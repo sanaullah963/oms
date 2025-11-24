@@ -1,19 +1,15 @@
 import { useEffect, useState, useMemo } from "react";
 import { io } from "socket.io-client";
 
-// কনফিগারেশন: API URL
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// সকেট অবজেক্টটি তৈরি করুন। এটি অ্যাপ্লিকেশনের লাইফটাইমে একবারই তৈরি হবে।
-// io() কলটি ফাইলের স্কোপে রাখা হয়েছে, কিন্তু এটি শুধুমাত্র ক্লায়েন্ট সাইডে ইমপোর্ট হওয়া উচিত।
 const socket = io(API_URL, {
-  // নিশ্চিত করুন যে সকেট শুধুমাত্র API URL-এ কানেক্ট করছে
   path: "/socket.io",
   autoConnect: true,
 });
 
 export const useSocket = () => {
-  // useMemo ব্যবহার করে socket ইনস্ট্যান্স পাস করলে ensure করা যায় যে এটি পরিবর্তন হবে না
   const memoizedSocket = useMemo(() => socket, []);
 
   const [isConnected, setIsConnected] = useState(memoizedSocket.connected);
