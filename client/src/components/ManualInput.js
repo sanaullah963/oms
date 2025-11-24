@@ -8,7 +8,7 @@ import { IoIosSend } from "react-icons/io";
 import { RiLoader2Fill } from "react-icons/ri";
 
 // API Endpoint Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:9000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_URL = `${API_BASE_URL}/api/orders/manual-single`;
 
 export default function ManualInput() {
