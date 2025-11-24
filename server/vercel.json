@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "name": "oms-fullstack-app",
+
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/next"
+    },
+    {
+      "src": "server/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "client/$1"
+    }
+  ]
+}

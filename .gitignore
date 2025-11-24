@@ -1,0 +1,81 @@
+
+
+node_modules
+client/node_modules
+server/node_modules
+
+----------------------------------------------------------------------
+
+2. Next.js Client Specific Files/Directories
+
+----------------------------------------------------------------------
+
+Next.js build output directory
+client/.next/
+Next.js cache directory
+client/.turbo/
+Log files (for debugging, etc.)
+client/.log
+client/npm-debug.log
+
+Yarn and npm lock files (unless you want consistent dependency versions)
+
+client/package-lock.json
+client/yarn.lock
+
+----------------------------------------------------------------------
+
+3. Server (Node/Express) Specific Files/Directories
+
+----------------------------------------------------------------------
+
+Express build output or temporary files (e.g., dist)
+
+server/dist/
+server/build/
+
+Server log files
+
+server/.log
+server/npm-debug.log
+
+----------------------------------------------------------------------
+
+4. Environment Variables (CRITICAL to Ignore for Security)
+
+----------------------------------------------------------------------
+
+Contains sensitive information (API keys, database credentials, etc.)
+
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+client/.env
+client/.env.local
+server/.env
+server/.env.local
+
+----------------------------------------------------------------------
+
+5. OS and Editor Generated Files
+
+----------------------------------------------------------------------
+
+.DS_Store
+Thumbs.db
+.vscode/
+
+----------------------------------------------------------------------
+
+6. Temporary / Local Files
+
+----------------------------------------------------------------------
+
+Common temporary files
+
+*.tmp
+*.bak
+*.swp
