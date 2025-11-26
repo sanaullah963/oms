@@ -12,7 +12,6 @@ const socket = io(API_URL, {
 export const useSocket = () => {
   const memoizedSocket = useMemo(() => socket, []);
   const [isConnected, setIsConnected] = useState(memoizedSocket.connected);
-  console.log("memoizedSocket:", memoizedSocket.connected);
   const [data, setData] = useState(null); // সার্ভার থেকে আসা নতুন ডেটা ধরার জন্য
 
   useEffect(() => {

@@ -9,14 +9,6 @@ import {STATUS_TABS}from '../constants/data'
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
 
-// --- স্ট্যাটাস ট্যাব কনফিগারেশন ---
-// const STATUS_TABS = [
-//     { key: 'Pending', label: 'পেন্ডিং', color: 'indigo' },
-//     { key: 'Confirmed', label: 'কনফার্মড', color: 'green' },
-//     { key: 'Call Not Received', label: 'কল ধরেনি', color: 'yellow' },
-//     { key: 'Phone Off', label: 'ফোন বন্ধ', color: 'orange' },
-//     { key: 'Cancelled', label: 'বাতিল', color: 'red' },
-// ];
 
 export default function Dashboard() {
     const [orders, setOrders] = useState([]);
@@ -32,6 +24,8 @@ export default function Dashboard() {
         try {
             const response = await axios.get(API_URL);
             setOrders(response.data);
+            console.log(response.data);
+            
         } catch (error) {
             console.error("Error fetching orders:", error);
             // Optionally set an error state here

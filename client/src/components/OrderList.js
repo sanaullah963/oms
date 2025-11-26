@@ -38,8 +38,6 @@ export default function OrderList({ orders, onOrderUpdate }) {
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
   // const sortedDates = Object.keys(groupedOrders).sort((a, b) => new Date(a) - new Date(b));
   const sortedDates = Object.keys(groupedOrders);
-  console.log('groupedOrders:',groupedOrders);
-  console.log( 'sortedDates:',sortedDates);
   return (
     <div className="flex flex-col space-y-4">
       {sortedDates.map((date) => (

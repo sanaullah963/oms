@@ -27,7 +27,7 @@ const io = new Server(httpServer, {
 // how to write status update socket
 app.set("io", io);
 io.on("connection", (socket) => {
-  console.log("A user connected via Socket.IO");
+  console.log("A user connected via Socket.IO", socket.id);
   //---- status update----
   socket.on("updateStatus", async ({ orderId, newStatus, note }) => {
     console.log("Status update request received:", orderId, newStatus);
