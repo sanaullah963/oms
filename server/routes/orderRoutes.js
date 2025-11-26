@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 router.post('/manual-single', async (req, res) => {
     // এখানে io (Socket.IO instance) access করার জন্য app.get('io') ব্যবহার করতে হবে
     const io = req.app.get('io'); 
-    
+        
     console.log("req.body:", req.body);
     try {
         const { rawInputText, totalCOD, productCode } = req.body;

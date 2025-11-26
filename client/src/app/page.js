@@ -4,18 +4,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import OrderList from '../components/OrderList'; 
 import ManualInput from '../components/ManualInput'; 
-import { useSocket } from '../hooks/useSocket'; 
+import { useSocket } from '../hooks/useSocket';
+import {STATUS_TABS}from '../constants/data'
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
 
 // --- স্ট্যাটাস ট্যাব কনফিগারেশন ---
-const STATUS_TABS = [
-    { key: 'Pending', label: 'পেন্ডিং', color: 'indigo' },
-    { key: 'Confirmed', label: 'কনফার্মড', color: 'green' },
-    { key: 'Call Not Received', label: 'কল ধরেনি', color: 'yellow' },
-    { key: 'Phone Off', label: 'ফোন বন্ধ', color: 'orange' },
-    { key: 'Cancelled', label: 'বাতিল', color: 'red' },
-];
+// const STATUS_TABS = [
+//     { key: 'Pending', label: 'পেন্ডিং', color: 'indigo' },
+//     { key: 'Confirmed', label: 'কনফার্মড', color: 'green' },
+//     { key: 'Call Not Received', label: 'কল ধরেনি', color: 'yellow' },
+//     { key: 'Phone Off', label: 'ফোন বন্ধ', color: 'orange' },
+//     { key: 'Cancelled', label: 'বাতিল', color: 'red' },
+// ];
 
 export default function Dashboard() {
     const [orders, setOrders] = useState([]);

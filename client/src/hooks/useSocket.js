@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { io } from "socket.io-client";
 
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const socket = io(API_URL, {
@@ -16,7 +15,6 @@ export const useSocket = () => {
   const [data, setData] = useState(null); // সার্ভার থেকে আসা নতুন ডেটা ধরার জন্য
 
   useEffect(() => {
-    // কানেকশন স্ট্যাটাস ম্যানেজ করা
     memoizedSocket.on("connect", () => {
       setIsConnected(true);
       console.log("Socket Connected!");

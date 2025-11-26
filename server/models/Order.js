@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
 
-// --- ১. Activities স্কিমা তৈরি (টাইমলাইন / অডিট লগ) ---
 const ActivitySchema = new mongoose.Schema(
   {
-    // কে বা কী কাজটি করেছে (যেমন: 'User', 'System', 'Steadfast')
+    
     actor: {
       type: String,
       default: "User",

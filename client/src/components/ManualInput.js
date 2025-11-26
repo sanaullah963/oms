@@ -1,7 +1,5 @@
 "use client";
-
 import { useState, useEffect } from "react";
-
 import { useSocket } from "../hooks/useSocket";
 import axios from "axios";
 import { IoIosSend } from "react-icons/io";

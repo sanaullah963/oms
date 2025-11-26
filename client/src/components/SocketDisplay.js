@@ -1,9 +1,7 @@
-'use client'; // ⬅️ সকেট, হুক এবং ইন্টারেক্টিভিটির জন্য আবশ্যক
-
+'use client';
 import { useSocket } from '../hooks/useSocket'; // ⬅️ এখানে আপনি হুকটি ইমপোর্ট করেছেন
-
 export default function SocketDisplay() {
-    // useSocket হুক থেকে ডেটা গ্রহণ
+
     const { socket, isConnected, data } = useSocket();
 
     // সার্ভারে মেসেজ পাঠানোর ফাংশন
