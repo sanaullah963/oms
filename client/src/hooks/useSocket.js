@@ -6,12 +6,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const socket = io(API_URL, {
   path: "/socket.io",
   autoConnect: true,
+  reconnectionAttempts:Infinity,
 });
 
 export const useSocket = () => {
   const memoizedSocket = useMemo(() => socket, []);
-
   const [isConnected, setIsConnected] = useState(memoizedSocket.connected);
+  console.log("memoizedSocket:", memoizedSocket.connected);
   const [data, setData] = useState(null); // সার্ভার থেকে আসা নতুন ডেটা ধরার জন্য
 
   useEffect(() => {

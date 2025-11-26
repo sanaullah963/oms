@@ -26,8 +26,17 @@ export const STATUS_SHORTCUTS = [
   },
 ];
 
+// --- 2. স্ট্যাটাস ট্যাব কনফিগারেশন ---
+export const STATUS_TABS = [
+    { key: 'Pending', label: 'পেন্ডিং', color: 'indigo' },
+    { key: 'Confirmed', label: 'কনফার্মড', color: 'green' },
+    { key: 'Call Not Received', label: 'কল ধরেনি', color: 'yellow' },
+    { key: 'Phone Off', label: 'ফোন বন্ধ', color: 'orange' },
+    { key: 'Cancelled', label: 'বাতিল', color: 'red' },
+];
 
-// --- ২. অ্যাক্টিভিটি টাইমলাইন কালার ---
+
+// --- 3. অ্যাক্টিভিটি টাইমলাইন কালার ---
 export const ACTIVITY_STATUS_COLORS = {
   "Order Created": "text-blue-500",
   Confirmed: "text-green-500",
@@ -38,7 +47,7 @@ export const ACTIVITY_STATUS_COLORS = {
 };
 
 
-// --- ৩. অর্ডারগুলোকে তাদের তৈরির তারিখ অনুযায়ী গ্রুপ করে। ---
+// --- 4. অর্ডারগুলোকে তাদের তৈরির তারিখ অনুযায়ী গ্রুপ করে। ---
 export const groupOrdersByDate = (orders) => {
     return orders.reduce((acc, order) => {
         // তারিখের শুধুমাত্র YYYY-MM-DD অংশটি নেওয়া হচ্ছে
@@ -50,7 +59,7 @@ export const groupOrdersByDate = (orders) => {
 };
 
 
-// --- ৪. তারিখকে বাংলা ফরম্যাটে রূপান্তর ---
+// --- 5. তারিখকে বাংলা ফরম্যাটে রূপান্তর ---
 export const formatDate = (dateString) => {
     // যদি dateString না থাকে, তাহলে একটি ডিফল্ট স্ট্রিং ফেরত দেওয়া হবে
     if (!dateString) return 'N/A';
@@ -58,12 +67,5 @@ export const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('bn-BD', options);
 };
 
-// --- ৫. স্ট্যাটাস ট্যাব কনফিগারেশন ---
-export const STATUS_TABS = [
-    { key: 'Pending', label: 'পেন্ডিং', color: 'indigo' },
-    { key: 'Confirmed', label: 'কনফার্মড', color: 'green' },
-    { key: 'Call Not Received', label: 'কল ধরেনি', color: 'yellow' },
-    { key: 'Phone Off', label: 'ফোন বন্ধ', color: 'orange' },
-    { key: 'Cancelled', label: 'বাতিল', color: 'red' },
-];
+
 

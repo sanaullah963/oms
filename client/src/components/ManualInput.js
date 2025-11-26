@@ -1,13 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useSocket } from "../hooks/useSocket";
 import axios from "axios";
 import { IoIosSend } from "react-icons/io";
 import { RiLoader2Fill } from "react-icons/ri";
+import { useSocket } from "../hooks/useSocket";
 
-// API Endpoint Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-const API_URL = `${API_BASE_URL}/api/orders/manual-single`;
+
 
 export default function ManualInput() {
   // Socket Hook Access
@@ -72,7 +70,10 @@ export default function ManualInput() {
       });
 
       // 2. HTTP POST Request (ডেটাবেসে সেভ করার জন্য)
-      const httpResponse = await axios.post(API_URL, dataToSend);
+      const httpResponse = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/orders/manual-single`,
+        dataToSend
+      );
 
       if (httpResponse.status === 201) {
         setMessage(
