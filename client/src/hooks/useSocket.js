@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const socket = io(API_URL, {
   path: "/socket.io",
   autoConnect: true,
-  reconnectionAttempts:Infinity,
+  // reconnectionAttempts:Infinity,
 });
 
 export const useSocket = () => {
