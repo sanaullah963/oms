@@ -81,4 +81,21 @@ router.post('/manual-single', async (req, res) => {
     }
 });
 
+//--- delete //api/orders/delete/:id
+router.delete('/delete/:id', async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        console.log(orderId);
+        
+        const deletedOrder = await Order.findByIdAndDelete(orderId);
+        if (!deletedOrder) {
+            return res.status(404).json({ message: 'Order not found.' });
+        }
+        res.status(200).json({ message: 'সফলভাবে ডিলিট করা হয়েছে' });
+    } catch (error) {
+        console.error("Error deleting order:", error);
+        res.status(500).json({ message: 'Server error while deleting order.' });
+    }
+});
+
 module.exports = router;

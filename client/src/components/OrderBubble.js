@@ -5,22 +5,14 @@ import axios from "axios";
 import { useSocket } from "../hooks/useSocket";
 import { STATUS_SHORTCUTS,ACTIVITY_STATUS_COLORS,formatTime } from "../constants/data";
 
+
 // API Endpoint Configuration
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
 
 
 
 
-// টাইমকে HH:MM (AM/PM) ফরম্যাটে দেখানোর জন্য
-// const formatTime = (isoString) => {
-//   // যদি isoString না থাকে, তাহলে একটি ডিফল্ট স্ট্রিং ফেরত দেওয়া হবে
-//   if (!isoString) return "N/A";
-//   return new Date(isoString).toLocaleTimeString("bn-BD", {
-//     hour: "2-digit",
-//     minute: "2-digit",
-//     hour12: true,
-//   });
-// };
+
 
 // --- ২. কাস্টম Modal কম্পোনেন্ট ---
 const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {
@@ -76,7 +68,7 @@ const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {
 export default function OrderBubble({ order, onUpdate }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { socket, isConnected } = useSocket();
+  // const { socket, isConnected } = useSocket();
 
   // Modal State
   const [modal, setModal] = useState({
@@ -130,10 +122,11 @@ export default function OrderBubble({ order, onUpdate }) {
   // ডিলিট লজিক
   const executeDelete = async () => {
     setLoading(true);
+    console.log(order._id);
     // Modal Hide করা হচ্ছে না, কারণ এটি executeDelete() এর পরে closeModal() এর মাধ্যমে বন্ধ হবে
 
     try {
-      await axios.delete(`${API_BASE}/${order._id}`);
+     const delResponse = await axios.delete(`${API_BASE}/delete/${order._id}`);
 
       if (onUpdate) {
         // 'DELETE' ইভেন্ট দিয়ে প্যারেন্ট কম্পোনেন্টকে জানানো
@@ -141,12 +134,13 @@ export default function OrderBubble({ order, onUpdate }) {
       }
       showMessage(
         "alert",
-        "সফলভাবে ডিলিট করা হয়েছে: অর্ডারটি লিস্ট থেকে সরানো হলো।",
+        delResponse?.data?.message,
+        // "সফলভাবে ডিলিট করা হয়েছে: অর্ডারটি লিস্ট থেকে সরানো হলো।",
         null
       );
     } catch (error) {
       console.error("Failed to delete order:", error);
-      showMessage("alert", "ত্রুটি: অর্ডার ডিলিট করা ব্যর্থ হয়েছে।", null);
+      // showMessage("alert", "ত্রুটি: অর্ডার ডিলিট করা ব্যর্থ হয়েছে।", null);
     } finally {
       setLoading(false);
     }
@@ -310,7 +304,7 @@ export default function OrderBubble({ order, onUpdate }) {
 
           {/* ডান দিকের বাটন: অর্ডার ডিলিট */}
           <button
-            className="flex items-center space-x-1 px-3 py-1.5 text-xs rounded-full bg-red-500 text-white hover:bg-red-600 transition duration-150 font-medium shadow-md"
+            className="cursor-pointer flex items-center space-x-1 px-3 py-1.5 text-xs rounded-full bg-red-500 text-white hover:bg-red-600 transition duration-150 font-medium shadow-md"
             onClick={handleDeleteOrder}
             title="অর্ডার ডিলিট করুন"
             disabled={loading}
@@ -352,7 +346,7 @@ export default function OrderBubble({ order, onUpdate }) {
                 <button
                   key={shortcut.key}
                   onClick={() => handleStatusUpdate(shortcut)}
-                  className={`text-white text-xs font-medium py-1.5 px-3 rounded-full shadow-md transition duration-200 ${
+                  className={`text-white text-xs font-medium py-1.5 px-3 rounded-full shadow-md transition duration-200 cursor-pointer ${
                     shortcut.color
                   } ${
                     loading

@@ -39,8 +39,9 @@ export default function OrderList({ orders, onOrderUpdate }) {
 
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
   const sortedDates = Object.keys(groupedOrders);
-      const { data: socketData } = useSocket(); 
-
+      // const { data: socketData } = useSocket(); 
+  console.log(sortedDates);
+  
   return (
     <div className="flex flex-col space-y-4">
       {sortedDates.map((date) => (
@@ -61,7 +62,7 @@ export default function OrderList({ orders, onOrderUpdate }) {
           {/* Orders for this Date */}
           <div className="flex flex-col space-y-3">
             {/* অর্ডারের টাইমলাইন অনুযায়ী সাজানোর জন্য reverse() ব্যবহার করুন (নতুনটি নিচে থাকবে) */}
-            {groupedOrders[date].reverse().map((order) => (
+            {groupedOrders[date].map((order) => (
               <OrderBubble
                 key={order._id}
                 order={order}
