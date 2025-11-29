@@ -68,4 +68,16 @@ export const formatDate = (dateString) => {
 };
 
 
+// --- 6. টাইমকে HH:MM (AM/PM) ফরম্যাটে দেখানোর জন্য
+export const formatTime = (isoString) => {
+  // যদি isoString না থাকে, তাহলে একটি ডিফল্ট স্ট্রিং ফেরত দেওয়া হবে
+  if (!isoString) return "N/A";
+  return new Date(isoString).toLocaleTimeString("bn-BD", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+
 

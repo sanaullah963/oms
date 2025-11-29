@@ -1,6 +1,7 @@
 import React from "react";
 import OrderBubble from "./OrderBubble";
 import { groupOrdersByDate, formatDate } from "../constants/data";
+import { useSocket } from "@/hooks/useSocket";
 
 // এই ফাংশনটি অর্ডারগুলোকে তাদের তৈরির তারিখ অনুযায়ী গ্রুপ করে।
 // const groupOrdersByDate = (orders) => {
@@ -22,6 +23,7 @@ import { groupOrdersByDate, formatDate } from "../constants/data";
 // };
 
 export default function OrderList({ orders, onOrderUpdate }) {
+  // if orders is empty
   if (!orders || orders.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500 bg-white rounded-xl shadow-md mt-4">
@@ -36,8 +38,9 @@ export default function OrderList({ orders, onOrderUpdate }) {
   const groupedOrders = groupOrdersByDate(orders);
 
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
-  // const sortedDates = Object.keys(groupedOrders).sort((a, b) => new Date(a) - new Date(b));
   const sortedDates = Object.keys(groupedOrders);
+      const { data: socketData } = useSocket(); 
+
   return (
     <div className="flex flex-col space-y-4">
       {sortedDates.map((date) => (

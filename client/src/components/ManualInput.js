@@ -5,15 +5,13 @@ import { IoIosSend } from "react-icons/io";
 import { RiLoader2Fill } from "react-icons/ri";
 import { useSocket } from "../hooks/useSocket";
 
-
-
 export default function ManualInput() {
   // Socket Hook Access
   const { socket, isConnected } = useSocket();
 
   // State for Component
   const [inputValue, setInputValue] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading,   ] = useState(false);
   const [message, setMessage] = useState("");
 
   // Hydration Fix State
@@ -38,7 +36,7 @@ export default function ManualInput() {
 
     if (!isClient) return;
 
-    if (!isConnected) {
+    if (!socket?.connected) {
       setMessage("❌ সকেট সার্ভারের সাথে সংযোগ নেই।");
       setLoading(false);
       return;
@@ -105,14 +103,17 @@ export default function ManualInput() {
 
   // --- Hydration Fixed Rendering Logic ---
   const renderStatusText = isClient
-    ? isConnected
+    ? socket?.connected
       ? "Connected"
       : "Disconnected"
     : "Loading...";
+  console.log("socket", socket.connected);
+  console.log("isClient", isClient);
+  console.log("isConnected", isConnected);
   const isInputDisabled =
-    !isConnected || inputValue.trim() === "" || loading || !isClient;
+    !socket?.connected || inputValue.trim() === "" || loading || !isClient;
   const statusColor = isClient
-    ? isConnected
+    ? socket?.connected
       ? "text-green-600"
       : "text-red-600"
     : "text-gray-500";
@@ -169,6 +170,7 @@ export default function ManualInput() {
         />
 
         {/* সাবমিট বাটন (ফ্লোটিং বাটন স্টাইল) */}
+
         <button
           type="submit"
           disabled={isInputDisabled}

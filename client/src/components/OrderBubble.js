@@ -3,39 +3,24 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useSocket } from "../hooks/useSocket";
-import { STATUS_SHORTCUTS,ACTIVITY_STATUS_COLORS } from "../constants/data";
+import { STATUS_SHORTCUTS,ACTIVITY_STATUS_COLORS,formatTime } from "../constants/data";
 
 // API Endpoint Configuration
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
 
-// --- ১. স্ট্যাটাস এবং কালার কোডিং (Constants) ---
-// const STATUS_SHORTCUTS = [
-//     { key: 'Confirmed', label: '✅ কনফার্ম', color: 'bg-green-600 hover:bg-green-700', note: 'Order Confirmed successfully.' },
-//     { key: 'Call Not Received', label: '🚫 কল ধরেনি', color: 'bg-yellow-600 hover:bg-yellow-700', note: 'Customer did not receive the call.' },
-//     { key: 'Phone Off', label: '📵 ফোন বন্ধ', color: 'bg-orange-600 hover:bg-orange-700', note: 'Customer phone was found switched off.' },
-//     { key: 'Cancelled', label: '❌ বাতিল', color: 'bg-red-600 hover:bg-red-700', note: 'Order Cancelled by seller/customer.' },
-// ];
 
-// অ্যাক্টিভিটি টাইমলাইন কালার
-// const ACTIVITY_STATUS_COLORS = {
-//   "Order Created": "text-blue-500",
-//   Confirmed: "text-green-500",
-//   "Call Not Received": "text-yellow-500",
-//   "Phone Off": "text-orange-500",
-//   Cancelled: "text-red-500",
-//   "Status Updated": "text-gray-500",
-// };
+
 
 // টাইমকে HH:MM (AM/PM) ফরম্যাটে দেখানোর জন্য
-const formatTime = (isoString) => {
-  // যদি isoString না থাকে, তাহলে একটি ডিফল্ট স্ট্রিং ফেরত দেওয়া হবে
-  if (!isoString) return "N/A";
-  return new Date(isoString).toLocaleTimeString("bn-BD", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-};
+// const formatTime = (isoString) => {
+//   // যদি isoString না থাকে, তাহলে একটি ডিফল্ট স্ট্রিং ফেরত দেওয়া হবে
+//   if (!isoString) return "N/A";
+//   return new Date(isoString).toLocaleTimeString("bn-BD", {
+//     hour: "2-digit",
+//     minute: "2-digit",
+//     hour12: true,
+//   });
+// };
 
 // --- ২. কাস্টম Modal কম্পোনেন্ট ---
 const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {

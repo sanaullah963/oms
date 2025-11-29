@@ -1,31 +1,30 @@
 "use client";
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, use } from 'react';
 import axios from 'axios';
 import OrderList from '../components/OrderList'; 
 import ManualInput from '../components/ManualInput'; 
 import { useSocket } from '../hooks/useSocket';
 import {STATUS_TABS}from '../constants/data'
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 
-export default function Dashboard() {
+
+export default function  Dashboard() {
     const [orders, setOrders] = useState([]);
     const [activeStatus, setActiveStatus] = useState('Pending');
     const [loading, setLoading] = useState(true);
-    
+
     // Socket.IO হুক ব্যবহার করে রিয়েল-টাইম আপডেট গ্রহণ
     const { data: socketData } = useSocket(); 
+
 
     // --- Core Functions: সমস্ত অর্ডার ফেচ করা ---
     const fetchOrders = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await axios.get(API_URL);
+            const response = await axios.get(`${API_URL}/api/orders`);
             setOrders(response.data);
-            console.log(response.data);
-            
         } catch (error) {
             console.error("Error fetching orders:", error);
             // Optionally set an error state here
@@ -41,7 +40,6 @@ export default function Dashboard() {
                 // অর্ডারের id অনুযায়ী ফিল্টার করে সরিয়ে দেওয়া
                 return prevOrders.filter(order => order._id !== data); 
             }
-            
             // যদি UPDATE হয়
             const index = prevOrders.findIndex(o => o._id === data._id);
             if (index !== -1) {

@@ -18,13 +18,12 @@ const CLIENT_URL = process.env.CLIENT_URL;
 // ------ 1. Socket.IO Setup ---
 const io = new Server(httpServer, {
   cors: {
-    origin: CLIENT_URL, // **IMPORTANT: Replace with your Next.js URL when you know it**
+    origin: CLIENT_URL,
     methods: ["GET", "POST"],
   },
 });
 
-// Pass the io instance to routes so they can emit real-time updates
-// how to write status update socket
+
 app.set("io", io);
 io.on("connection", (socket) => {
   console.log("A user connected via Socket.IO", socket.id);
