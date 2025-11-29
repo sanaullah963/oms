@@ -107,9 +107,7 @@ export default function ManualInput() {
       ? "Connected"
       : "Disconnected"
     : "Loading...";
-  console.log("socket", socket.connected);
-  console.log("isClient", isClient);
-  console.log("isConnected", isConnected);
+
   const isInputDisabled =
     !socket?.connected || inputValue.trim() === "" || loading || !isClient;
   const statusColor = isClient

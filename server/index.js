@@ -1,7 +1,7 @@
 const express = require("express");
 const http = require("http");
 const mongoose = require("mongoose");
-const { Server } = require("socket.io"); // Socket.IO Server
+const { Server } = require("socket.io");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const orderRoutes = require("./routes/orderRoutes");
@@ -10,7 +10,7 @@ const Order = require("./models/Order");
 require("dotenv").config();
 
 const app = express();
-const httpServer = http.createServer(app); // Create HTTP server from Express app
+const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGODB_URI;
 const CLIENT_URL = process.env.CLIENT_URL;
