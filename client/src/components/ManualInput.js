@@ -11,7 +11,7 @@ export default function ManualInput() {
 
   // State for Component
   const [inputValue, setInputValue] = useState("");
-  const [loading,   ] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   // Hydration Fix State
