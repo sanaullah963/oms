@@ -39,8 +39,6 @@ export default function OrderList({ orders, onOrderUpdate }) {
 
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
   const sortedDates = Object.keys(groupedOrders);
-      // const { data: socketData } = useSocket(); 
-  console.log(sortedDates);
   
   return (
     <div className="flex flex-col space-y-4">

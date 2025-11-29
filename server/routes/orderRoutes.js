@@ -98,4 +98,29 @@ router.delete('/delete/:id', async (req, res) => {
     }
 });
 
+//--- update //api/orders/update-order/:id
+router.put('/update-order/:id', async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        const data ={
+            ...req.body,
+            $push: {
+                activities: {
+                    description: 'address updated',
+                    type: ' Updated',
+                    changedAt: new Date(),
+                },
+            },
+        }
+        const updatedOrder = await Order.findByIdAndUpdate(orderId, data, { new: true });
+        if (!updatedOrder) {
+            return res.status(404).json({ message: 'Order not found.' });
+        }
+        res.status(200).json({ message: 'সফলভাবে অপডেট করা হয়েছে', order: updatedOrder });
+    } catch (error) {
+        console.error("Error updating order:", error);
+        res.status(500).json({ message: 'Server error while updating order.' });
+    }
+});
+
 module.exports = router;

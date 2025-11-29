@@ -8,12 +8,9 @@ import { useSocket } from "../hooks/useSocket";
 export default function ManualInput() {
   // Socket Hook Access
   const { socket, isConnected } = useSocket();
-
-  // State for Component
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-
   // Hydration Fix State
   const [isClient, setIsClient] = useState(false);
 
@@ -35,9 +32,11 @@ export default function ManualInput() {
     setMessage("");
 
     if (!isClient) return;
-
     if (!socket?.connected) {
       setMessage("❌ সকেট সার্ভারের সাথে সংযোগ নেই।");
+      setTimeout(() => {
+        setMessage("");
+      }, 3000);
       setLoading(false);
       return;
     }
@@ -45,16 +44,23 @@ export default function ManualInput() {
     // Check if input is empty after trim
     if (inputValue.trim() === "") {
       setMessage("⚠️ অনুগ্রহ করে অর্ডার বিবরণ লিখুন।");
+      setTimeout(() => {
+        setMessage("");
+      }, 3000);
       setLoading(false);
       return;
     }
-
+    if (inputValue.trim().split(/\s+/).length < 2) {
+      setMessage("⚠️ অনুগ্রহ করে অর্ডার বিবরণ লিখুন।");
+      setLoading(false);
+      return;
+    }
     // Data Extraction/Parsing Logic (আপনার পূর্বের কোড থেকে)
     const words = inputValue.trim().split(/\s+/);
     // Assuming the last word is COD, and the second last is Product Code
     const totalCOD = words.length >= 1 ? words[words.length - 1] : "";
     const productCode = words.length >= 2 ? words[words.length - 2] : "";
-
+    
     const dataToSend = {
       rawInputText: inputValue,
       totalCOD,
@@ -75,10 +81,11 @@ export default function ManualInput() {
 
       if (httpResponse.status === 201) {
         setMessage(
-          `✅ সফলভাবে অর্ডার তৈরি হয়েছে! আইডি: ${httpResponse.data.order._id.slice(
-            -4
-          )}`
+          `✅অর্ডার তৈরি হয়েছে!`
         );
+        setTimeout(() => {
+          setMessage("");
+        }, 3000);
         setInputValue(""); // ইনপুট খালি করা
       } else {
         setMessage(
@@ -90,7 +97,6 @@ export default function ManualInput() {
         "Manual order submission failed:",
         error.response?.data || error.message
       );
-
       const errorMessage = error.response?.data?.message
         ? error.response.data.message
         : "অর্ডার তৈরি করার সময় সার্ভার ত্রুটি হয়েছে।";
@@ -117,22 +123,7 @@ export default function ManualInput() {
     : "text-gray-500";
 
   return (
-    <div className="p-3 md:p-4 w-full">
-      {/* Connection Status Indicator - চ্যাট হেডার স্টাইলে */}
-      <div className="mb-2 flex justify-between items-center text-xs">
-        <span className="font-semibold text-gray-700">
-          ✍️ নতুন অর্ডার ইনপুট
-        </span>
-        <span className={`font-medium ${statusColor} flex items-center`}>
-          {/* <span
-            className={`w-2 h-2 rounded-full mr-1 ${
-              isConnected ? "bg-green-500" : "bg-red-500"
-            } animate-pulse`}
-          ></span> */}
-          {renderStatusText}
-        </span>
-      </div>
-
+    <div className="  md:p-4 w-full">
       {/* Message Display Area (Floating above input) */}
       {message && (
         <div
@@ -147,15 +138,20 @@ export default function ManualInput() {
       )}
 
       {/* হোয়াটসঅ্যাপ-স্টাইল ইনপুট ফর্ম */}
-      <form onSubmit={handleSubmit} className="flex items-end space-x-2">
+      <form
+        onSubmit={handleSubmit}
+        onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
+        className="flex items-end"
+      >
         {/* টেক্সট এরিয়া - হোয়াটসঅ্যাপ মেসেজ বক্সের মতো */}
+
         <textarea
           id="manual-input"
           value={inputValue}
           onChange={handleInputChange}
           rows="1"
-          placeholder="অর্ডার বিবরণ (গ্রাহকের নাম, ঠিকানা, কোড, মূল্য) এখানে লিখুন..."
-          className="flex-grow p-3 border border-gray-300 rounded-full shadow-inner focus:ring-indigo-500 focus:border-indigo-500 resize-none transition duration-150 text-base max-h-40 overflow-y-auto disabled:bg-gray-100 disabled:cursor-not-allowed"
+          placeholder=" এখানে লিখুন..."
+          className="flex-grow  pt-2 ps-1.5 text-sm md:p-2 border border-gray-300 rounded-md shadow-inner focus:border-gray-500  focus:h-36  transition-all duration-300 ease-in-out md:text-base h-12  overflow-y-auto disabled:bg-gray-100 disabled:cursor-not-allowed"
           required
           disabled={loading || !isClient}
           onKeyDown={(e) => {
@@ -168,22 +164,31 @@ export default function ManualInput() {
         />
 
         {/* সাবমিট বাটন (ফ্লোটিং বাটন স্টাইল) */}
-
-        <button
-          type="submit"
-          disabled={isInputDisabled}
-          className={`flex-shrink-0 p-3 rounded-full shadow-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 ${
-            isInputDisabled
-              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700 text-white focus:ring-indigo-500 transform hover:scale-105"
-          }`}
-        >
-          {loading ? (
-            <RiLoader2Fill className="h-6 w-6 animate-spin" />
-          ) : (
-            <IoIosSend className="h-6 w-6" />
-          )}
-        </button>
+        <div className="flex flex-col h-full items-center juctify-center">
+          <span className={`font-mono ${statusColor}  text-[10px]`}>
+            {/* <span
+            className={`w-2 h-2 rounded-full mr-1 ${
+              isConnected ? "bg-green-500" : "bg-red-500"
+            } animate-pulse`}
+          ></span> */}
+            {renderStatusText}
+          </span>
+          <button
+            type="submit"
+            disabled={isInputDisabled}
+            className={`flex-shrink-0 p-2  md:p-3 rounded-full shadow-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2 ${
+              isInputDisabled
+                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white focus:ring-indigo-500 transform hover:scale-105"
+            }`}
+          >
+            {loading ? (
+              <RiLoader2Fill className="h-6 w-6 animate-spin" />
+            ) : (
+              <IoIosSend className="h-6 w-6" />
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );

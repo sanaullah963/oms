@@ -90,7 +90,7 @@ const getButtonClasses = (status, color) => {
     }
     return `${base} bg-gray-200 text-gray-700 hover:bg-gray-300`;
   };
-
+  
 
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-50">
@@ -161,7 +161,7 @@ const getButtonClasses = (status, color) => {
       </div>
 
       {/* Fixed Bottom Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-2xl z-20">
+      <div className="fixed bottom-0 left-0 right-0 px-1 py-2 md:p-4 bg-white border-t border-gray-200 shadow-2xl z-20">
         <ManualInput />
       </div>
     </div>

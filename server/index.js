@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const orderRoutes = require("./routes/orderRoutes");
 const Order = require("./models/Order");
+const { type } = require("os");
 
 require("dotenv").config();
 
@@ -23,7 +24,6 @@ const io = new Server(httpServer, {
   },
 });
 
-
 app.set("io", io);
 io.on("connection", (socket) => {
   console.log("A user connected via Socket.IO", socket.id);
@@ -35,10 +35,11 @@ io.on("connection", (socket) => {
       const updatedOrder = await Order.findByIdAndUpdate(
         orderId,
         {
-          orderStatus : newStatus,
+          orderStatus: newStatus,
           $push: {
             activities: {
-              description:note,
+              description: note,
+              type: newStatus,
               changedAt: new Date(),
             },
           },
