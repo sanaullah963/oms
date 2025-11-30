@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 const { parseOrderDetails } = require('../utils/parser'); // পরবর্তী ধাপে তৈরি করা হবে
+const { bookSteadfast } = require('../controllers/steadfastController');
 
 // --- ১. GET /api/orders - সমস্ত অর্ডার ফেচ করা ---
 router.get('/', async (req, res) => {
@@ -122,5 +123,8 @@ router.put('/update-order/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error while updating order.' });
     }
 });
+// steadfast api
+
+router.post("/courier/steadfast/:orderId", bookSteadfast);
 
 module.exports = router;

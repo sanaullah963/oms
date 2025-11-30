@@ -29,36 +29,36 @@ io.on("connection", (socket) => {
   console.log("A user connected via Socket.IO", socket.id);
   //---- status update----
   socket.on("updateStatus", async ({ orderId, newStatus, note }) => {
-    console.log("Status update request received:", orderId, newStatus);
+
     try {
-      // MongoDB update
-      const updatedOrder = await Order.findByIdAndUpdate(
-        orderId,
-        {
-          orderStatus: newStatus,
-          $push: {
-            activities: {
-              description: note,
-              type: newStatus,
-              changedAt: new Date(),
+      
+        // MongoDB update
+        const updatedOrder = await Order.findByIdAndUpdate(
+          orderId,
+          {
+            orderStatus: newStatus,
+            $push: {
+              activities: {
+                description: note,
+                type: newStatus,
+                changedAt: new Date(),
+              },
             },
           },
-        },
-        { new: true }
-      );
-      console.log("Updated order:", updatedOrder);
-      // Send response back to requesting user
-      if (!updatedOrder) {
-        return socket.emit("statusUpdated", {
-          success: false,
-          message: "Order not found",
-        });
-      } else {
-        socket.emit("statusUpdated", {
-          success: true,
-          order: updatedOrder,
-        });
-      }
+          { new: true }
+        );
+        // Send response back to requesting user
+        if (!updatedOrder) {
+          return socket.emit("statusUpdated", {
+            success: false,
+            message: "Order not found",
+          });
+        } else {
+          socket.emit("statusUpdated", {
+            success: true,
+            order: updatedOrder,
+          });
+        }
 
       // Inform all other clients (admin dashboard, etc.)
       socket.broadcast.emit("orderStatusChange", updatedOrder);

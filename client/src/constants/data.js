@@ -6,6 +6,7 @@ export const STATUS_SHORTCUTS = [
     color: "bg-green-600 hover:bg-green-700",
     note: "Order Confirmed successfully.",
   },
+
   {
     key: "Call Not Received",
     label: "কল ধরেনি",
@@ -24,6 +25,12 @@ export const STATUS_SHORTCUTS = [
     color: "bg-red-600 hover:bg-red-700",
     note: "Order Cancelled by seller/customer.",
   },
+  // {
+  //   key: "Booked",
+  //   label: "এন্ট্রি",
+  //   color: "bg-green-600 hover:bg-green-700",
+  //   note: "courier Entry successfully.",
+  // },
 ];
 
 // --- 2. স্ট্যাটাস ট্যাব কনফিগারেশন ---
@@ -33,6 +40,7 @@ export const STATUS_TABS = [
     { key: 'Call Not Received', label: 'কল ধরেনি', color: 'yellow' },
     { key: 'Phone Off', label: 'ফোন বন্ধ', color: 'orange' },
     { key: 'Cancelled', label: 'বাতিল', color: 'red' },
+    { key: 'Booked', label: 'এন্ট্রি', color: 'green' },
 ];
 
 

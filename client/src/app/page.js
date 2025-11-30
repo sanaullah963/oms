@@ -34,10 +34,10 @@ export default function Dashboard() {
     setOrders((prevOrders) => {
       if (actionType === "DELETE") {
         // অর্ডারের id অনুযায়ী ফিল্টার করে সরিয়ে দেওয়া
-        return prevOrders.filter((order) => order._id !== data);
+        return prevOrders.filter((order) => order?._id !== data);
       }
       // যদি UPDATE হয়
-      const index = prevOrders.findIndex((o) => o._id === data._id);
+      const index = prevOrders?.findIndex((o) => o?._id === data?._id);
       if (index !== -1) {
         // বিদ্যমান অর্ডারটি আপডেট করা
         const newOrders = [...prevOrders];
@@ -161,7 +161,7 @@ const getButtonClasses = (status, color) => {
       </div>
 
       {/* Fixed Bottom Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 px-1 py-2 md:p-4 bg-white border-t border-gray-200 shadow-2xl z-20">
+      <div className="fixed bottom-0 left-0 right-0 px-1 py-2  bg-white border-t border-gray-200 shadow-2xl z-20">
         <ManualInput />
       </div>
     </div>

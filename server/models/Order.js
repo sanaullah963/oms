@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 
 const ActivitySchema = new mongoose.Schema(
   {
-    
     actor: {
       type: String,
       default: "User",
@@ -52,13 +51,26 @@ const OrderSchema = new mongoose.Schema({
   orderStatus: {
     type: String,
     default: "Pending",
-    enum: ["Pending", "confirmed", "released", "Delivered", "Cancelled"],
+    enum: ["Pending", "confirmed", "released", "Delivered", "Cancelled", "Booked"],
   },
 
   // এডিট হিস্ট্রি (ঐচ্ছিক কিন্তু এডিটের জন্য সহায়ক)
   activities: {
     type: [ActivitySchema],
     default: [],
+  },
+  // --- ৩. কুরিয়ার ডেটা ফিল্ড (নতুন) ---
+  courier: {
+    // কুরিয়ার থেকে পাওয়া ট্র্যাকিং আইডি
+    trackingId: { type: String, default: null }, // কুরিয়ার বুকিং এর সময় যে JSON ডেটা পাঠানো হয়েছিল
+    requestPayload: { type: mongoose.Schema.Types.Mixed, default: null }, // কুরিয়ার থেকে পাওয়া রেসপন্স ডেটা
+    responseData: { type: mongoose.Schema.Types.Mixed, default: null }, // বুকিং এর সময়
+    bookedAt: { type: Date, default: null }, // বুকিং স্ট্যাটাস
+    bookingStatus: {
+      type: String,
+      enum: ["In-review","Pending", "Failed", "Booked", "Shipping", "Delivered"],
+      default: "Pending",
+    },
   },
 
   createdAt: { type: Date, default: Date.now },

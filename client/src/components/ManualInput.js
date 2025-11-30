@@ -123,7 +123,7 @@ export default function ManualInput() {
     : "text-gray-500";
 
   return (
-    <div className="  md:p-4 w-full">
+    <div className="   w-full">
       {/* Message Display Area (Floating above input) */}
       {message && (
         <div
