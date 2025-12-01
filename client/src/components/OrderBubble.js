@@ -672,9 +672,10 @@ export default function OrderBubble({ order, onUpdate }) {
                             activity.note ||
                             "নোট নেই"}
                         </p>
-                        {order?.orderStatus === "Booked" && order?.courier?.trackingId && (
-                          <p>ট্র্যাকিং আইডি: {order.courier.trackingId}</p>
-                        )}
+                        {order?.orderStatus === "Booked" &&
+                          order?.courier?.trackingId && (
+                            <p>ট্র্যাকিং আইডি: {order.courier.trackingId}</p>
+                          )}
                       </div>
                     </div>
                   ))}

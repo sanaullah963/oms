@@ -95,22 +95,33 @@ const getButtonClasses = (status, color) => {
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-50">
       {/* Header / Status Tabs */}
-      <header className="p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
-        <h1 className="text-lg font-extrabold text-indigo-700 mb-2">
+      <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
+        <h1 className="text-lg font-extrabold text-indigo-700 mb-1 md:mb-2">
           <span >📦 অর্ডার ড্যাশবোর্ড</span> 
           <span className="text-green-500 text-2xl ml-2 ">{orders?.length}</span>
         </h1>
-        <div className="flex overflow-x-auto w-auto gap-1 md:gap-2">
+        <div className="flex overflow-x-auto w-auto gap-0.5 md:gap-2 whitespace-nowrap">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveStatus(tab.key)}
               className={getButtonClasses(tab.key, tab.color)}
-            >{`${tab.label}_${orders.filter((o) => o.orderStatus === tab.key).length}`}
+            >{`${tab.label} ${orders.filter((o) => o.orderStatus === tab.key).length}`}
               
             </button>
           ))}
         </div>
+        {/* <ul className="inline overflow-x-auto gap-0.5 md:gap-2">
+          {STATUS_TABS.map((tab) => (
+            <li
+              key={tab.key}
+              onClick={() => setActiveStatus(tab.key)}
+              className={`${getButtonClasses(tab.key, tab.color)} w-auto inline`}
+            >{`${tab.label} ${orders.filter((o) => o.orderStatus === tab.key).length}`}
+              
+            </li>
+          ))}
+        </ul> */}
       </header>
 
       {/* Main Content Area: Order List */}
@@ -162,7 +173,7 @@ const getButtonClasses = (status, color) => {
 
       {/* Fixed Bottom Input Area */}
       <div className="fixed bottom-0 left-0 right-0 px-1 py-2  bg-white border-t border-gray-200 shadow-2xl z-20">
-        <ManualInput />
+        <ManualInput onUpdate={handleOrderUpdate} />
       </div>
     </div>
   );

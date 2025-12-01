@@ -5,7 +5,7 @@ import { IoIosSend } from "react-icons/io";
 import { RiLoader2Fill } from "react-icons/ri";
 import { useSocket } from "../hooks/useSocket";
 
-export default function ManualInput() {
+export default function ManualInput({ onUpdate }) {
   // Socket Hook Access
   const { socket, isConnected } = useSocket();
   const [inputValue, setInputValue] = useState("");
@@ -60,7 +60,7 @@ export default function ManualInput() {
     // Assuming the last word is COD, and the second last is Product Code
     const totalCOD = words.length >= 1 ? words[words.length - 1] : "";
     const productCode = words.length >= 2 ? words[words.length - 2] : "";
-    
+
     const dataToSend = {
       rawInputText: inputValue,
       totalCOD,
@@ -68,21 +68,18 @@ export default function ManualInput() {
     };
 
     try {
-      // 1. Socket.IO Emit (রিয়েল-টাইম আপডেটের জন্য)
-      socket.emit("manualInput", dataToSend, (response) => {
-        console.log("Socket Server Acknowledged:", response);
-      });
-
       // 2. HTTP POST Request (ডেটাবেসে সেভ করার জন্য)
       const httpResponse = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/orders/manual-single`,
         dataToSend
       );
 
+      console.log("HTTP Response:", httpResponse.data);
       if (httpResponse.status === 201) {
-        setMessage(
-          `✅অর্ডার তৈরি হয়েছে!`
-        );
+        setMessage(`✅অর্ডার তৈরি হয়েছে!`);
+        if (onUpdate) {
+          onUpdate(httpResponse.data?.order);
+        }
         setTimeout(() => {
           setMessage("");
         }, 3000);
@@ -102,6 +99,9 @@ export default function ManualInput() {
         : "অর্ডার তৈরি করার সময় সার্ভার ত্রুটি হয়েছে।";
 
       setMessage(`❌ ত্রুটি: ${errorMessage}`);
+      setTimeout(() => {
+        setMessage("");
+      }, 3000);
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ export default function ManualInput() {
     : "text-gray-500";
 
   return (
-    <div className="   w-full">
+    <div className=" w-full">
       {/* Message Display Area (Floating above input) */}
       {message && (
         <div
