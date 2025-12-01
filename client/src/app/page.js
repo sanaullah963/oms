@@ -98,7 +98,7 @@ const getButtonClasses = (status, color) => {
       <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
         <h1 className="text-lg font-extrabold text-indigo-700 mb-1 md:mb-2">
           <span >📦 অর্ডার ড্যাশবোর্ড</span> 
-          <span className="text-green-500 text-2xl ml-2 ">{orders?.length}</span>
+          <span className="text-green-700 text-2xl ml-2 ">{orders?.length}</span>
         </h1>
         <div className="flex overflow-x-auto w-auto gap-0.5 md:gap-2 whitespace-nowrap">
           {STATUS_TABS.map((tab) => (
@@ -125,10 +125,11 @@ const getButtonClasses = (status, color) => {
       </header>
 
       {/* Main Content Area: Order List */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-100 pb-36">
+      <div className="flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 pb-36">
         {" "}
         {/* pb-36 for bottom padding above fixed input */}
         {loading ? (
+          // Loading Spinner when loding
           <div className="text-center py-10 text-gray-500">
             <svg
               className="animate-spin h-8 w-8 text-indigo-500 mx-auto"

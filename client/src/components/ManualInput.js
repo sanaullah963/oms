@@ -4,6 +4,8 @@ import axios from "axios";
 import { IoIosSend } from "react-icons/io";
 import { RiLoader2Fill } from "react-icons/ri";
 import { useSocket } from "../hooks/useSocket";
+import { parseOrderDetails } from "@/module/parce";
+// import parseOrderDetails from "../../../server/utils/parser"
 
 export default function ManualInput({ onUpdate }) {
   // Socket Hook Access
@@ -73,8 +75,6 @@ export default function ManualInput({ onUpdate }) {
         `${process.env.NEXT_PUBLIC_API_URL}/api/orders/manual-single`,
         dataToSend
       );
-
-      console.log("HTTP Response:", httpResponse.data);
       if (httpResponse.status === 201) {
         setMessage(`✅অর্ডার তৈরি হয়েছে!`);
         if (onUpdate) {
@@ -140,7 +140,6 @@ export default function ManualInput({ onUpdate }) {
       {/* হোয়াটসঅ্যাপ-স্টাইল ইনপুট ফর্ম */}
       <form
         onSubmit={handleSubmit}
-        onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
         className="flex items-end"
       >
         {/* টেক্সট এরিয়া - হোয়াটসঅ্যাপ মেসেজ বক্সের মতো */}
@@ -154,13 +153,6 @@ export default function ManualInput({ onUpdate }) {
           className="flex-grow  pt-2 ps-1.5 text-sm md:p-2 border border-gray-300 rounded-md shadow-inner focus:border-gray-500  focus:h-36  transition-all duration-300 ease-in-out md:text-base h-12  overflow-y-auto disabled:bg-gray-100 disabled:cursor-not-allowed"
           required
           disabled={loading || !isClient}
-          onKeyDown={(e) => {
-            // এন্টার প্রেস করলে (Shift ছাড়া) সাবমিট করা
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit(e);
-            }
-          }}
         />
 
         {/* সাবমিট বাটন (ফ্লোটিং বাটন স্টাইল) */}

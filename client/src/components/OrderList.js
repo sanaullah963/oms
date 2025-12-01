@@ -45,14 +45,14 @@ export default function OrderList({ orders, onOrderUpdate }) {
       {sortedDates.map((date) => (
         <div key={date}>
           {/* Date Divider (WhatsApp স্টাইল অনুকরণ) */}
-          <div className="relative flex justify-center my-6">
+          <div className="relative flex justify-center my-1">
             <div
               className="absolute inset-0 flex items-center"
               aria-hidden="true"
             >
               <div className="w-full border-t border-gray-200" />
             </div>
-            <span className="relative z-10 bg-gray-50 text-gray-700 text-sm font-medium px-4 py-1.5 rounded-full shadow-md">
+            <span className="relative z-10 bg-green-700 text-gray-50 text-sm font-medium px-4 py-1.5 rounded-full shadow-md">
               {formatDate(date)}
             </span>
           </div>

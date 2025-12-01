@@ -21,11 +21,10 @@ function parseOrderDetails(rawText) {
     .trim();
 
   // --- ১. ফোন নম্বর বের করা (সবচেয়ে নির্ভরযোগ্য) ---
-  // Regex যা বাংলা (০-৯) এবং ইংরেজি (0-9) উভয় সংখ্যা সমর্থন করে।
-  // এটি 'নাম্বার:', 'ফোন:', বা শুধু 01/০১৯... দিয়ে শুরু হওয়া ১১ সংখ্যার নম্বর খুঁজবে।
   // const PHONE_REGEX = /(?:নাম্বার|মোবাইল|ফোন|ph|num)[\s\S]*?:?[\s\S]*?([০-৯]{10,11}|[0-9]{10,11})|(\s|^)((01|০১)[০-৯]{9})/iu;
   const PHONE_REGEX = /(?:\+?88)?\s*(01[0-9]{9}|০১[০-৯]{9})/;
-  const phoneMatch = cleanedText.match(PHONE_REGEX);
+
+  // const phoneMatch = cleanedText.match(PHONE_REGEX);
 
   // if (phoneMatch) {
   //     // phoneMatch[1] বা phoneMatch[3] এ নম্বরটি পাওয়া যায়
@@ -35,12 +34,13 @@ function parseOrderDetails(rawText) {
   //         data.castomerPhone = rawPhone.trim();
   //     }
   // }
+  const phoneMatch = cleanedText.match(PHONE_REGEX);
+
   if (phoneMatch) {
     data.castomerPhone = phoneMatch[1].trim();
   }
 
   // --- ২. নাম বের করা ---
-  // নাম সাধারণত 'নাম:', 'Name:' বা টেক্সট ব্লকের প্রথম লাইনে থাকে।
   const lines = cleanedText
     .split("\n")
     .map((line) => line.trim())

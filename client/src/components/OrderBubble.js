@@ -122,7 +122,8 @@ export default function OrderBubble({ order, onUpdate }) {
       !formData.totalCOD ||
       !formData.productCode
     ) {
-      showMessage("alert", "ত্রুটি: সবগুলি ফিল্ড পূরণ করা আবশ্যক।", null);
+      // showMessage("alert", "ত্রুটি: সবগুলি ফিল্ড পূরণ করা আবশ্যক।", null);
+      toast.error("সবগুলি ফিল্ড পূরণ করুন");
       setLoading(false);
       return;
     }
@@ -134,11 +135,7 @@ export default function OrderBubble({ order, onUpdate }) {
         formData
       );
       if (response.status !== 200) {
-        showMessage(
-          "alert",
-          "অর্ডারটি আপডেট করার সময় একটি ত্রুটি হয়েছে।",
-          null
-        );
+        toast.error("অর্ডারটি আপডেট করার সময় ত্রুটি হয়েছে।");
         setLoading(false);
         return;
       }
@@ -147,7 +144,8 @@ export default function OrderBubble({ order, onUpdate }) {
         onUpdate(response.data.order);
       }
 
-      showMessage("alert", response.data.message, null);
+      // showMessage("alert", response.data.message, null);
+      toast.success(response.data.message);
       setIsEditing(false); // এডিটিং মোড থেকে বের হয়ে আসা
     } catch (error) {
       console.error("Failed to update order:", error);
@@ -249,8 +247,8 @@ export default function OrderBubble({ order, onUpdate }) {
       const { newUpdatedOrder, data, status, message } = response.data;
       //response.data.data for consinment
       //response.data
-      console.log("after send response", data);
-      console.log("new order", response.data);
+      // console.log("after send response", data);
+      // console.log("new order", response.data);
 
       if (status === "success") {
         // const trackingId = response.data.trackingId;
@@ -442,9 +440,16 @@ export default function OrderBubble({ order, onUpdate }) {
                 {order.castomerName} | {order.totalCOD} | code:{" "}
                 {order.productCode}
               </p>
-              <p className="text-sm font-medium text-blue-600 hover:underline">
-                {order.castomerPhone}
-              </p>
+              <div className="flex items-center gap-1">
+                <p className="text-sm font-medium text-blue-600 hover:underline">
+                  {order.castomerPhone}
+                </p>
+                ।
+                <p className="text-sm font-medium text-blue-600 hover:underline">
+                  {/* {order.castomerPhone} */}
+                  Alt number
+                </p>
+              </div>
               <p className="text-xs text-gray-600 mt-1 h-10">
                 {order?.rawInputText || "পাওয়া যায়নি"}
               </p>
@@ -456,7 +461,7 @@ export default function OrderBubble({ order, onUpdate }) {
               <div className="flex space-x-2">
                 {/* ফোন number কপি */}
                 <button
-                  className="p-2 text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
+                  className="p-2 cursor-pointer text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
                   onClick={() => handleCopy(order.castomerPhone)}
                   title="ফোন নম্বর কপি"
                   disabled={loading}
@@ -510,7 +515,7 @@ export default function OrderBubble({ order, onUpdate }) {
                 </a>
                 {/* rawInput text copy */}
                 <button
-                  className="p-2 text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
+                  className="p-2 cursor-pointer text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
                   onClick={() => handleCopy(order?.rawInputText)}
                   title="সম্পূর্ণ অর্ডার কপি"
                   disabled={loading}
@@ -537,7 +542,7 @@ export default function OrderBubble({ order, onUpdate }) {
 
                 {/* --- এডিট বাটন (নতুন) --- */}
                 <button
-                  className="p-2 text-sm rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition duration-150 shadow-md"
+                  className="p-2 cursor-pointer text-sm rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition duration-150 shadow-md"
                   onClick={(e) => {
                     e.stopPropagation(); // Bubbling বন্ধ করা
                     setIsEditing(true);
@@ -562,7 +567,7 @@ export default function OrderBubble({ order, onUpdate }) {
                 </button>
                 {/* booking button */}
                 <button
-                  className="p-2 text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
+                  className="p-2 cursor-pointer text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
                   onClick={() => handelBooking(order)}
                   title="সম্পূর্ণ অর্ডার কপি"
                   disabled={loading}
@@ -625,9 +630,17 @@ export default function OrderBubble({ order, onUpdate }) {
             >
               <div className="mt-2 pt-2 border-t border-gray-300">
                 {/* শর্টকাট স্ট্যাটাস বাটন */}
-                <h4 className="text-xs font-semibold mb-3 text-gray-700 uppercase tracking-wider">
-                  দ্রুত স্ট্যাটাস আপডেট:
-                </h4>
+                {order?.courier?.trackingId && (
+                  <div className="text-sm font-medium flex items-center gap-1">
+                    <p>SteadFast id : </p>
+                    <p className="text-blue-600 hover:underline"
+                    onClick={() =>( navigator.clipboard.writeText(order.courier.trackingId), toast.success("কপি হয়েছে : "+order.courier.trackingId))}
+                    >
+                      {order?.courier?.trackingId}
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-1  mb-6">
                   {STATUS_SHORTCUTS.map((shortcut) => (
                     <button
@@ -672,10 +685,10 @@ export default function OrderBubble({ order, onUpdate }) {
                             activity.note ||
                             "নোট নেই"}
                         </p>
-                        {order?.orderStatus === "Booked" &&
+                        {/* {order?.orderStatus === "Booked" &&
                           order?.courier?.trackingId && (
                             <p>ট্র্যাকিং আইডি: {order.courier.trackingId}</p>
-                          )}
+                          )} */}
                       </div>
                     </div>
                   ))}
