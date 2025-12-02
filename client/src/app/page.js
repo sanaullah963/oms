@@ -12,6 +12,8 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const query = searchQuery.toLowerCase().trim();
 
   const { data: socketData } = useSocket();
 
@@ -65,12 +67,76 @@ export default function Dashboard() {
   }, [socketData, handleOrderUpdate]);
 
   // --- Render Logic ---
-  const filteredOrders = orders.filter(
-    (order) => order.orderStatus === activeStatus
-  );
+  // const filteredOrders = orders.filter(
+  //   (order) => order.orderStatus === activeStatus
+  // );
+
+  // const filteredOrders = useMemo(() => {
+  //   // 1. স্ট্যাটাস অনুযায়ী ফিল্টার করা, সকল অর্ডার থেকে স্ট্যাটাস অণুজাই নতুন array তৈরি করা
+  //   const statusFiltered = orders.filter(
+  //     (order) => order.orderStatus === activeStatus
+  //   );
+
+  //   if (!query) {
+  //     return statusFiltered;
+  //   }
+  //   // 2. সার্চ কোয়েরি দ্বারা ফিল্টার করা
+  //   return statusFiltered.filter((order) => {
+  //     // কোন কোন ফিল্ডে সার্চ করা হবে
+  //     const searchableFields = [
+  //       order._id,
+  //       order.castomerName,
+  //       order.castomerPhone,
+  //       order.productCode,
+  //       order.totalCOD,
+  //     ];
+
+  //     return searchableFields.some((field) => {
+  //       if (field) {
+  //         // স্ট্রিং-এ রূপান্তর করে সার্চ করা
+  //         const fieldStr = String(field).toLowerCase();
+  //         return fieldStr.includes(query);
+  //       }
+  //       return false;
+  //     });
+  //   });
+  // }, [orders, activeStatus, searchQuery]);
+
+  const filteredOrders = useMemo(() => {
+    // 1. যদি সার্চ কোয়েরি থাকে, তবে স্ট্যাটাস নির্বিশেষে সকল অর্ডারে সার্চ হবে
+    if (query) {
+      return orders.filter((order) => {
+        // কোন কোন ফিল্ডে সার্চ করা হবে
+        const searchableFields = [
+          order?._id,
+          order.rawInputText,
+          order?.castomerAddress,
+          order?.castomerName,
+          order?.castomerPhone,
+          order?.productCode,
+          order?.totalCOD,
+          order?.courier?.trackingId,
+        ];
+
+        return searchableFields.some((field) => {
+          if (field) {
+            // স্ট্রিং-এ রূপান্তর করে সার্চ করা
+            const fieldStr = String(field).toLowerCase();
+            return fieldStr.includes(query);
+          }
+          return false;
+        });
+      });
+    }
+
+    // 2. যদি সার্চ কোয়েরি খালি থাকে, তবে শুধুমাত্র বর্তমান activeStatus অনুযায়ী ফিল্টার করা হবে
+    else {
+      return orders.filter((order) => order.orderStatus === activeStatus);
+    }
+  }, [orders, activeStatus, searchQuery]);
 
   // ডাইনামিক বাটন ক্লাস তৈরি
-const getButtonClasses = (status, color) => {
+  const getButtonClasses = (status, color) => {
     const base =
       "md:px-4 p-1 md:py-2 font-semibold text-sm rounded-md transition-colors duration-200 w-auto";
     const colorMap = {
@@ -90,24 +156,51 @@ const getButtonClasses = (status, color) => {
     }
     return `${base} bg-gray-200 text-gray-700 hover:bg-gray-300`;
   };
-  
 
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-50">
       {/* Header / Status Tabs */}
       <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
-        <h1 className="text-lg font-extrabold text-indigo-700 mb-1 md:mb-2">
-          <span >📦 অর্ডার ড্যাশবোর্ড</span> 
-          <span className="text-green-700 text-2xl ml-2 ">{orders?.length}</span>
-        </h1>
-        <div className="flex overflow-x-auto w-auto gap-0.5 md:gap-2 whitespace-nowrap">
+        {/* search bar */}
+        <div className="flex justify-between ">
+          {/* search bar input box */}
+          <div className="flex-1 mr-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="নাম, ফোন, বা অর্ডার ID দিয়ে খুঁজুন..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-200 focus:border-indigo-200 transition duration-150 text-sm"
+              />
+            </div>
+          </div>
+          <h1 className="text-lg font-extrabold text-indigo-700 mb-1 md:mb-2">
+            <span> অর্ডার</span>
+            <span className="text-green-700 text-2xl ml-2 font-mono">
+              {orders?.length}
+            </span>
+          </h1>
+        </div>
+
+        <div
+          className="flex overflow-x-auto  w-auto gap-0.5 md:gap-2 whitespace-nowrap"
+          style={{
+            // Firefox-এর জন্য hide scrollbar
+            scrollbarWidth: "none",
+            // IE এবং Edge-এর জন্য hide scrollbar
+            msOverflowStyle: "none",
+          }}
+        >
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveStatus(tab.key)}
               className={getButtonClasses(tab.key, tab.color)}
-            >{`${tab.label} ${orders.filter((o) => o.orderStatus === tab.key).length}`}
-              
+            >
+              {`${tab.label} ${
+                orders.filter((o) => o.orderStatus === tab.key).length
+              }`}
             </button>
           ))}
         </div>

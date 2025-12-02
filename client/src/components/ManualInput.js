@@ -4,8 +4,7 @@ import axios from "axios";
 import { IoIosSend } from "react-icons/io";
 import { RiLoader2Fill } from "react-icons/ri";
 import { useSocket } from "../hooks/useSocket";
-import { parseOrderDetails } from "@/module/parce";
-// import parseOrderDetails from "../../../server/utils/parser"
+
 
 export default function ManualInput({ onUpdate }) {
   // Socket Hook Access
