@@ -4,7 +4,7 @@ import axios from "axios";
 import OrderList from "../components/OrderList";
 import ManualInput from "../components/ManualInput";
 import { useSocket } from "../hooks/useSocket";
-import { STATUS_TABS } from "../constants/data";
+import { convertNumber, STATUS_TABS } from "../constants/data";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -71,50 +71,19 @@ export default function Dashboard() {
   //   (order) => order.orderStatus === activeStatus
   // );
 
-  // const filteredOrders = useMemo(() => {
-  //   // 1. স্ট্যাটাস অনুযায়ী ফিল্টার করা, সকল অর্ডার থেকে স্ট্যাটাস অণুজাই নতুন array তৈরি করা
-  //   const statusFiltered = orders.filter(
-  //     (order) => order.orderStatus === activeStatus
-  //   );
-
-  //   if (!query) {
-  //     return statusFiltered;
-  //   }
-  //   // 2. সার্চ কোয়েরি দ্বারা ফিল্টার করা
-  //   return statusFiltered.filter((order) => {
-  //     // কোন কোন ফিল্ডে সার্চ করা হবে
-  //     const searchableFields = [
-  //       order._id,
-  //       order.castomerName,
-  //       order.castomerPhone,
-  //       order.productCode,
-  //       order.totalCOD,
-  //     ];
-
-  //     return searchableFields.some((field) => {
-  //       if (field) {
-  //         // স্ট্রিং-এ রূপান্তর করে সার্চ করা
-  //         const fieldStr = String(field).toLowerCase();
-  //         return fieldStr.includes(query);
-  //       }
-  //       return false;
-  //     });
-  //   });
-  // }, [orders, activeStatus, searchQuery]);
-
   const filteredOrders = useMemo(() => {
     // 1. যদি সার্চ কোয়েরি থাকে, তবে স্ট্যাটাস নির্বিশেষে সকল অর্ডারে সার্চ হবে
     if (query) {
       return orders.filter((order) => {
-        // কোন কোন ফিল্ডে সার্চ করা হবে
+        const enNunber = convertNumber(order?.castomerPhone);
         const searchableFields = [
           order?._id,
-          order.rawInputText,
-          order?.castomerAddress,
           order?.castomerName,
-          order?.castomerPhone,
+          // order?.castomerPhone,
+          enNunber,
           order?.productCode,
           order?.totalCOD,
+          order?.rawInputText,
           order?.courier?.trackingId,
         ];
 
@@ -128,7 +97,6 @@ export default function Dashboard() {
         });
       });
     }
-
     // 2. যদি সার্চ কোয়েরি খালি থাকে, তবে শুধুমাত্র বর্তমান activeStatus অনুযায়ী ফিল্টার করা হবে
     else {
       return orders.filter((order) => order.orderStatus === activeStatus);

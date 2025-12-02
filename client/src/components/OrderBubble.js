@@ -412,7 +412,7 @@ export default function OrderBubble({ order, onUpdate }) {
             </div>
           </div>
         ) : (
-          // --- ডিসপ্লে মোড (পূর্বের লজিক) ---
+          // --- ডিসপ্লে মোড 
           <>
             <div
               className={`cursor-pointer ${
