@@ -106,3 +106,7 @@ httpServer.listen(PORT, () => {
 app.get("/", (req, res) => {
   res.send("home route");
 });
+app.get("/ping", (req, res) => {
+  res.status(200).send("ping route");
+});
+
