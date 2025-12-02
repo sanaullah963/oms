@@ -412,7 +412,7 @@ export default function OrderBubble({ order, onUpdate }) {
             </div>
           </div>
         ) : (
-          // --- ডিসপ্লে মোড 
+          // --- ডিসপ্লে মোড
           <>
             <div
               className={`cursor-pointer ${
@@ -444,11 +444,10 @@ export default function OrderBubble({ order, onUpdate }) {
                 <p className="text-sm font-medium text-blue-600 hover:underline">
                   {order.castomerPhone}
                 </p>
-                ।
+                {/* ।
                 <p className="text-sm font-medium text-blue-600 hover:underline">
-                  {/* {order.castomerPhone} */}
                   Alt number
-                </p>
+                </p> */}
               </div>
               <p className="text-xs text-gray-600 mt-1 h-10">
                 {order?.rawInputText || "পাওয়া যায়নি"}
@@ -566,32 +565,16 @@ export default function OrderBubble({ order, onUpdate }) {
                   </svg>
                 </button>
                 {/* booking button */}
-                <button
-                  className="p-2 cursor-pointer text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
-                  onClick={() => handelBooking(order)}
-                  title="সম্পূর্ণ অর্ডার কপি"
-                  disabled={loading}
-                >
-                  {/* <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="feather feather-file-text"
+                {order?.orderStatus !== "Booked" && (
+                  <button
+                    className="p-2 cursor-pointer text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
+                    onClick={() => handelBooking(order)}
+                    title="সম্পূর্ণ অর্ডার কপি"
+                    disabled={loading}
                   >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
-                  </svg> */}
-                  Booking
-                </button>
+                    Booking
+                  </button>
+                )}
               </div>
               {/* ডান দিকের বাটন*/}
 
@@ -621,6 +604,25 @@ export default function OrderBubble({ order, onUpdate }) {
                 {/* <span>ডিলিট</span> */}
               </button>
             </div>
+            {/* শর্টকাট স্ট্যাটাস বাটন */}
+            <div className="flex flex-wrap gap-1  mt-2">
+              {STATUS_SHORTCUTS.map((shortcut) => (
+                <button
+                  key={shortcut.key}
+                  onClick={() => handleStatusUpdate(shortcut)}
+                  className={`text-white text-xs font-medium py-1.5 px-2 md:px-3 rounded-lg  md:rounded-full shadow-md transition duration-200  cursor-pointer ${
+                    shortcut.color
+                  } ${
+                    loading
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:ring-2 ring-offset-1 ring-opacity-50"
+                  }`}
+                  disabled={loading}
+                >
+                  {shortcut.label}
+                </button>
+              ))}
+            </div>
 
             {/* --- কলাপসিবল ডিটেইলস সেকশন --- */}
             <div
@@ -633,15 +635,21 @@ export default function OrderBubble({ order, onUpdate }) {
                 {order?.courier?.trackingId && (
                   <div className="text-sm font-medium flex items-center gap-1">
                     <p>SteadFast id : </p>
-                    <p className="text-blue-600 hover:underline"
-                    onClick={() =>( navigator.clipboard.writeText(order.courier.trackingId), toast.success("কপি হয়েছে : "+order.courier.trackingId))}
+                    <p
+                      className="text-blue-600 hover:underline"
+                      onClick={() => (
+                        navigator.clipboard.writeText(order.courier.trackingId),
+                        toast.success(
+                          "কপি হয়েছে : " + order.courier.trackingId
+                        )
+                      )}
                     >
                       {order?.courier?.trackingId}
                     </p>
                   </div>
                 )}
 
-                <div className="flex flex-wrap gap-1  mb-6">
+                {/* <div className="flex flex-wrap gap-1  mb-6">
                   {STATUS_SHORTCUTS.map((shortcut) => (
                     <button
                       key={shortcut.key}
@@ -658,7 +666,7 @@ export default function OrderBubble({ order, onUpdate }) {
                       {shortcut.label}
                     </button>
                   ))}
-                </div>
+                </div> */}
 
                 {/* টাইমলাইন এবং নোট সেকশন */}
                 <h4 className="text-xs font-semibold mb-3 text-gray-700 uppercase tracking-wider">
@@ -674,6 +682,7 @@ export default function OrderBubble({ order, onUpdate }) {
                         }`}
                       >
                         {formatTime(activity.timestamp)}
+                        
                       </span>
                       <div className="w-3/4 pl-3 border-l-2 border-dashed border-gray-200">
                         <p className="font-semibold text-gray-800">

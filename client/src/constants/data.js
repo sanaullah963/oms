@@ -80,7 +80,7 @@ export const formatDate = (dateString) => {
 export const formatTime = (isoString) => {
   // যদি isoString না থাকে, তাহলে একটি ডিফল্ট স্ট্রিং ফেরত দেওয়া হবে
   if (!isoString) return "N/A";
-  return new Date(isoString).toLocaleTimeString("bn-BD", {
+  return new Date(isoString).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,

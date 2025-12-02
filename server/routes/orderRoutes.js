@@ -71,9 +71,9 @@ router.post("/manual-single", async (req, res) => {
       totalCOD: totalCOD,
       activities: initialActivities,
     });
-    console.log("newOrder:", newOrder);
+    // console.log("newOrder:", newOrder);
     const savedOrder = await newOrder.save();
-    console.log("mongos saved:", savedOrder);
+    // console.log("mongos saved:", savedOrder);
 
     // ঙ. রিয়েল-টাইম আপডেট (ভার্সন ২.০ এর জন্য সেটআপ)
     if (io) {
@@ -94,7 +94,7 @@ router.post("/manual-single", async (req, res) => {
 router.delete("/delete/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
-    console.log(orderId);
+    // console.log(orderId);
 
     const deletedOrder = await Order.findByIdAndDelete(orderId);
     if (!deletedOrder) {
