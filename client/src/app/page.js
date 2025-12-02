@@ -124,7 +124,6 @@ export default function Dashboard() {
     }
     return `${base} bg-gray-200 text-gray-700 hover:bg-gray-300`;
   };
-orders.map((order) => console.log(order.orderStatus))
 
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-50">
