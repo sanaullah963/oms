@@ -5,6 +5,8 @@ import OrderList from "../components/OrderList";
 import ManualInput from "../components/ManualInput";
 import { useSocket } from "../hooks/useSocket";
 import { convertNumber, STATUS_TABS } from "../constants/data";
+import ClipboardCopy from "@/components/Copy";
+import Copy from "@/components/Copy";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -14,7 +16,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const query = searchQuery.toLowerCase().trim();
-
+  const [show, setShow] = useState(false);
   const { data: socketData } = useSocket();
 
   // --- Core Functions: সমস্ত অর্ডার ফেচ করা ---
@@ -112,12 +114,22 @@ export default function Dashboard() {
     }
     return `${base} bg-gray-200 text-gray-700 hover:bg-gray-300`;
   };
+  const handeelcopy = async () => {
+    console.log("copied");
+    await navigator.clipboard.writeText("01328951929");
+    setShow(true);
+    setTimeout(() => {
+      setShow(false);
+    }, 1500);
+  };
 
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-50">
       {/* Header / Status Tabs */}
       <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
         {/* search bar */}
+        <button onClick={() => handeelcopy()}>click</button>
+        <Copy show={show} />
         <div className="flex justify-between ">
           {/* search bar input box */}
           <div className="flex-1 mr-4">
