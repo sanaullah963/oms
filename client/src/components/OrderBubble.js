@@ -167,7 +167,6 @@ export default function OrderBubble({ order, onUpdate }) {
     const { key } = shortcut;
     let note = shortcut?.note;
     try {
-
       if (noteText) {
         note = noteText;
       }
@@ -244,7 +243,7 @@ export default function OrderBubble({ order, onUpdate }) {
     try {
       // click to copy data
       navigator.clipboard.writeText(text);
-      toast.success(`${text} --> কপি হয়েছে`);
+      toast.success(`${text} copied`);
     } catch (err) {
       console.error("Copy failed:", err);
       showMessage("alert", "ত্রুটি: কপি করতে ব্যর্থ হয়েছে।", null);
@@ -462,9 +461,15 @@ export default function OrderBubble({ order, onUpdate }) {
                     {order.orderStatus}
                   </span>
                 </div>
+                {/* date showing */}
+                {/* <span className="text-xs text-gray-500 font-medium">
+                  {formatDate(order.createdAt)}
+                </span> */}
                 {/* টাইমস্ট্যাম্প */}
                 <span className="text-xs text-gray-500 font-medium">
-                  {formatTime(order.createdAt)}
+                  {`${formatDate(order.createdAt)}  .  .  ${formatTime(
+                    order.createdAt
+                  )}`}
                 </span>
               </div>
 
@@ -474,7 +479,10 @@ export default function OrderBubble({ order, onUpdate }) {
                 {order.productCode}
               </p>
               <div className="flex items-center gap-1">
-                <p className="text-sm font-medium text-blue-600 hover:underline">
+                <p
+                  className="text-sm font-medium text-blue-600 hover:underline"
+                  onClick={() => handleCopy(order.castomerPhone)}
+                >
                   {order.castomerPhone}
                 </p>
                 {/* ।
@@ -492,7 +500,7 @@ export default function OrderBubble({ order, onUpdate }) {
               {/* বাম দিকের বাটন: কপি, কল, এডিট */}
               <div className="flex space-x-2">
                 {/* ফোন number কপি */}
-                <button
+                {/* <button
                   className="p-2 cursor-pointer text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
                   onClick={() => handleCopy(order.castomerPhone)}
                   title="ফোন নম্বর কপি"
@@ -520,7 +528,7 @@ export default function OrderBubble({ order, onUpdate }) {
                     ></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                   </svg>
-                </button>
+                </button> */}
                 {/* call and number copy */}
                 <a
                   href={`tel:${order.castomerPhone}`}
@@ -562,13 +570,17 @@ export default function OrderBubble({ order, onUpdate }) {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="feather feather-file-text"
+                    className="feather feather-copy"
                   >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
+                    <rect
+                      x="9"
+                      y="9"
+                      width="13"
+                      height="13"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                   </svg>
                 </button>
 
@@ -733,10 +745,6 @@ export default function OrderBubble({ order, onUpdate }) {
                             activity.note ||
                             "নোট নেই"}
                         </p>
-                        {/* {order?.orderStatus === "Booked" &&
-                          order?.courier?.trackingId && (
-                            <p>ট্র্যাকিং আইডি: {order.courier.trackingId}</p>
-                          )} */}
                       </div>
                     </div>
                   ))}
@@ -761,7 +769,7 @@ export default function OrderBubble({ order, onUpdate }) {
         onConfirm={modal.type === "confirm" ? modal.action : closeModal}
         onCancel={closeModal}
       />
-      <ToastContainer autoClose={2000} />
+      <ToastContainer autoClose={800} />
     </>
   );
 }
