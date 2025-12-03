@@ -104,23 +104,11 @@ export default function Dashboard() {
   }, [orders, activeStatus, searchQuery]);
 
   // ডাইনামিক বাটন ক্লাস তৈরি
-  const getButtonClasses = (status, color) => {
+  const getButtonClasses = (status) => {
     const base =
       "md:px-4 p-1 md:py-2 font-semibold text-sm rounded-md transition-colors duration-200 w-auto";
-    const colorMap = {
-      Pending: "bg-yellow-500 hover:bg-yellow-600",
-      Confirmed: "bg-green-600 hover:bg-green-700",
-      "Call Not Received": "bg-yellow-600 hover:bg-yellow-700",
-      "Phone Off": "bg-orange-600 hover:bg-orange-700",
-      Cancelled: "bg-red-600 hover:bg-red-700",
-      indigo: "bg-indigo-600 hover:bg-indigo-700",
-      green: "bg-green-600 hover:bg-green-700",
-    };
-
     if (activeStatus === status) {
-      return `${base} text-white shadow-lg ${
-        colorMap[status] || colorMap[color]
-      }`;
+      return `${base} text-white shadow-lg bg-green-600 hover:bg-green-700 `;
     }
     return `${base} bg-gray-200 text-gray-700 hover:bg-gray-300`;
   };
@@ -191,7 +179,7 @@ export default function Dashboard() {
             <button
               key={tab.key}
               onClick={() => setActiveStatus(tab.key)}
-              className={getButtonClasses(tab.key, tab.color)}
+              className={getButtonClasses(tab.key)}
             >
               {`${tab.label} ${
                 orders.filter((o) => o.orderStatus === tab.key).length
@@ -199,17 +187,6 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
-        {/* <ul className="inline overflow-x-auto gap-0.5 md:gap-2">
-          {STATUS_TABS.map((tab) => (
-            <li
-              key={tab.key}
-              onClick={() => setActiveStatus(tab.key)}
-              className={`${getButtonClasses(tab.key, tab.color)} w-auto inline`}
-            >{`${tab.label} ${orders.filter((o) => o.orderStatus === tab.key).length}`}
-              
-            </li>
-          ))}
-        </ul> */}
       </header>
 
       {/* Main Content Area: Order List */}

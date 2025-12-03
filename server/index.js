@@ -29,36 +29,34 @@ io.on("connection", (socket) => {
   console.log("A user connected via Socket.IO", socket.id);
   //---- status update----
   socket.on("updateStatus", async ({ orderId, newStatus, note }) => {
-
     try {
-      
-        // MongoDB update
-        const updatedOrder = await Order.findByIdAndUpdate(
-          orderId,
-          {
-            orderStatus: newStatus,
-            $push: {
-              activities: {
-                description: note,
-                type: newStatus,
-                changedAt: new Date(),
-              },
+      // MongoDB update
+      const updatedOrder = await Order.findByIdAndUpdate(
+        orderId,
+        {
+          orderStatus: newStatus,
+          $push: {
+            activities: {
+              description: note,
+              type: newStatus,
+              changedAt: new Date(),
             },
           },
-          { new: true }
-        );
-        // Send response back to requesting user
-        if (!updatedOrder) {
-          return socket.emit("statusUpdated", {
-            success: false,
-            message: "Order not found",
-          });
-        } else {
-          socket.emit("statusUpdated", {
-            success: true,
-            order: updatedOrder,
-          });
-        }
+        },
+        { new: true }
+      );
+      // Send response back to requesting user
+      if (!updatedOrder) {
+        return socket.emit("statusUpdated", {
+          success: false,
+          message: "Order not found",
+        });
+      } else {
+        socket.emit("statusUpdated", {
+          success: true,
+          order: updatedOrder,
+        });
+      }
 
       // Inform all other clients (admin dashboard, etc.)
       socket.broadcast.emit("orderStatusChange", updatedOrder);
@@ -70,7 +68,31 @@ io.on("connection", (socket) => {
       });
     }
   });
+  // recive note from client
+  socket.on("addNote", async ({ orderId, note }) => {
+    try {
+      const updatedOrder = await Order.findByIdAndUpdate(
+        orderId,
+        {
+          // $push: {
+          //   activities: {
+          //     description: note,
+          //     type: "Note",
+          //     changedAt: new Date(),
+          //   },
+          // },
+          note: note,
+        },
+        { new: true }
+      );
+      if (updatedOrder) {
+        return socket.emit("noteAdded", {updatedOrder});
+      }
 
+    } catch (err) {
+      console.error("Error adding note:", err);
+    }
+  });
   // disconnect notice
   socket.on("disconnect", () => {
     console.log("A user disconnected");
@@ -109,4 +131,3 @@ app.get("/", (req, res) => {
 app.get("/ping", (req, res) => {
   res.status(200).send("ping route");
 });
-

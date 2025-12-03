@@ -27,7 +27,7 @@ const ActivitySchema = new mongoose.Schema(
     },
   },
   { _id: false }
-); // সাব-ডকুমেন্টে _id দরকার নেই
+);
 
 // --- ২. মূল Order স্কিমা ---
 const OrderSchema = new mongoose.Schema({
@@ -41,13 +41,10 @@ const OrderSchema = new mongoose.Schema({
   castomerName: { type: String, required: true },
   castomerPhone: { type: String, required: true },
   castomerAddress: { type: String, required: true },
-
-  // পণ্যের তথ্য (MVP-এর জন্য একটিমাত্র আইটেম হিসেবে ধরে নিচ্ছি)
   productCode: { type: String, required: true },
   totalCOD: { type: Number, required: true },
-
-  // স্ট্যাটাস ও সোর্স
   orderSource: { type: String, default: "Manual Messenger" },
+  note: { type: String, required: false },
   orderStatus: {
     type: String,
     default: "Pending",

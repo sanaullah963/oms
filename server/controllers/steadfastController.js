@@ -78,7 +78,7 @@ exports.bookSteadfast = async (req, res) => {
         status: "error",
       });
     }
-
+    const riderNote = order?.note;
     // 3) API Body তৈরি করা (form-urlencoded)
     const requestData = {
       invoice: order._id.toString(),
@@ -87,8 +87,6 @@ exports.bookSteadfast = async (req, res) => {
       recipient_address: order.rawInputText,
       cod_amount: Number(order.totalCOD),
     };
-
- 
 
     // 4)------------Steadfast API
     //https://portal.packzy.com/api/v1
@@ -139,7 +137,7 @@ exports.bookSteadfast = async (req, res) => {
 
     order.orderStatus = "Booked";
 
-   const newUpdatedOrder = await order.save();
+    const newUpdatedOrder = await order.save();
 
     return res.status(200).json({
       message: "Order booked successfully!",

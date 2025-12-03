@@ -7,6 +7,7 @@ import {
   STATUS_SHORTCUTS,
   ACTIVITY_STATUS_COLORS,
   formatTime,
+  formatDate,
 } from "../constants/data";
 
 // API Endpoint Configuration
@@ -65,6 +66,7 @@ const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {
 export default function OrderBubble({ order, onUpdate }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [noteText, setnoteText] = useState("");
 
   // --- নতুন স্টেট: এডিটিং মোড এবং ফর্ম ডেটা ---
   const [isEditing, setIsEditing] = useState(false);
@@ -161,21 +163,31 @@ export default function OrderBubble({ order, onUpdate }) {
   // --- স্ট্যাটাস আপডেট করার ফাংশন ---
   const handleStatusUpdate = async (shortcut) => {
     setLoading(true);
-    const { key, note } = shortcut;
-
+    const { key } = shortcut;
+    let note = shortcut?.note;
     try {
+      if (noteText) {
+        note = noteText;
+      }
+      if (key === "Custom") {
+        if (noteText === "") {
+          toast.error("কমেন্ট লিখুন");
+          setLoading(false);
+          return;
+        }
+      }
       socket.emit("updateStatus", {
         orderId: order._id,
         newStatus: key,
         note: note,
       });
-
       socket.on("statusUpdated", (data) => {
-        // console.log(data);
         if (onUpdate) {
           onUpdate(data.order);
         }
       });
+
+      // }
     } catch (error) {
       console.log(error);
     }
@@ -289,8 +301,26 @@ export default function OrderBubble({ order, onUpdate }) {
     }
   };
   // সম্পূর্ণ অর্ডার টেক্সট (কপি করার জন্য)
-  const orderText = order?.rawInputText;
 
+  // handel comment
+  const handelNote = () => {
+    if (!noteText) {
+      toast.error("নোট লিখুন");
+      return;
+    }
+    try {
+      socket.emit("addNote", { orderId: order._id, note: noteText });
+      socket.on("noteAdded", (data) => {
+        const { updatedOrder } = data;
+        if (onUpdate) {
+          onUpdate(updatedOrder);
+        }
+        // setnoteText("");
+      });
+    } catch (error) {
+      console.log("note added error", error);
+    }
+  };
   // স্ট্যাটাস কালার ডাইনামিকালি সেট করা
   const statusColor =
     order.orderStatus === "Pending"
@@ -631,7 +661,6 @@ export default function OrderBubble({ order, onUpdate }) {
               }`}
             >
               <div className="mt-2 pt-2 border-t border-gray-300">
-                {/* শর্টকাট স্ট্যাটাস বাটন */}
                 {order?.courier?.trackingId && (
                   <div className="text-sm font-medium flex items-center gap-1">
                     <p>SteadFast id : </p>
@@ -649,41 +678,48 @@ export default function OrderBubble({ order, onUpdate }) {
                   </div>
                 )}
 
-                {/* <div className="flex flex-wrap gap-1  mb-6">
-                  {STATUS_SHORTCUTS.map((shortcut) => (
-                    <button
-                      key={shortcut.key}
-                      onClick={() => handleStatusUpdate(shortcut)}
-                      className={`text-white text-xs font-medium py-1.5 px-2 md:px-3 rounded-lg  md:rounded-full shadow-md transition duration-200  cursor-pointer ${
-                        shortcut.color
-                      } ${
-                        loading
-                          ? "opacity-50 cursor-not-allowed"
-                          : "hover:ring-2 ring-offset-1 ring-opacity-50"
-                      }`}
-                      disabled={loading}
-                    >
-                      {shortcut.label}
-                    </button>
-                  ))}
-                </div> */}
-
+                {/* comment input */}
+                <div className="flex gap-1">
+                  <input
+                    type="text"
+                    placeholder="কমেন্ট লিখুন..."
+                    value={noteText}
+                    onChange={(e) => setnoteText(e.target.value)}
+                    className="w-full pl-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-200 focus:border-indigo-200 transition duration-150 text-sm"
+                  />
+                  <button
+                    onClick={() => handelNote()}
+                    className=" cursor-pointer hover:bg-green-600 bg-green-500 text-gray-50 px-2 rounded-md"
+                  >
+                    Note
+                  </button>
+                </div>
+                {/* display nots */}
+                <p className="text-xs"> Note :- {order?.note} </p>
                 {/* টাইমলাইন এবং নোট সেকশন */}
-                <h4 className="text-xs font-semibold mb-3 text-gray-700 uppercase tracking-wider">
-                  অ্যাক্টিভিটি টাইমলাইন:
-                </h4>
-                <div className="space-y-4">
+                <div className="space-y-4 mt-1 pt-2">
                   {sortedActivities.map((activity, index) => (
                     <div key={index} className="flex items-start text-xs">
-                      <span
-                        className={`w-1/4 flex-shrink-0 font-bold ${
-                          ACTIVITY_STATUS_COLORS[activity.type] ||
-                          "text-gray-500"
-                        }`}
-                      >
-                        {formatTime(activity.timestamp)}
-                        
-                      </span>
+                      <div className="w-1/4 flex flex-col">
+                        {/* formate time */}
+                        <span
+                          className={` font-bold ${
+                            ACTIVITY_STATUS_COLORS[activity.type] ||
+                            "text-gray-500"
+                          }`}
+                        >
+                          {formatTime(activity.timestamp)}
+                        </span>
+                        {/* formate date */}
+                        <span
+                          className={` font-bold ${
+                            ACTIVITY_STATUS_COLORS[activity.type] ||
+                            "text-gray-500"
+                          }`}
+                        >
+                          {formatDate(activity.timestamp)}
+                        </span>
+                      </div>
                       <div className="w-3/4 pl-3 border-l-2 border-dashed border-gray-200">
                         <p className="font-semibold text-gray-800">
                           {activity.type}
@@ -722,7 +758,7 @@ export default function OrderBubble({ order, onUpdate }) {
         onConfirm={modal.type === "confirm" ? modal.action : closeModal}
         onCancel={closeModal}
       />
-      <ToastContainer />
+      <ToastContainer autoClose={2000} />
     </>
   );
 }
