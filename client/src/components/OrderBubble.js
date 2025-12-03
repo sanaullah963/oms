@@ -166,12 +166,13 @@ export default function OrderBubble({ order, onUpdate }) {
     const { key } = shortcut;
     let note = shortcut?.note;
     try {
+
       if (noteText) {
         note = noteText;
       }
       if (key === "Custom") {
         if (noteText === "") {
-          toast.error("কমেন্ট লিখুন");
+          toast.error("আগে কমেন্ট লিখুন");
           setLoading(false);
           return;
         }
@@ -185,6 +186,7 @@ export default function OrderBubble({ order, onUpdate }) {
         if (onUpdate) {
           onUpdate(data.order);
         }
+        setnoteText("");
       });
 
       // }
@@ -315,7 +317,7 @@ export default function OrderBubble({ order, onUpdate }) {
         if (onUpdate) {
           onUpdate(updatedOrder);
         }
-        // setnoteText("");
+        setnoteText("");
       });
     } catch (error) {
       console.log("note added error", error);
