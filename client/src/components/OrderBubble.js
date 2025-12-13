@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useSocket } from "../hooks/useSocket";
 import { ToastContainer, toast } from "react-toastify";
@@ -10,6 +10,7 @@ import {
   formatTime,
   formatDate,
 } from "../constants/data";
+import LoadingSpinner from "./LoadingSpinner";
 
 // API Endpoint Configuration
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
@@ -68,6 +69,9 @@ export default function OrderBubble({ order, onUpdate }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [noteText, setnoteText] = useState("");
+  const [isLoading, setIsLoading] = useState({
+    histryBtn: false,
+  });
 
   // --- নতুন স্টেট: এডিটিং মোড এবং ফর্ম ডেটা ---
   const [isEditing, setIsEditing] = useState(false);
@@ -91,6 +95,16 @@ export default function OrderBubble({ order, onUpdate }) {
   });
 
   // Helper function to show modal/message
+
+  useEffect(() => {
+    // if(!order?.courierHistory?.all){
+    // socket.emit("allCourierHistory", {orderId:order._id});
+    // socket.on("distributecourierHistory", (data) => {
+    //   console.log(data.result);
+    //   onUpdate(data.result);
+    // });
+    // }
+  }, []);
   const showMessage = (type, message, action = null) => {
     setModal({
       isVisible: true,
@@ -323,6 +337,29 @@ export default function OrderBubble({ order, onUpdate }) {
       console.log("note added error", error);
     }
   };
+
+  //handelOrderHistry button
+  const handelOrderHistry = () => {
+    if (order?.courierHistory?.all) {
+      return;
+    }
+    setIsLoading({ ...isLoading, histryBtn: true });
+    socket.emit("allCourierHistory", { orderId: order._id });
+    socket.on("distributecourierHistory", (data) => {
+      const { result, success } = data;
+      console.log("result", data);
+      if (success) {
+        if (onUpdate) {
+          onUpdate(result);
+        }
+        toast.error(result);
+      } else {
+        toast.error(result);
+      }
+      setIsLoading({ ...isLoading, histryBtn: false });
+    });
+  };
+  // courierHistory: { all: { cancel: '2', success: '4' } },
   // স্ট্যাটাস কালার ডাইনামিকালি সেট করা
   const statusColor =
     order.orderStatus === "Pending"
@@ -454,12 +491,45 @@ export default function OrderBubble({ order, onUpdate }) {
             >
               <div className="flex justify-between items-start mb-1">
                 {/* স্ট্যাটাস ও আইডি */}
-                <div className="flex flex-col">
+                <div className="flex gap-2">
                   <span
                     className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${statusColor}`}
                   >
                     {order.orderStatus}
                   </span>
+                  {/* our history */}
+                  <div className="">
+                    <span className="text-xs text-black gap-3 font-medium bg-red-200 px-2 py-0.5 rounded-lg">
+                      <span> Our </span>
+                      <span className="text-green-700">5</span>/
+                      <span className="text-red-600">5</span>
+                    </span>
+                  </div>
+                  {/* oll history */}
+                  <div className="">
+                    {/* get all history button */}
+                    {order?.courierHistory?.all ? (
+                      <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
+                        <span> All </span>
+                        <span className="text-green-700">
+                          {order?.courierHistory?.all?.success}
+                        </span>
+                        /
+                        <span className="text-red-600">
+                          {order?.courierHistory?.all?.cancel}
+                        </span>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={handelOrderHistry}
+                        className="bg-green-500 text-white text-sm px-2 py-1 rounded-md cursor-pointer"
+                      >
+                        {isLoading.histryBtn ? <LoadingSpinner /> : "History"}
+                      </button>
+                    )}
+
+                    {/* show all history */}
+                  </div>
                 </div>
                 {/* date showing */}
                 {/* <span className="text-xs text-gray-500 font-medium">

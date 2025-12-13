@@ -1,3 +1,4 @@
+const { all } = require("axios");
 const mongoose = require("mongoose");
 
 const ActivitySchema = new mongoose.Schema(
@@ -45,10 +46,42 @@ const OrderSchema = new mongoose.Schema({
   totalCOD: { type: Number, required: true },
   orderSource: { type: String, default: "Manual Messenger" },
   note: { type: String, required: false },
+  courierHistory: {
+    // type: mongoose.Schema.Types.Mixed,
+    our: {
+      success: {
+        type: String,
+        required: false,
+      },
+      cancel: {
+        type: String,
+        required: false,
+      },
+    },
+    all: {
+      success: {
+        type: String,
+        required: false,
+      },
+      cancel: {
+        type: String,
+        required: false,
+      },
+    },
+  },
+  //-- castomer outher courier histroy
+
   orderStatus: {
     type: String,
     default: "Pending",
-    enum: ["Pending", "confirmed", "released", "Delivered", "Cancelled", "Booked"],
+    enum: [
+      "Pending",
+      "confirmed",
+      "released",
+      "Delivered",
+      "Cancelled",
+      "Booked",
+    ],
   },
 
   // এডিট হিস্ট্রি (ঐচ্ছিক কিন্তু এডিটের জন্য সহায়ক)
@@ -65,7 +98,14 @@ const OrderSchema = new mongoose.Schema({
     bookedAt: { type: Date, default: null }, // বুকিং স্ট্যাটাস
     bookingStatus: {
       type: String,
-      enum: ["In-review","Pending", "Failed", "Booked", "Shipping", "Delivered"],
+      enum: [
+        "In-review",
+        "Pending",
+        "Failed",
+        "Booked",
+        "Shipping",
+        "Delivered",
+      ],
       default: "Pending",
     },
   },

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Order = require("../models/Order");
+const axios = require("axios");
 const { parseOrderDetails } = require("../utils/parser"); // পরবর্তী ধাপে তৈরি করা হবে
 const { bookSteadfast } = require("../controllers/steadfastController");
 
@@ -20,19 +21,15 @@ router.get("/", async (req, res) => {
 router.post("/manual-single", async (req, res) => {
   // এখানে io (Socket.IO instance) access করার জন্য app.get('io') ব্যবহার করতে হবে
   const io = req.app.get("io");
-
-  // console.log("req.body:", req.body);
   try {
     const { rawInputText, totalCOD, productCode } = req.body;
 
     // ফ্রন্ট-এন্ড নিশ্চিত করবে যে rawInputText এবং totalCOD আছে
     if (!rawInputText || !totalCOD) {
-      return res
-        .status(400)
-        .json({
-          message: "Raw input text and COD amount are required.",
-          status: "error",
-        });
+      return res.status(400).json({
+        message: "Raw input text and COD amount are required.",
+        status: "error",
+      });
     }
     const parsedData = parseOrderDetails(rawInputText);
 
@@ -61,7 +58,9 @@ router.post("/manual-single", async (req, res) => {
       },
     ];
 
+
     // ঘ. নতুন অর্ডার ডকুমেন্ট তৈরি ও সেভ
+    // console.log("courier histroy", histroy);
     const newOrder = new Order({
       rawInputText,
       castomerName: parsedData.castomerName,
@@ -71,10 +70,7 @@ router.post("/manual-single", async (req, res) => {
       totalCOD: totalCOD,
       activities: initialActivities,
     });
-    // console.log("newOrder:", newOrder);
     const savedOrder = await newOrder.save();
-    // console.log("mongos saved:", savedOrder);
-
     // ঙ. রিয়েল-টাইম আপডেট (ভার্সন ২.০ এর জন্য সেটআপ)
     if (io) {
       io.emit("new_order_added", savedOrder);

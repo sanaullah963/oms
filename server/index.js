@@ -7,6 +7,9 @@ const cors = require("cors");
 const orderRoutes = require("./routes/orderRoutes");
 const Order = require("./models/Order");
 const { type } = require("os");
+const axios = require('axios');
+const convertNumber = require("./controllers/convertNumber");
+
 
 require("dotenv").config();
 
@@ -74,23 +77,68 @@ io.on("connection", (socket) => {
       const updatedOrder = await Order.findByIdAndUpdate(
         orderId,
         {
-          // $push: {
-          //   activities: {
-          //     description: note,
-          //     type: "Note",
-          //     changedAt: new Date(),
-          //   },
-          // },
           note: note,
         },
         { new: true }
       );
       if (updatedOrder) {
-        return socket.emit("noteAdded", {updatedOrder});
+        return socket.emit("noteAdded", { updatedOrder });
       }
-
     } catch (err) {
       console.error("Error adding note:", err);
+    }
+  });
+  // --- recive id for courier history ---
+  socket.on("allCourierHistory", async ({ orderId }) => {
+    // convert number ban to eng
+
+    try {
+      // get castomerPhone from mongodb by orderId
+      const phone = await Order.findById(orderId).select("castomerPhone");
+
+      if (phone) {
+        const engNum = convertNumber(phone.castomerPhone);
+        const res = await axios.post(
+          "https://bdcourier.com/api/courier-check",
+          { phone: engNum },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.BDCOURIER_SECRET_KEY}`,
+            },
+          }
+        );
+
+        if (res.data) {
+          const success = res.data?.courierData?.summary?.success_parcel;
+          const cancel = res.data?.courierData?.summary?.cancelled_parcel;
+          const updatedOrder = await Order.findByIdAndUpdate(
+            phone._id,
+            {
+              $set: {
+                "courierHistory.all.success": success,
+                "courierHistory.all.cancel": cancel,
+              },
+            },
+            { new: true }
+          );
+          return socket.emit("distributecourierHistory", {
+            result: updatedOrder,
+            success: true,
+          });
+        } else {
+          socket.emit("distributecourierHistory", {
+            result: "bdCourier api response error",
+            success: false,
+          });
+        }
+      } else {
+        socket.emit("distributecourierHistory", {
+          result: "phone not found",
+          success: false,
+        });
+      }
+    } catch (err) {
+      console.error("Error getting order history:", err);
     }
   });
   // disconnect notice
