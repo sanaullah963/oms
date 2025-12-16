@@ -161,7 +161,7 @@ export default function Dashboard() {
           <h1 className="text-lg font-extrabold text-indigo-700 mb-1 md:mb-2">
             <span> অর্ডার</span>
             <span className="text-green-700 text-2xl ml-2 font-mono">
-              {orders?.filter(order => order.orderStatus !== 'Booked').length}
+              {orders?.filter(order => order.orderStatus !== 'Booked' && order.orderStatus !== 'Cancelled').length}
             </span>
           </h1>
         </div>
