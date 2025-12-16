@@ -149,7 +149,8 @@ export default function ManualInput({ onUpdate }) {
           onChange={handleInputChange}
           rows="1"
           placeholder=" এখানে লিখুন..."
-          className="flex-grow  pt-2 ps-1.5 text-sm md:p-2 border border-gray-300 rounded-md shadow-inner focus:border-gray-500  focus:h-36  transition-all duration-300 ease-in-out md:text-base h-12  overflow-y-auto disabled:bg-gray-100 disabled:cursor-not-allowed"
+          // transition-all duration-300
+          className="flex-grow  pt-2 ps-1.5 text-sm md:p-2 border border-gray-300 rounded-md shadow-inner focus:border-gray-500  focus:h-36 ease-in-out md:text-base h-12  overflow-y-auto disabled:bg-gray-100 disabled:cursor-not-allowed"
           required
           disabled={loading || !isClient}
         />
