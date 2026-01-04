@@ -131,8 +131,46 @@ router.put("/update-order/:id", async (req, res) => {
     res.status(500).json({ message: "Server error while updating order." });
   }
 });
-// steadfast api
-
+// steadfast booking 
 router.post("/courier/steadfast/:orderId", bookSteadfast);
+
+// status check for steadfast
+// --- Steadfast Webhook Endpoint ---
+router.post("/webhook/steadfast", async (req, res) => {
+    const io = req.app.get("io"); // Socket.io instance
+    const { order_id, status, tracking_code } = req.body;
+
+    try {
+        // ১. ডাটাবেজে অর্ডারটি খুঁজে বের করে আপডেট করা
+        // এখানে 'order_id' হলো আপনার ডাটাবেজের অর্ডার আইডি অথবা ইনভয়েস আইডি যা আপনি বুকিং এর সময় পাঠিয়েছিলেন
+        const updatedOrder = await Order.findOneAndUpdate(
+            { _id: order_id }, // অথবা আপনার অর্ডারের ইনভয়েস ফিল্ড
+            { 
+                $set: { "courier.bookingStatus": status, orderCourierStatus: status },
+                $push: { 
+                    activities: { 
+                        type: "Courier Update", 
+                        description: `Steadfast Status: ${status}`,
+                        changedAt: new Date()
+                    } 
+                } 
+            },
+            { new: true }
+        );
+
+        if (updatedOrder) {
+            // ২. রিয়েল-টাইম ফ্রন্টএন্ড আপডেট (Admin Dashboard এ সরাসরি পরিবর্তন দেখা যাবে)
+            if (io) {
+                io.emit("orderStatusChange", updatedOrder);
+            }
+            return res.status(200).json({ success: true, message: "Webhook processed" });
+        } else {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+    } catch (error) {
+        console.error("Webhook Error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
 
 module.exports = router;

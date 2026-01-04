@@ -71,7 +71,7 @@ exports.bookSteadfast = async (req, res) => {
       order.totalCOD === "" ||
       order.totalCOD === "N/A" ||
       order.totalCOD < 0 ||
-      order.totalCOD !== parseInt(order.totalCOD)
+      order .totalCOD !== parseInt(order.totalCOD)
     ) {
       return res.json({
         message: `invalit totalCOD: ${order.totalCOD}`,
@@ -90,8 +90,9 @@ exports.bookSteadfast = async (req, res) => {
 
     // 4)------------Steadfast API
     //https://portal.packzy.com/api/v1
+
     const response = await axios.post(
-      "https://portal.packzy.com/api/v1/create_order",
+      `${process.env.STEADFAST_API_URL}/create_order`,
       requestData,
       {
         headers: {
@@ -113,7 +114,7 @@ exports.bookSteadfast = async (req, res) => {
     }
 
     // 5) Database Update করা
-    // order.courier = {
+    //order.courier = {
     //   bookingStatus: true,
     //   trackingId: response.data?.tracking_code || "",
     //   merchantOrderId: response.data?.merchant_order_id || "",
@@ -121,8 +122,6 @@ exports.bookSteadfast = async (req, res) => {
     // };
     order.courier = {
       trackingId: response?.data?.consignment?.consignment_id,
-      // requestPayload: payload,
-      // responseData: steadFastResponse,
       bookedAt: new Date(),
       bookingStatus: "Booked",
     };

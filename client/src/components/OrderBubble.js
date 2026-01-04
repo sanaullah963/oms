@@ -162,7 +162,7 @@ export default function OrderBubble({ order, onUpdate }) {
       }
 
       // showMessage("alert", response.data.message, null);
-      toast.success(response.data.message);
+      // toast.success(response.data.message);
       setIsEditing(false); // এডিটিং মোড থেকে বের হয়ে আসা
     } catch (error) {
       console.error("Failed to update order:", error);
@@ -256,8 +256,10 @@ export default function OrderBubble({ order, onUpdate }) {
     // Iframe এর মধ্যে document.execCommand('copy') বেশি নির্ভরযোগ্য
     try {
       // click to copy data
+      isExpanded ? setIsExpanded(true) : setIsExpanded(false);
       navigator.clipboard.writeText(text);
-      toast.success(`${text} copied`);
+      // toast.success(`${text} copied`);
+      console.log(isExpanded);
     } catch (err) {
       console.error("Copy failed:", err);
       showMessage("alert", "ত্রুটি: কপি করতে ব্যর্থ হয়েছে।", null);
@@ -273,23 +275,19 @@ export default function OrderBubble({ order, onUpdate }) {
         `${API_BASE}/courier/steadfast/${order._id}`
       );
       const { newUpdatedOrder, data, status, message } = response.data;
-      //response.data.data for consinment
-      //response.data
-      // console.log("after send response", data);
-      // console.log("new order", response.data);
 
       if (status === "success") {
         // const trackingId = response.data.trackingId;
-        toast.success(
-          `Steadfast বুকিং সফল! ট্র্যাকিং ID: ${newUpdatedOrder?.courier?.trackingId}`
-        );
+        // toast.success(
+        //   `Steadfast বুকিং সফল! ট্র্যাকিং ID: ${newUpdatedOrder?.courier?.trackingId}`
+        // );
         if (onUpdate) {
           // সার্ভার থেকে আসা আপডেট হওয়া অর্ডারটি দিয়ে স্টেট আপডেট করুন
           onUpdate(newUpdatedOrder);
         }
       } else {
         // সার্ভার-সাইড কাস্টম এরর (যেমন: Steadfast এরর)
-        toast.error(message);
+        // toast.error(message);
       }
     } catch (error) {
       console.error("Courier Booking Failed:", error);
@@ -344,6 +342,7 @@ export default function OrderBubble({ order, onUpdate }) {
       return;
     }
     setIsLoading({ ...isLoading, histryBtn: true });
+    isExpanded ? setIsExpanded(true) : setIsExpanded(false);
     socket.emit("allCourierHistory", { orderId: order._id });
     socket.on("distributecourierHistory", (data) => {
       const { result, success } = data;
@@ -352,9 +351,9 @@ export default function OrderBubble({ order, onUpdate }) {
         if (onUpdate) {
           onUpdate(result);
         }
-        toast.error(result);
+        // toast.error(result);
       } else {
-        toast.error(result);
+        // toast.error(result);
       }
       setIsLoading({ ...isLoading, histryBtn: false });
     });
@@ -751,12 +750,12 @@ export default function OrderBubble({ order, onUpdate }) {
                     <p>SteadFast id : </p>
                     <p
                       className="text-blue-600 hover:underline"
-                      onClick={() => (
-                        navigator.clipboard.writeText(order.courier.trackingId),
-                        toast.success(
-                          "কপি হয়েছে : " + order.courier.trackingId
-                        )
-                      )}
+                      onClick={() =>
+                        navigator.clipboard.writeText(order.courier.trackingId)
+                        // toast.success(
+                        //   "কপি হয়েছে : " + order.courier.trackingId
+                        // )
+                      }
                     >
                       {order?.courier?.trackingId}
                     </p>

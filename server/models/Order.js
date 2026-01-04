@@ -37,7 +37,6 @@ const OrderSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-
   // পার্স করা এবং চূড়ান্ত ডেটা
   castomerName: { type: String, required: true },
   castomerPhone: { type: String, required: true },
@@ -70,7 +69,6 @@ const OrderSchema = new mongoose.Schema({
     },
   },
   //-- castomer outher courier histroy
-
   orderStatus: {
     type: String,
     default: "Pending",
@@ -82,6 +80,10 @@ const OrderSchema = new mongoose.Schema({
       "Cancelled",
       "Booked",
     ],
+  },
+  orderCourierStatus: {
+    type: String,
+    required: false,
   },
 
   // এডিট হিস্ট্রি (ঐচ্ছিক কিন্তু এডিটের জন্য সহায়ক)
