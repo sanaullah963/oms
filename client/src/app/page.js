@@ -30,7 +30,6 @@ export default function Dashboard() {
       setLoading(false);
     }
   }, []);
-
   // --- State Management: আপডেট বা ডিলিট হ্যান্ডেল করা ---
   const handleOrderUpdate = useCallback((data, actionType = "UPDATE") => {
     setOrders((prevOrders) => {
@@ -56,7 +55,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
-
+console.log(orders)
   // --- Effects: Socket.IO রিয়েল-টাইম আপডেট ---
   useEffect(() => {
     if (socketData && socketData._id) {

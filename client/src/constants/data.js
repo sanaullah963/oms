@@ -19,29 +19,30 @@ export const STATUS_SHORTCUTS = [
     color: "bg-orange-600 hover:bg-orange-700",
     note: "Customer phone was found switched off.",
   },
-  {
-    key: "Cancelled",
-    label: "বাতিল",
-    color: "bg-red-600 hover:bg-red-700",
-    note: "Order Cancelled by seller/customer.",
-  },
+
   {
     key: "Custom",
     label: "কাস্টম",
     color: "bg-yellow-600 hover:bg-yellow-700",
     note: "Custom Status",
   },
+    {
+    key: "Cancelled",
+    label: "বাতিল",
+    color: "bg-red-600 hover:bg-red-700",
+    note: "Order Cancelled by seller/customer.",
+  },
 ];
 
 // --- 2. স্ট্যাটাস ট্যাব কনফিগারেশন ---
 export const STATUS_TABS = [
   { key: "Pending", label: "পেন্ডিং" },
-  { key: "Confirmed", label: "কনফার্মড" },
   { key: "Call Not Received", label: "কল ধরেনি" },
   { key: "Phone Off", label: "ফোন বন্ধ" },
   { key: "Cancelled", label: "বাতিল" },
-  { key: "Booked", label: "এন্ট্রি" },
   { key: "Custom", label: "কাস্টম" },
+  { key: "Confirmed", label: "কনফার্মড" },
+  { key: "Booked", label: "এন্ট্রি" },
 ];
 
 // --- 3. অ্যাক্টিভিটি টাইমলাইন কালার ---

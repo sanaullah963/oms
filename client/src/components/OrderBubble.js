@@ -256,16 +256,12 @@ export default function OrderBubble({ order, onUpdate }) {
     // Iframe এর মধ্যে document.execCommand('copy') বেশি নির্ভরযোগ্য
     try {
       // click to copy data
-      isExpanded ? setIsExpanded(true) : setIsExpanded(false);
       navigator.clipboard.writeText(text);
-      // toast.success(`${text} copied`);
-      console.log(isExpanded);
     } catch (err) {
       console.error("Copy failed:", err);
       showMessage("alert", "ত্রুটি: কপি করতে ব্যর্থ হয়েছে।", null);
     }
   };
-
   // ----- কুরিয়ার বুকিং এর জন্য চূড়ান্ত API কল ফাংশন ---
   const executeCourierBooking = async () => {
     setLoading(true);
@@ -342,7 +338,6 @@ export default function OrderBubble({ order, onUpdate }) {
       return;
     }
     setIsLoading({ ...isLoading, histryBtn: true });
-    isExpanded ? setIsExpanded(true) : setIsExpanded(false);
     socket.emit("allCourierHistory", { orderId: order._id });
     socket.on("distributecourierHistory", (data) => {
       const { result, success } = data;
@@ -368,7 +363,7 @@ export default function OrderBubble({ order, onUpdate }) {
       : order.orderStatus === "Cancelled"
       ? "text-red-600 bg-red-100"
       : "text-indigo-600 bg-indigo-100";
-
+  console.log("order", order);
   return (
     <>
       <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 mb-1 border border-gray-300 hover:shadow-xl transition-all duration-300">
@@ -530,16 +525,21 @@ export default function OrderBubble({ order, onUpdate }) {
                     {/* show all history */}
                   </div>
                 </div>
-                {/* date showing */}
-                {/* <span className="text-xs text-gray-500 font-medium">
-                  {formatDate(order.createdAt)}
-                </span> */}
                 {/* টাইমস্ট্যাম্প */}
-                <span className="text-xs text-gray-500 font-medium">
-                  {`${formatDate(order.createdAt)}  .  .  ${formatTime(
-                    order.createdAt
-                  )}`}
-                </span>
+                <div className="text-xs  font-medium flex flex-col">
+                  <span className="text-gray-800">
+                    {`${formatDate(order.createdAt)}  .  .  ${formatTime(
+                      order.createdAt
+                    )}`}
+                  </span>
+                  <span className="text-green-500">
+                    {`${formatDate(
+                      order.activities[order.activities.length - 1].timestamp
+                    )}  .  .  ${formatTime(
+                      order.activities[order.activities.length - 1].timestamp
+                    )}`}
+                  </span>
+                </div>
               </div>
 
               {/* পার্স করা মূল তথ্য */}
@@ -568,36 +568,6 @@ export default function OrderBubble({ order, onUpdate }) {
             <div className="flex justify-between mt-1 pt-1 border-t border-gray-100">
               {/* বাম দিকের বাটন: কপি, কল, এডিট */}
               <div className="flex space-x-2">
-                {/* ফোন number কপি */}
-                {/* <button
-                  className="p-2 cursor-pointer text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
-                  onClick={() => handleCopy(order.castomerPhone)}
-                  title="ফোন নম্বর কপি"
-                  disabled={loading}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="feather feather-copy"
-                  >
-                    <rect
-                      x="9"
-                      y="9"
-                      width="13"
-                      height="13"
-                      rx="2"
-                      ry="2"
-                    ></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                </button> */}
                 {/* call and number copy */}
                 <a
                   href={`tel:${order.castomerPhone}`}
@@ -750,8 +720,11 @@ export default function OrderBubble({ order, onUpdate }) {
                     <p>SteadFast id : </p>
                     <p
                       className="text-blue-600 hover:underline"
-                      onClick={() =>
-                        navigator.clipboard.writeText(order.courier.trackingId)
+                      onClick={
+                        () =>
+                          navigator.clipboard.writeText(
+                            order.courier.trackingId
+                          )
                         // toast.success(
                         //   "কপি হয়েছে : " + order.courier.trackingId
                         // )

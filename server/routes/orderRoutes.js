@@ -6,10 +6,41 @@ const { parseOrderDetails } = require("../utils/parser"); // পরবর্ত�
 const { bookSteadfast } = require("../controllers/steadfastController");
 
 // --- ১. GET /api/orders - সমস্ত অর্ডার ফেচ করা ---
+// router.get("/", async (req, res) => {
+//   try {
+//     // নতুন অর্ডারগুলি সবার উপরে দেখানোর জন্য createdAt: -1 (Descending) ব্যবহার করা হয়েছে
+//     const orders = await Order.find().sort({ createdAt: -1 });
+//     res.status(200).json(orders);
+//   } catch (error) {
+//     console.error("Error fetching orders:", error);
+//     res.status(500).json({ message: "Failed to fetch orders." });
+//   }
+// });
 router.get("/", async (req, res) => {
   try {
-    // নতুন অর্ডারগুলি সবার উপরে দেখানোর জন্য createdAt: -1 (Descending) ব্যবহার করা হয়েছে
-    const orders = await Order.find().sort({ createdAt: -1 });
+    // ১. সঠিক টাইমজোন মেইনটেইন করে ৩ দিন আগের সময় বের করা
+    const today = new Date();
+    const threeDaysAgo = new Date(today);
+    threeDaysAgo.setDate(today.getDate() - 3);
+    const query = {
+      $or: [
+        {
+          orderStatus: { $in: ["Cancelled", "Booked"] },
+          createdAt: { $gte: threeDaysAgo }, // শুধুমাত্র ৩ দিনের ডেটা
+        },
+        {
+          orderStatus: { $nin: ["Cancelled", "Booked"] }, // বাকি সব স্ট্যাটাসের সব ডেটা
+        },
+      ],
+    };
+
+    const orders = await Order.find(query).sort({ createdAt: -1 });
+
+    // ৪. যদি কোনো ডেটা না পাওয়া যায়
+    if (!orders || orders.length === 0) {
+      return res.status(200).json([]);
+    }
+
     res.status(200).json(orders);
   } catch (error) {
     console.error("Error fetching orders:", error);
@@ -57,7 +88,6 @@ router.post("/manual-single", async (req, res) => {
         details: { newStatus: "Pending" },
       },
     ];
-
 
     // ঘ. নতুন অর্ডার ডকুমেন্ট তৈরি ও সেভ
     // console.log("courier histroy", histroy);
@@ -131,46 +161,50 @@ router.put("/update-order/:id", async (req, res) => {
     res.status(500).json({ message: "Server error while updating order." });
   }
 });
-// steadfast booking 
+// steadfast booking
 router.post("/courier/steadfast/:orderId", bookSteadfast);
 
 // status check for steadfast
 // --- Steadfast Webhook Endpoint ---
 router.post("/webhook/steadfast", async (req, res) => {
-    const io = req.app.get("io"); // Socket.io instance
-    const { order_id, status, tracking_code } = req.body;
+  const io = req.app.get("io"); // Socket.io instance
+  const { order_id, status, tracking_code } = req.body;
 
-    try {
-        // ১. ডাটাবেজে অর্ডারটি খুঁজে বের করে আপডেট করা
-        // এখানে 'order_id' হলো আপনার ডাটাবেজের অর্ডার আইডি অথবা ইনভয়েস আইডি যা আপনি বুকিং এর সময় পাঠিয়েছিলেন
-        const updatedOrder = await Order.findOneAndUpdate(
-            { _id: order_id }, // অথবা আপনার অর্ডারের ইনভয়েস ফিল্ড
-            { 
-                $set: { "courier.bookingStatus": status, orderCourierStatus: status },
-                $push: { 
-                    activities: { 
-                        type: "Courier Update", 
-                        description: `Steadfast Status: ${status}`,
-                        changedAt: new Date()
-                    } 
-                } 
-            },
-            { new: true }
-        );
+  try {
+    // ১. ডাটাবেজে অর্ডারটি খুঁজে বের করে আপডেট করা
+    // এখানে 'order_id' হলো আপনার ডাটাবেজের অর্ডার আইডি অথবা ইনভয়েস আইডি যা আপনি বুকিং এর সময় পাঠিয়েছিলেন
+    const updatedOrder = await Order.findOneAndUpdate(
+      { _id: order_id }, // অথবা আপনার অর্ডারের ইনভয়েস ফিল্ড
+      {
+        $set: { "courier.bookingStatus": status, orderCourierStatus: status },
+        $push: {
+          activities: {
+            type: "Courier Update",
+            description: `Steadfast Status: ${status}`,
+            changedAt: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
 
-        if (updatedOrder) {
-            // ২. রিয়েল-টাইম ফ্রন্টএন্ড আপডেট (Admin Dashboard এ সরাসরি পরিবর্তন দেখা যাবে)
-            if (io) {
-                io.emit("orderStatusChange", updatedOrder);
-            }
-            return res.status(200).json({ success: true, message: "Webhook processed" });
-        } else {
-            return res.status(404).json({ success: false, message: "Order not found" });
-        }
-    } catch (error) {
-        console.error("Webhook Error:", error);
-        res.status(500).json({ message: "Internal Server Error" });
+    if (updatedOrder) {
+      // ২. রিয়েল-টাইম ফ্রন্টএন্ড আপডেট (Admin Dashboard এ সরাসরি পরিবর্তন দেখা যাবে)
+      if (io) {
+        io.emit("orderStatusChange", updatedOrder);
+      }
+      return res
+        .status(200)
+        .json({ success: true, message: "Webhook processed" });
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
+  } catch (error) {
+    console.error("Webhook Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
 module.exports = router;
