@@ -26,7 +26,7 @@ export const STATUS_SHORTCUTS = [
     color: "bg-yellow-600 hover:bg-yellow-700",
     note: "Custom Status",
   },
-    {
+  {
     key: "Cancelled",
     label: "বাতিল",
     color: "bg-red-600 hover:bg-red-700",
@@ -68,6 +68,18 @@ export const groupOrdersByDate = (orders) => {
   }, {});
 };
 
+// sort order by last updated date
+export const groupOrdersByLastUpdatedDate = (orders) => {
+  return orders.reduce((acc, order) => {
+    // তারিখের শুধুমাত্র YYYY-MM-DD অংশটি নেওয়া হচ্ছে
+    const dateKey = new Date(order.activities[order.activities.length - 1].timestamp).toISOString().split("T")[0];
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(order);
+    return acc;
+  }, {});
+};
 // --- 5. তারিখকে বাংলা ফরম্যাটে রূপান্তর ---
 // export const formatDate = (dateString) => {
 //     // যদি dateString না থাকে, তাহলে একটি ডিফল্ট স্ট্রিং ফেরত দেওয়া হবে
@@ -110,7 +122,7 @@ export const formatTime = (isoString) => {
 };
 
 // --- 7. number ban to eng
-export function convertNumber(input) {
+export const convertNumber = (input) => {
   const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
   const englishDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -119,4 +131,4 @@ export function convertNumber(input) {
     output = output.replace(new RegExp(banglaDigits[i], "g"), englishDigits[i]);
   }
   return output;
-}
+};

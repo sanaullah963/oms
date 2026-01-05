@@ -55,7 +55,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
-console.log(orders)
+
   // --- Effects: Socket.IO রিয়েল-টাইম আপডেট ---
   useEffect(() => {
     if (socketData && socketData._id) {

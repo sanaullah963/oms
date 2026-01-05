@@ -333,7 +333,6 @@ export default function OrderBubble({ order, onUpdate }) {
     socket.emit("allCourierHistory", { orderId: order._id });
     socket.on("distributecourierHistory", (data) => {
       const { result, success } = data;
-      console.log("result", data);
       if (success) {
         if (onUpdate) {
           onUpdate(result);
@@ -355,7 +354,6 @@ export default function OrderBubble({ order, onUpdate }) {
       : order.orderStatus === "Cancelled"
       ? "text-red-600 bg-red-100"
       : "text-indigo-600 bg-indigo-100";
-  console.log("order", order);
   return (
     <>
       <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 mb-1 border border-gray-300 hover:shadow-xl transition-all duration-300">
@@ -526,14 +524,16 @@ export default function OrderBubble({ order, onUpdate }) {
                 {/* টাইমস্ট্যাম্প */}
                 <div className="text-xs  font-medium flex flex-col">
                   <span className="text-gray-800">
-                    {`${formatDate(order.createdAt)}  .  .  ${formatTime(
+                    <span className="text-indigo-700 hidden md:inline">Created At </span>
+                    {`${formatDate(order.createdAt)}.  .${formatTime(
                       order.createdAt
                     )}`}
                   </span>
                   <span className="text-green-500">
+                    <span className="text-indigo-700 hidden md:inline">Last Update </span>
                     {`${formatDate(
                       order.activities[order.activities.length - 1].timestamp
-                    )}  .  .  ${formatTime(
+                    )}.  .${formatTime(
                       order.activities[order.activities.length - 1].timestamp
                     )}`}
                   </span>
