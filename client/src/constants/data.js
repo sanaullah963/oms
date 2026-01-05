@@ -11,13 +11,13 @@ export const STATUS_SHORTCUTS = [
     key: "Call Not Received",
     label: "কল ধরেনি",
     color: "bg-yellow-600 hover:bg-yellow-700",
-    note: "Customer did not receive the call.",
+    note: "call not receive",
   },
   {
     key: "Phone Off",
     label: "ফোন বন্ধ",
     color: "bg-orange-600 hover:bg-orange-700",
-    note: "Customer phone was found switched off.",
+    note: "Customer phone off.",
   },
 
   {
@@ -30,7 +30,7 @@ export const STATUS_SHORTCUTS = [
     key: "Cancelled",
     label: "বাতিল",
     color: "bg-red-600 hover:bg-red-700",
-    note: "Order Cancelled by seller/customer.",
+    note: "Order Cancelled",
   },
 ];
 

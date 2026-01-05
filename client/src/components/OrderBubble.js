@@ -473,55 +473,55 @@ export default function OrderBubble({ order, onUpdate }) {
               className={`cursor-pointer ${
                 loading ? "opacity-70 pointer-events-none" : ""
               }`}
-              onClick={() => !loading && setIsExpanded(!isExpanded)}  
+              onClick={() => !loading && setIsExpanded(!isExpanded)}
             >
               <div className="flex justify-between items-start mb-1">
                 {/* স্ট্যাটাস */}
                 <div className="">
                   <div className="flex gap-2">
                     <span
-                    className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${statusColor}`}
-                  >
-                    {order.orderStatus}
-                  </span>
-                  {/* our history */}
-                  <div>
-                    <span className="text-xs text-black gap-3 font-medium bg-red-200 px-2 py-0.5 rounded-lg">
-                      <span> Our </span>
-                      <span className="text-green-700">5</span>/
-                      <span className="text-red-600">5</span>
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${statusColor}`}
+                    >
+                      {order.orderStatus}
                     </span>
-                  </div>
-                  {/* oll history */}
-                  <div>
-                    {/* get all history button */}
-                    {order?.courierHistory?.all ? (
-                      <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
-                        <span> All </span>
-                        <span className="text-green-700">
-                          {order?.courierHistory?.all?.success}
-                        </span>
-                        /
-                        <span className="text-red-600">
-                          {order?.courierHistory?.all?.cancel}
-                        </span>
+                    {/* our history */}
+                    <div>
+                      <span className="text-xs text-black gap-3 font-medium bg-red-200 px-2 py-0.5 rounded-lg">
+                        <span> Our </span>
+                        <span className="text-green-700">5</span>/
+                        <span className="text-red-600">5</span>
                       </span>
-                    ) : (
-                      <button
-                        onClick={handelOrderHistry}
-                        className="bg-green-500 text-white text-sm px-2 py-1 rounded-md cursor-pointer"
-                      >
-                        {isLoading.histryBtn ? <LoadingSpinner /> : "History"}
-                      </button>
-                    )}
+                    </div>
+                    {/* oll history */}
+                    <div>
+                      {/* get all history button */}
+                      {order?.courierHistory?.all ? (
+                        <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
+                          <span> All </span>
+                          <span className="text-green-700">
+                            {order?.courierHistory?.all?.success}
+                          </span>
+                          /
+                          <span className="text-red-600">
+                            {order?.courierHistory?.all?.cancel}
+                          </span>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={handelOrderHistry}
+                          className="bg-green-500 text-white text-sm px-2 py-1 rounded-md cursor-pointer"
+                        >
+                          {isLoading.histryBtn ? <LoadingSpinner /> : "History"}
+                        </button>
+                      )}
 
-                    {/* show all history */}
-                  </div>
+                      {/* show all history */}
+                    </div>
                   </div>
                   {/* note or comment */}
-                  <span className=" text-sm">
-                  {order.activities[order.activities.length - 1].description}
-                  </span>
+                  {/* <span className=" text-sm">
+                    {order.activities[order.activities.length - 1].description}
+                  </span> */}
                 </div>
                 {/* টাইমস্ট্যাম্প */}
                 <div className="text-xs  font-medium flex flex-col">
@@ -548,7 +548,9 @@ export default function OrderBubble({ order, onUpdate }) {
               <div className="flex items-center gap-1">
                 <p
                   className="text-sm font-medium text-blue-600 hover:underline"
-                  onClick={(e) =>( e.stopPropagation(), handleCopy(order.castomerPhone))}
+                  onClick={(e) => (
+                    e.stopPropagation(), handleCopy(order.castomerPhone)
+                  )}
                 >
                   {order.castomerPhone}
                 </p>
@@ -704,7 +706,10 @@ export default function OrderBubble({ order, onUpdate }) {
                 </button>
               ))}
             </div>
-
+            {/* note or comment */}
+            <span className=" text-sm">
+              {order.activities[order.activities.length - 1].description}
+            </span>
             {/* --- কলাপসিবল ডিটেইলস সেকশন --- */}
             <div
               className={`overflow-hidden transition-all duration-300 ease-in-out ${
@@ -718,11 +723,8 @@ export default function OrderBubble({ order, onUpdate }) {
                     <p>SteadFast id : </p>
                     <p
                       className="text-blue-600 hover:underline"
-                      onClick={
-                        () =>
-                          navigator.clipboard.writeText(
-                            order.courier.trackingId
-                          )
+                      onClick={() =>
+                        navigator.clipboard.writeText(order.courier.trackingId)
                       }
                     >
                       {order?.courier?.trackingId}
