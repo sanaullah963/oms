@@ -520,7 +520,7 @@ export default function OrderBubble({ order, onUpdate }) {
                   </div>
                   {/* note or comment */}
                   <span className=" text-sm">
-                    comment : {order.activities[order.activities.length - 1].description}
+                  {order.activities[order.activities.length - 1].description}
                   </span>
                 </div>
                 {/* টাইমস্ট্যাম্প */}
