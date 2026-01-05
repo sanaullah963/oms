@@ -37,12 +37,12 @@ export const STATUS_SHORTCUTS = [
 // --- 2. স্ট্যাটাস ট্যাব কনফিগারেশন ---
 export const STATUS_TABS = [
   { key: "Pending", label: "পেন্ডিং" },
+  { key: "Custom", label: "কাস্টম" },
   { key: "Call Not Received", label: "কল ধরেনি" },
   { key: "Phone Off", label: "ফোন বন্ধ" },
-  { key: "Cancelled", label: "বাতিল" },
-  { key: "Custom", label: "কাস্টম" },
   { key: "Confirmed", label: "কনফার্মড" },
   { key: "Booked", label: "এন্ট্রি" },
+  { key: "Cancelled", label: "বাতিল" },
 ];
 
 // --- 3. অ্যাক্টিভিটি টাইমলাইন কালার ---
