@@ -80,13 +80,10 @@ router.post("/manual-single", async (req, res) => {
     const initialActivities = [
       {
         type: "Order Created",
-        description: "Manual order created from raw text input.",
-      },
-      {
-        type: "Status Updated",
-        description: `Status set to Pending.`,
+        description: "Manual order created",
         details: { newStatus: "Pending" },
       },
+
     ];
 
     // ঘ. নতুন অর্ডার ডকুমেন্ট তৈরি ও সেভ

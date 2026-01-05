@@ -102,7 +102,7 @@ exports.bookSteadfast = async (req, res) => {
         },
       }
     );
-    console.log('steadfast response',response);
+
     // check stadefast response status
     if (response?.data?.status !== 200) {
       order.courier.bookingStatus = "Failed";
@@ -130,7 +130,7 @@ exports.bookSteadfast = async (req, res) => {
     order.activities.push({
       author: "Steadfast",
       type: "Order Booked",
-      description: "অর্ডার বুকিং করা হয়েছে",
+      description: "অর্ডার বুকিং হয়েছে",
       // type: "Booked",
       changedAt: new Date(),
     });
@@ -145,7 +145,6 @@ exports.bookSteadfast = async (req, res) => {
     });
   } catch (error) {
     console.error("Steadfast API Error:", error?.response || error);
-    console.error("Steadfast API Error: (cahs)", error);
 
     return res.status(500).json({
       message: "Failed to book order!",

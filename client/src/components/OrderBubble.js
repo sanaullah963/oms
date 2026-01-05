@@ -96,15 +96,6 @@ export default function OrderBubble({ order, onUpdate }) {
 
   // Helper function to show modal/message
 
-  useEffect(() => {
-    // if(!order?.courierHistory?.all){
-    // socket.emit("allCourierHistory", {orderId:order._id});
-    // socket.on("distributecourierHistory", (data) => {
-    //   console.log(data.result);
-    //   onUpdate(data.result);
-    // });
-    // }
-  }, []);
   const showMessage = (type, message, action = null) => {
     setModal({
       isVisible: true,
@@ -333,7 +324,8 @@ export default function OrderBubble({ order, onUpdate }) {
   };
 
   //handelOrderHistry button
-  const handelOrderHistry = () => {
+  const handelOrderHistry = (e) => {
+    e.stopPropagation();
     if (order?.courierHistory?.all) {
       return;
     }
@@ -481,18 +473,19 @@ export default function OrderBubble({ order, onUpdate }) {
               className={`cursor-pointer ${
                 loading ? "opacity-70 pointer-events-none" : ""
               }`}
-              onClick={() => !loading && setIsExpanded(!isExpanded)}
+              onClick={() => !loading && setIsExpanded(!isExpanded)}  
             >
               <div className="flex justify-between items-start mb-1">
-                {/* স্ট্যাটাস ও আইডি */}
-                <div className="flex gap-2">
-                  <span
+                {/* স্ট্যাটাস */}
+                <div className="">
+                  <div className="flex gap-2">
+                    <span
                     className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${statusColor}`}
                   >
                     {order.orderStatus}
                   </span>
                   {/* our history */}
-                  <div className="">
+                  <div>
                     <span className="text-xs text-black gap-3 font-medium bg-red-200 px-2 py-0.5 rounded-lg">
                       <span> Our </span>
                       <span className="text-green-700">5</span>/
@@ -500,7 +493,7 @@ export default function OrderBubble({ order, onUpdate }) {
                     </span>
                   </div>
                   {/* oll history */}
-                  <div className="">
+                  <div>
                     {/* get all history button */}
                     {order?.courierHistory?.all ? (
                       <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
@@ -524,6 +517,11 @@ export default function OrderBubble({ order, onUpdate }) {
 
                     {/* show all history */}
                   </div>
+                  </div>
+                  {/* note or comment */}
+                  <span className=" text-sm">
+                    comment : {order.activities[order.activities.length - 1].description}
+                  </span>
                 </div>
                 {/* টাইমস্ট্যাম্প */}
                 <div className="text-xs  font-medium flex flex-col">
@@ -550,7 +548,7 @@ export default function OrderBubble({ order, onUpdate }) {
               <div className="flex items-center gap-1">
                 <p
                   className="text-sm font-medium text-blue-600 hover:underline"
-                  onClick={() => handleCopy(order.castomerPhone)}
+                  onClick={(e) =>( e.stopPropagation(), handleCopy(order.castomerPhone))}
                 >
                   {order.castomerPhone}
                 </p>
@@ -661,7 +659,6 @@ export default function OrderBubble({ order, onUpdate }) {
                 )}
               </div>
               {/* ডান দিকের বাটন*/}
-
               <button
                 className="cursor-pointer flex items-center space-x-1 px-3 py-1.5 text-xs rounded-full bg-red-500 text-white hover:bg-red-600 transition duration-150 font-medium shadow-md"
                 onClick={handleDeleteOrder}
@@ -715,6 +712,7 @@ export default function OrderBubble({ order, onUpdate }) {
               }`}
             >
               <div className="mt-2 pt-2 border-t border-gray-300">
+                {/* show traking id */}
                 {order?.courier?.trackingId && (
                   <div className="text-sm font-medium flex items-center gap-1">
                     <p>SteadFast id : </p>
@@ -725,9 +723,6 @@ export default function OrderBubble({ order, onUpdate }) {
                           navigator.clipboard.writeText(
                             order.courier.trackingId
                           )
-                        // toast.success(
-                        //   "কপি হয়েছে : " + order.courier.trackingId
-                        // )
                       }
                     >
                       {order?.courier?.trackingId}
