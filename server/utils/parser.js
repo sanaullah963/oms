@@ -21,22 +21,41 @@ function parseOrderDetails(rawText) {
     .trim();
 
   // --- ১. ফোন নম্বর বের করা (সবচেয়ে নির্ভরযোগ্য) ---
-  // Regex যা বাংলা (০-৯) এবং ইংরেজি (0-9) উভয় সংখ্যা সমর্থন করে।
-  // এটি 'নাম্বার:', 'ফোন:', বা শুধু 01/০১৯... দিয়ে শুরু হওয়া ১১ সংখ্যার নম্বর খুঁজবে।
-  // const PHONE_REGEX = /(?:নাম্বার|মোবাইল|ফোন|ph|num)[\s\S]*?:?[\s\S]*?([০-৯]{10,11}|[0-9]{10,11})|(\s|^)((01|০১)[০-৯]{9})/iu;
-  const PHONE_REGEX = /(?:\+?88)?\s*(01[0-9]{9}|০১[০-৯]{9})/;
-  const phoneMatch = cleanedText.match(PHONE_REGEX);
+
+  // const PHONE_REGEX = /(?:\+?88)?\s*(01[0-9]{9}|০১[০-৯]{9})/;
+  // const PHONE_REGEX = /(?:\+?88)?\s*((?:01|০১)(?:[\s.-]*[0-9০-৯]){9})/;
+  const PHONE_REGEX = /(?:\+?88)?\s*((?:01|০১)(?:[\s.-]*[0-9০-৯]){9})/g;
+  // const phoneMatch = cleanedText.match(PHONE_REGEX);
+  const matches = [...cleanedText.matchAll(PHONE_REGEX)];
+  let detectedNumbers = [];
 
   // if (phoneMatch) {
-  //     // phoneMatch[1] বা phoneMatch[3] এ নম্বরটি পাওয়া যায়
-  //     const rawPhone = phoneMatch[1] || phoneMatch[3];
-  //     if (rawPhone) {
-  //          // শুধুমাত্র সংখ্যা সেভ হবে (কাস্টমার যে ফরম্যাটে দিয়েছে)
-  //         data.castomerPhone = rawPhone.trim();
-  //     }
+  //   data.castomerPhone = phoneMatch[1].trim();
   // }
-  if (phoneMatch) {
-    data.castomerPhone = phoneMatch[1].trim();
+  if (matches.length > 0) {
+    detectedNumbers = matches.map((match) => {
+      let num = match[1];
+      // নম্বর নরমাল করা (স্পেস, হাইফেন সরানো এবং বাংলা থেকে ইংলিশে রূপান্তর)
+      const benToEng = {
+        "০": "0",
+        "১": "1",
+        "২": "2",
+        "৩": "3",
+        "৪": "4",
+        "৫": "5",
+        "৬": "6",
+        "৭": "7",
+        "৮": "8",
+        "৯": "9",
+      };
+      let cleanNum = num
+        .replace(/[\s.-]/g, "")
+        .replace(/[০-৯]/g, (d) => benToEng[d]);
+      return cleanNum;
+    });
+    // ইউনিক নম্বরগুলো রাখা (ডুপ্লিকেট এড়াতে)
+    const uniqueNumbers = [...new Set(detectedNumbers)];
+    data.castomerPhone = uniqueNumbers.join(", ");
   }
 
   // --- ২. নাম বের করা ---

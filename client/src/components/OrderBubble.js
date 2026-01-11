@@ -69,6 +69,7 @@ export default function OrderBubble({ order, onUpdate }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [noteText, setnoteText] = useState("");
+
   const [isLoading, setIsLoading] = useState({
     histryBtn: false,
   });
@@ -354,6 +355,10 @@ export default function OrderBubble({ order, onUpdate }) {
       : order.orderStatus === "Cancelled"
       ? "text-red-600 bg-red-100"
       : "text-indigo-600 bg-indigo-100";
+
+  console.log(order.castomerPhone);
+  // const castomerPhoneArr = order.castomerPhone.split(', ');
+  // console.log('split',castomerPhoneArr[0])
   return (
     <>
       <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 mb-1 border border-gray-300 hover:shadow-xl transition-all duration-300">
@@ -524,13 +529,17 @@ export default function OrderBubble({ order, onUpdate }) {
                 {/* টাইমস্ট্যাম্প */}
                 <div className="text-xs  font-medium flex flex-col">
                   <span className="text-gray-800">
-                    <span className="text-indigo-700 hidden md:inline">Created At </span>
+                    <span className="text-indigo-700 hidden md:inline">
+                      Created At{" "}
+                    </span>
                     {`${formatDate(order.createdAt)}.  .${formatTime(
                       order.createdAt
                     )}`}
                   </span>
                   <span className="text-green-500">
-                    <span className="text-indigo-700 hidden md:inline">Last Update </span>
+                    <span className="text-indigo-700 hidden md:inline">
+                      Last Update{" "}
+                    </span>
                     {`${formatDate(
                       order.activities[order.activities.length - 1].timestamp
                     )}.  .${formatTime(
@@ -546,18 +555,26 @@ export default function OrderBubble({ order, onUpdate }) {
                 {order.productCode}
               </p>
               <div className="flex items-center gap-1">
-                <p
+                {/* <p
                   className="text-sm font-medium text-blue-600 hover:underline"
                   onClick={(e) => (
-                    e.stopPropagation(), handleCopy(order.castomerPhone)
+                    e.stopPropagation(),
+                    handleCopy(order.castomerPhone.split(", ")[0])
                   )}
                 >
                   {order.castomerPhone}
-                </p>
-                {/* ।
-                <p className="text-sm font-medium text-blue-600 hover:underline">
-                  Alt number
                 </p> */}
+                {
+                  order.castomerPhone.split(", ").map((phone, index) => (
+                    <p
+                      key={index}
+                      className="text-sm font-medium text-blue-600 hover:underline"
+                      onClick={(e) => (e.stopPropagation(), handleCopy(phone))}
+                    >
+                     {index > 0 && ' |'} {phone}
+                    </p>
+                  ))
+                }
               </div>
               <p className="text-xs text-gray-600 mt-1 h-10">
                 {order?.rawInputText || "পাওয়া যায়নি"}
@@ -570,7 +587,7 @@ export default function OrderBubble({ order, onUpdate }) {
               <div className="flex space-x-2">
                 {/* call and number copy */}
                 <a
-                  href={`tel:${order.castomerPhone}`}
+                  href={`tel:${order.castomerPhone.split(", ")[0]}`}
                   onClick={() =>
                     navigator.clipboard.writeText(order.castomerPhone)
                   }
