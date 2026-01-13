@@ -29,7 +29,7 @@ exports.bookSteadfast = async (req, res) => {
 
     // 2)--------------Validation
     // convert number to english
-    order.castomerPhone = convertNumber(order.castomerPhone);
+    order.castomerPhone = convertNumber(order.castomerPhone.split(", ")[0]);
     // check name
     if (
       !order.castomerName ||
