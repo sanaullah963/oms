@@ -46,9 +46,12 @@ const OrderSchema = new mongoose.Schema({
   orderSource: { type: String, default: "Manual Messenger" },
   note: { type: String, required: false },
   courierHistory: {
-    // type: mongoose.Schema.Types.Mixed,
     our: {
       success: {
+        type: String,
+        required: false,
+      },
+      pending: {
         type: String,
         required: false,
       },

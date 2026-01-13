@@ -114,13 +114,6 @@ exports.bookSteadfast = async (req, res) => {
       });
     }
 
-    // 5) Database Update করা
-    //order.courier = {
-    //   bookingStatus: true,
-    //   trackingId: response.data?.tracking_code || "",
-    //   merchantOrderId: response.data?.merchant_order_id || "",
-    //   bookedAt: new Date(),
-    // };
     order.courier = {
       trackingId: response?.data?.consignment?.consignment_id,
       bookedAt: new Date(),
@@ -131,7 +124,6 @@ exports.bookSteadfast = async (req, res) => {
       author: "Steadfast",
       type: "Order Booked",
       description: "অর্ডার বুকিং হয়েছে",
-      // type: "Booked",
       changedAt: new Date(),
     });
 

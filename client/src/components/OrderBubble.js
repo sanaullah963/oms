@@ -183,6 +183,9 @@ export default function OrderBubble({ order, onUpdate }) {
           return;
         }
       }
+      if(shortcut.copyText){
+        navigator.clipboard.writeText(shortcut.copyText);
+      }
       socket.emit("updateStatus", {
         orderId: order._id,
         newStatus: key,
@@ -356,7 +359,7 @@ export default function OrderBubble({ order, onUpdate }) {
       ? "text-red-600 bg-red-100"
       : "text-indigo-600 bg-indigo-100";
 
-  console.log(order.castomerPhone);
+
   // const castomerPhoneArr = order.castomerPhone.split(', ');
   // console.log('split',castomerPhoneArr[0])
   return (

@@ -12,12 +12,14 @@ export const STATUS_SHORTCUTS = [
     label: "কল ধরেনি",
     color: "bg-yellow-600 hover:bg-yellow-700",
     note: "call not receive",
+    copyText:"আপনাকে কল করা হচ্ছে, কিন্তু আপনি রিসিভ করছেন না।"
   },
   {
     key: "Phone Off",
     label: "ফোন বন্ধ",
     color: "bg-orange-600 hover:bg-orange-700",
     note: "Customer phone off.",
+    copyText:"আপনাকে কল করা হচ্ছে, কিন্তু আপনার ফোন বন্ধ বলছে।"
   },
 
   {

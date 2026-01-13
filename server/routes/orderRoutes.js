@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const axios = require("axios");
 const Order = require("../models/Order");
 const { parseOrderDetails } = require("../utils/parser"); // পরবর্তী ধাপে তৈরি করা হবে
 const { bookSteadfast } = require("../controllers/steadfastController");
@@ -82,11 +83,31 @@ router.post("/manual-single", async (req, res) => {
         description: "Manual order created",
         details: { newStatus: "Pending" },
       },
-
     ];
 
     // ঘ. নতুন অর্ডার ডকুমেন্ট তৈরি ও সেভ
     // console.log("courier histroy", histroy);
+
+    // const phones = parsedData.castomerPhone.split(", ");
+    // if (phones[0].startsWith("01") && phones[0].length === 11) {
+    //   try {
+    //     const response = await axios.get(
+    //     `https://portal.steadfast.com.bd/api/v1/merchant/parcels?customer_phone=${phones[0]}`,
+    //     {
+    //       headers: {
+    //         // "Content-Type": "application/json",
+    //         "Api-Key": process.env.STEADFAST_API_KEY,
+    //         "Secret-Key": process.env.STEADFAST_SECRET_KEY,
+    //       },
+    //     }
+    //   );
+    //   console.log("steadfast response-------", response.data);
+    //   } catch (error) {
+    //     console.log("steadfast error--------", error);
+    //   }
+    // }
+
+
     const newOrder = new Order({
       rawInputText,
       castomerName: parsedData.castomerName,

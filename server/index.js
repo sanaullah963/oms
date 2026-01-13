@@ -97,7 +97,7 @@ io.on("connection", (socket) => {
       const phone = await Order.findById(orderId).select("castomerPhone");
 
       if (phone) {
-        const engNum = convertNumber(phone.castomerPhone);
+        const engNum = convertNumber(phone.castomerPhone.split(", ")[0]);
         const res = await axios.post(
           "https://bdcourier.com/api/courier-check",
           { phone: engNum },
