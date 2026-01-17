@@ -491,13 +491,13 @@ export default function OrderBubble({ order, onUpdate }) {
                       {order.orderStatus}
                     </span>
                     {/* our history */}
-                    <div>
+                    {/* <div>
                       <span className="text-xs text-black gap-3 font-medium bg-red-200 px-2 py-0.5 rounded-lg">
                         <span> Our </span>
                         <span className="text-green-700">5</span>/
                         <span className="text-red-600">5</span>
                       </span>
-                    </div>
+                    </div> */}
                     {/* oll history */}
                     <div>
                       {/* get all history button */}
@@ -554,8 +554,11 @@ export default function OrderBubble({ order, onUpdate }) {
 
               {/* পার্স করা মূল তথ্য */}
               <p className="text-sm font-bold text-gray-800">
-                {order.castomerName} | {order.totalCOD} | code:{" "}
-                {order.productCode}
+                <span> {order.castomerName} </span> -- 
+                <span> {order.totalCOD} </span> --
+                <span className="text-purple-600"> {order.productCode} </span>
+                
+                
               </p>
               <div className="flex items-center gap-1">
                 {/* <p
