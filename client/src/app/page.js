@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback, useMemo, use } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import OrderList from "../components/OrderList";
 import ManualInput from "../components/ManualInput";
@@ -12,110 +12,106 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
-    // --- ডাটাবেজ সার্চের জন্য স্টেট ---
+
+  // ---------------- DB search state ----------------
   const [dbOrders, setDbOrders] = useState([]);
-  const [dbLoading, setDbLoading] = useState(false); 
+  const [dbLoading, setDbLoading] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const query = searchQuery.toLowerCase().trim();
-  
 
-  const { socket,data: socketData } = useSocket();
+  const { socket, data: socketData } = useSocket();
 
-  // --- Core Functions: সমস্ত অর্ডার ফেচ করা ---
+  // ---------------- FETCH ALL ORDERS ----------------
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/api/orders`);
-      setOrders(response.data);
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      // Optionally set an error state here
+      const res = await axios.get(`${API_URL}/api/orders`);
+      setOrders(res.data);
+    } catch (err) {
+      console.error("Fetch orders error:", err);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  
-  // ডাটাবেজ থেকে সার্চ করার ফাংশন
-  const fetchSearchFromDB = useCallback(async (q) => {
-    if (!q) {
-      setDbOrders([]);
-      return;
-    }
-    setDbLoading(true);
-    try {
-      if(socket.connected){
-        socket.emit("searchQuery", q);
-        //recive data from socket
-        socket.on("searchResult", (data) => {
-          setDbOrders(data.orders);
-        });
-      }
-    } catch (error) {
-      console.error("DB Search Error:", error);
-    } finally {
-      setDbLoading(false);
-    }
-  }, []);
-    // Debounced DB Search ইফেক্ট
+  // ---------------- SOCKET SEARCH LISTENER (ONCE) ----------------
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
+    if (!socket) return;
+
+    const handleSearchResult = (data) => {
+      setDbOrders(data?.orders || []);
+      setDbLoading(false);
+    };
+
+    socket.on("searchResult", handleSearchResult);
+
+    return () => {
+      socket.off("searchResult", handleSearchResult);
+    };
+  }, [socket]);
+
+  // ---------------- EMIT SEARCH QUERY ----------------
+  const fetchSearchFromDB = useCallback(
+    (q) => {
+      if (!q || !socket?.connected) {
+        setDbOrders([]);
+        return;
+      }
+      setDbLoading(true);
+      socket.emit("searchQuery", q);
+    },
+    [socket],
+  );
+
+  // ---------------- DEBOUNCE SEARCH ----------------
+  useEffect(() => {
+    const timer = setTimeout(() => {
       if (query) {
         fetchSearchFromDB(query);
       } else {
         setDbOrders([]);
       }
-    }, 600); 
+    }, 1000);
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => clearTimeout(timer);
   }, [query, fetchSearchFromDB]);
 
-  // --- State Management: আপডেট বা ডিলিট হ্যান্ডেল করা ---
+  // ---------------- HANDLE ORDER UPDATE ----------------
   const handleOrderUpdate = useCallback((data, actionType = "UPDATE") => {
-    setOrders((prevOrders) => {
+    setOrders((prev) => {
       if (actionType === "DELETE") {
-        // অর্ডারের id অনুযায়ী ফিল্টার করে সরিয়ে দেওয়া
-        return prevOrders.filter((order) => order?._id !== data);
+        return prev.filter((o) => o?._id !== data);
       }
-      // যদি UPDATE হয়
-      const index = prevOrders?.findIndex((o) => o?._id === data?._id);
+
+      const index = prev.findIndex((o) => o?._id === data?._id);
       if (index !== -1) {
-        // বিদ্যমান অর্ডারটি আপডেট করা
-        const newOrders = [...prevOrders];
-        newOrders[index] = data;
-        return newOrders;
-      } else {
-        // যদি নতুন অর্ডার হয় (যেমন ManualInput থেকে বা Socket এর মাধ্যমে)
-        return [data, ...prevOrders];
+        const copy = [...prev];
+        copy[index] = data;
+        return copy;
       }
+      return [data, ...prev];
     });
   }, []);
 
-  // --- Effects: Initial Load ---
+  // ---------------- INITIAL LOAD ----------------
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
-  // --- Effects: Socket.IO রিয়েল-টাইম আপডেট ---
+  // ---------------- REAL-TIME SOCKET UPDATE ----------------
   useEffect(() => {
     if (socketData && socketData._id) {
-      // নতুন ডেটা পেলে (Socket Hook থেকে) তা লিস্টে আপডেট/যোগ করা
-      console.log("Applying socket data update...");
-      handleOrderUpdate(socketData, "UPDATE");
+     handleOrderUpdate(socketData, "UPDATE");
     }
   }, [socketData, handleOrderUpdate]);
 
-  // --- Render Logic ---
-  // const filteredOrders = orders.filter(
-  //   (order) => order.orderStatus === activeStatus
-  // );
-
-  // লোকাল এবং ডিবি রেজাল্ট কম্বাইন করা
+  // ---------------- FILTERED ORDERS ----------------
   const filteredOrders = useMemo(() => {
     if (query) {
       const localResults = orders.filter((order) => {
         const enNumber = convertNumber(order?.castomerPhone);
-        const searchableFields = [
+        const fields = [
           order?._id,
           order?.castomerName,
           enNumber,
@@ -124,65 +120,30 @@ export default function Dashboard() {
           order?.rawInputText,
           order?.courier?.trackingId,
         ];
-        return searchableFields.some((field) => 
-          field && String(field).toLowerCase().includes(query)
-        );
+
+        return fields.some((f) => f && String(f).toLowerCase().includes(query));
       });
 
+      // merge local + db result (remove duplicate)
       const combined = [...localResults, ...dbOrders];
-      const uniqueResults = combined.filter((v, i, a) => 
-        a.findIndex(t => t._id === v._id) === i
+      return combined.filter(
+        (v, i, a) => a.findIndex((t) => t._id === v._id) === i,
       );
-      
-      return uniqueResults;
-    }
-    
-    return orders.filter((order) => order.orderStatus === activeStatus);
+    } 
+
+    return orders.filter((o) => o.orderStatus === activeStatus);
   }, [orders, dbOrders, query, activeStatus]);
 
-  // const filteredOrders = useMemo(() => {
-  //   // 1. যদি সার্চ কোয়েরি থাকে, তবে স্ট্যাটাস নির্বিশেষে সকল অর্ডারে সার্চ হবে
-  //   if (query) {
-  //     return orders.filter((order) => {
-  //       const enNunber = convertNumber(order?.castomerPhone);
-  //       const searchableFields = [
-  //         order?._id,
-  //         order?.castomerName,
-  //         // order?.castomerPhone,
-  //         enNunber,
-  //         order?.productCode,
-  //         order?.totalCOD,
-  //         order?.rawInputText,
-  //         order?.courier?.trackingId,
-  //       ];
-
-  //       return searchableFields.some((field) => {
-  //         if (field) {
-  //           // স্ট্রিং-এ রূপান্তর করে সার্চ করা
-  //           const fieldStr = String(field).toLowerCase();
-  //           return fieldStr.includes(query);
-  //         }
-  //         return false;
-  //       });
-  //     });
-  //   }
-  //   // 2. যদি সার্চ কোয়েরি খালি থাকে, তবে শুধুমাত্র বর্তমান activeStatus অনুযায়ী ফিল্টার করা হবে
-  //   else {
-  //     return orders.filter((order) => order.orderStatus === activeStatus);
-  //   }
-  // }, [orders, activeStatus, searchQuery]);
-
-  // ডাইনামিক বাটন ক্লাস তৈরি
+  // ---------------- BUTTON STYLE ----------------
   const getButtonClasses = (status) => {
     const base =
-      "md:px-4 p-1 md:py-2 font-semibold text-sm rounded-md transition-colors duration-200 w-auto";
-    if (activeStatus === status) {
-      return `${base} text-white shadow-lg bg-green-600 hover:bg-green-700 `;
-    }
-    return `${base} bg-gray-200 text-gray-700 hover:bg-gray-300`;
+      "md:px-4 p-1 md:py-2 font-semibold text-sm rounded-md transition";
+    return activeStatus === status
+      ? `${base} bg-green-600 text-white`
+      : `${base} bg-gray-200 text-gray-700`;
   };
 
-
+   // ---------------- UI ----------------
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-50">
       {/* Header / Status Tabs */}
@@ -220,7 +181,7 @@ export default function Dashboard() {
                 orders?.filter(
                   (order) =>
                     order.orderStatus !== "Booked" &&
-                    order.orderStatus !== "Cancelled"
+                    order.orderStatus !== "Cancelled",
                 ).length
               }
             </span>

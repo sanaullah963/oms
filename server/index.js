@@ -149,32 +149,58 @@ io.on("connection", (socket) => {
     }
   });
   // --- recive search query ---
+  // socket.on("searchQuery", async (q) => {
+  //   try {
+  //     let query = {};
+  //     const isNumber = !isNaN(q) && q.trim() !== "";
+  //     if (isNumber) {
+  //       query = {
+  //         $or: [
+  //           { orderId: Number(q) },
+  //           { castomerPhone: q },
+  //           { castomerName: q },
+  //           { rawInputText: q },
+
+  //         ],
+  //       };
+  //     } else {
+  //       query = { rawInputText: { $search: q } };
+  //     }
+  //     const orders = await Order.find(query);
+
+  //     // const orders = await Order.find({ $text: { $search: q } });
+  //     // console.log("-----------", orders);
+  //     socket.emit("searchResult", { orders });
+  //   } catch (err) {
+  //     console.error("Error getting order history:",err);
+  //   }
+  // });
   socket.on("searchQuery", async (q) => {
     try {
-      let query = {};
-      const isNumber = !isNaN(q) && q.trim() !== "";
-      if (isNumber) {
-        query = {
-          $or: [
-            { orderId: Number(q) }, 
-            { castomerPhone: q }, 
-            { castomerName: q }, 
-            { rawInputText: q }, 
- 
-          ],
-        };
-      } else {
-        query = { rawInputText: { $search: q } };
+      const safeQuery = q.trim();
+      if (!safeQuery) {
+        socket.emit("searchResult", { orders: [] });
+        return;
       }
-      const orders = await Order.find(query);
 
-      // const orders = await Order.find({ $text: { $search: q } });
-      // console.log("-----------", orders);
+      const regex = new RegExp(safeQuery, "i"); // case-insensitive partial match
+
+      const orders = await Order.find({
+        $or: [
+          { castomerPhone: { $regex: regex } },
+          { castomerName: { $regex: regex } },
+          { rawInputText: { $regex: regex } },
+          { "courier.trackingId": { $regex: regex } },
+        ],
+      }).limit(5);
+
       socket.emit("searchResult", { orders });
     } catch (err) {
-      console.error("Error getting order history:",err);
+      console.error("Search error:", err);
+      socket.emit("searchResult", { orders: [] });
     }
   });
+
   // disconnect notice
   socket.on("disconnect", () => {
     console.log("A user disconnected");
