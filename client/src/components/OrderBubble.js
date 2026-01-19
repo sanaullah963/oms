@@ -23,8 +23,8 @@ const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {
   const title = isConfirm
     ? "নিশ্চিত করুন"
     : message.startsWith("ত্রুটি")
-    ? "ত্রুটি!"
-    : "সফল!";
+      ? "ত্রুটি!"
+      : "সফল!";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
@@ -87,6 +87,18 @@ export default function OrderBubble({ order, onUpdate }) {
 
   const { socket, isConnected } = useSocket();
 
+  useEffect(() => {
+    socket.on("orderUpdated", (data) => {
+      if (onUpdate) {
+        onUpdate(data.order);
+      }
+    });
+
+    return () => {
+      socket.off("orderUpdated");
+    };
+  }, []);
+
   // Modal State
   const [modal, setModal] = useState({
     isVisible: false,
@@ -141,7 +153,7 @@ export default function OrderBubble({ order, onUpdate }) {
       // নতুন আপডেট এন্ডপয়েন্ট ব্যবহার করা
       const response = await axios.put(
         `${API_BASE}/update-order/${order._id}`,
-        formData
+        formData,
       );
       if (response.status !== 200) {
         toast.error("অর্ডারটি আপডেট করার সময় ত্রুটি হয়েছে।");
@@ -222,7 +234,7 @@ export default function OrderBubble({ order, onUpdate }) {
         "alert",
         delResponse?.data?.message,
         // "সফলভাবে ডিলিট করা হয়েছে: অর্ডারটি লিস্ট থেকে সরানো হলো।",
-        null
+        null,
       );
     } catch (error) {
       console.error("Failed to delete order:", error);
@@ -237,13 +249,13 @@ export default function OrderBubble({ order, onUpdate }) {
     showMessage(
       "confirm",
       "আপনি কি নিশ্চিত যে আপনি এই অর্ডারটি ডিলিট করতে চান? এই অ্যাকশনটি অপরিবর্তনীয়।",
-      executeDelete
+      executeDelete,
     );
   };
 
   // অ্যাক্টিভিটি টাইমলাইন তৈরি (নতুনটি উপরে)
   const sortedActivities = [...(order.activities || [])].sort(
-    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+    (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
   );
 
   // --- অ্যাকশন বাটন লজিক (নাম্বার ও টেক্সট কপি) ---
@@ -263,7 +275,7 @@ export default function OrderBubble({ order, onUpdate }) {
     try {
       // নতুন সার্ভার এন্ডপয়েন্ট: POST /api/orders/:id/courier-booking
       const response = await axios.post(
-        `${API_BASE}/courier/steadfast/${order._id}`
+        `${API_BASE}/courier/steadfast/${order._id}`,
       );
       const { newUpdatedOrder, data, status, message } = response.data;
 
@@ -354,10 +366,10 @@ export default function OrderBubble({ order, onUpdate }) {
     order.orderStatus === "Pending"
       ? "text-yellow-600 bg-yellow-100"
       : order.orderStatus === "Confirmed" || order.orderStatus === "Booked"
-      ? "text-green-600 bg-green-100"
-      : order.orderStatus === "Cancelled"
-      ? "text-red-600 bg-red-100"
-      : "text-indigo-600 bg-indigo-100";
+        ? "text-green-600 bg-green-100"
+        : order.orderStatus === "Cancelled"
+          ? "text-red-600 bg-red-100"
+          : "text-indigo-600 bg-indigo-100";
 
   // const castomerPhoneArr = order.castomerPhone.split(', ');
   // console.log('split',castomerPhoneArr[0])
@@ -457,8 +469,6 @@ export default function OrderBubble({ order, onUpdate }) {
               className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
               disabled={loading}
             />
-
-          
           </div>
         ) : (
           // --- ডিসপ্লে মোড
@@ -524,7 +534,7 @@ export default function OrderBubble({ order, onUpdate }) {
                       Created At{" "}
                     </span>
                     {`${formatDate(order.createdAt)}.  .${formatTime(
-                      order.createdAt
+                      order.createdAt,
                     )}`}
                   </span>
                   <span className="text-green-500">
@@ -532,9 +542,9 @@ export default function OrderBubble({ order, onUpdate }) {
                       Last Update{" "}
                     </span>
                     {`${formatDate(
-                      order.activities[order.activities.length - 1].timestamp
+                      order.activities[order.activities.length - 1].timestamp,
                     )}.  .${formatTime(
-                      order.activities[order.activities.length - 1].timestamp
+                      order.activities[order.activities.length - 1].timestamp,
                     )}`}
                   </span>
                 </div>

@@ -49,11 +49,8 @@ export default function Dashboard() {
         //recive data from socket
         socket.on("searchResult", (data) => {
           setDbOrders(data.orders);
-          console.log(data);
         });
       }
-
-
     } catch (error) {
       console.error("DB Search Error:", error);
     } finally {

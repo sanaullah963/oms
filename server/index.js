@@ -54,10 +54,14 @@ io.on("connection", (socket) => {
           message: "Order not found",
         });
       } else {
-        socket.emit("statusUpdated", {
+        io.emit("statusUpdated", {
           success: true,
           order: updatedOrder,
         });
+        // socket.broadcast.emit("statusUpdated",{
+        //   success: true,
+        //   order: updatedOrder,
+        // });
       }
 
       // Inform all other clients (admin dashboard, etc.)
@@ -69,6 +73,10 @@ io.on("connection", (socket) => {
         message: "Database update failed",
       });
     }
+  });
+  // real time update order,when order status change from admin dashboard then real time update all client
+  socket.on("orderStatusChange", (order) => {
+    socket.broadcast.emit("orderStatusChange", order);
   });
   // recive note from client
   socket.on("addNote", async ({ orderId, note }) => {
