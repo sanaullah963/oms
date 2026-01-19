@@ -67,8 +67,8 @@ router.post("/manual-single", async (req, res) => {
     // খ. ডেটা যাচাই
     if (
       !parsedData.castomerName ||
-      !parsedData.castomerPhone ||
-      !parsedData.castomerAddress
+      !parsedData.castomerPhone
+      // !parsedData.castomerAddress
     ) {
       return res.status(400).json({
         message:
@@ -107,12 +107,11 @@ router.post("/manual-single", async (req, res) => {
     //   }
     // }
 
-
     const newOrder = new Order({
       rawInputText,
       castomerName: parsedData.castomerName,
       castomerPhone: parsedData.castomerPhone,
-      castomerAddress: parsedData.castomerAddress,
+      // castomerAddress: parsedData.castomerAddress,
       productCode: productCode, // ফ্রন্ট-এন্ড থেকে বা পার্সিং লজিক থেকে আসবে
       totalCOD: totalCOD,
       activities: initialActivities,

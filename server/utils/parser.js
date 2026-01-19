@@ -8,7 +8,7 @@ function parseOrderDetails(rawText) {
   const data = {
     castomerName: "N/A",
     castomerPhone: "N/A",
-    castomerAddress: "N/A",
+    // castomerAddress: "N/A",
     // totalCOD এবং productCode সরাসরি ফ্রন্ট-এন্ড থেকে বা অন্য লজিকে আসবে,
     // এই ফাংশন কেবল নাম, ফোন, ঠিকানা ফোকাস করছে।
   };
@@ -93,7 +93,7 @@ function parseOrderDetails(rawText) {
   addressBlock = addressBlock.replace(/\s+/g, " ").trim();
 
   // যেহেতু ঠিকানা বের করা সবচেয়ে কঠিন, আমরা নাম ও ফোন নম্বর বাদ দিয়ে অবশিষ্ট অংশটিই ঠিকানা হিসেবে সেভ করব।
-  data.castomerAddress = addressBlock;
+  // data.castomerAddress = addressBlock;
 
   return data;
 }

@@ -79,7 +79,7 @@ export default function OrderBubble({ order, onUpdate }) {
   const [formData, setFormData] = useState({
     castomerName: order.castomerName,
     castomerPhone: order.castomerPhone,
-    castomerAddress: order.castomerAddress,
+    // castomerAddress: order.castomerAddress,
     totalCOD: order.totalCOD,
     productCode: order.productCode,
     rawInputText: order.rawInputText,
@@ -127,7 +127,7 @@ export default function OrderBubble({ order, onUpdate }) {
     if (
       !formData.castomerName ||
       !formData.castomerPhone ||
-      !formData.castomerAddress ||
+      // !formData.castomerAddress ||
       !formData.totalCOD ||
       !formData.productCode
     ) {

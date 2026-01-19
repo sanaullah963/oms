@@ -40,7 +40,7 @@ const OrderSchema = new mongoose.Schema({
   // পার্স করা এবং চূড়ান্ত ডেটা
   castomerName: { type: String, required: true },
   castomerPhone: { type: String, required: true },
-  castomerAddress: { type: String, required: true },
+  // castomerAddress: { type: String, required: true },
   productCode: { type: String, required: true },
   totalCOD: { type: Number, required: true },
   orderSource: { type: String, default: "Manual Messenger" },
