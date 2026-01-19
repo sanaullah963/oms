@@ -183,7 +183,7 @@ export default function OrderBubble({ order, onUpdate }) {
           return;
         }
       }
-      if(shortcut.copyText){
+      if (shortcut.copyText) {
         navigator.clipboard.writeText(shortcut.copyText);
       }
       socket.emit("updateStatus", {
@@ -359,7 +359,6 @@ export default function OrderBubble({ order, onUpdate }) {
       ? "text-red-600 bg-red-100"
       : "text-indigo-600 bg-indigo-100";
 
-
   // const castomerPhoneArr = order.castomerPhone.split(', ');
   // console.log('split',castomerPhoneArr[0])
   return (
@@ -369,9 +368,30 @@ export default function OrderBubble({ order, onUpdate }) {
         {isEditing ? (
           // --- এডিট মোড (ফর্ম) ---
           <div className="space-y-1.5">
-            <h4 className="text-lg font-bold text-indigo-700">
+            {/* <h4 className="text-lg font-bold text-indigo-700">
               অর্ডার এডিট করুন
-            </h4>
+            </h4> */}
+            {/* button */}
+            <div className="flex justify-end space-x-2 pt-2 border-t border-gray-200">
+              <button
+                onClick={() => setIsEditing(false)}
+                className="cursor-pointer px-4 py-2 text-sm rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                disabled={loading}
+              >
+                Exit
+              </button>
+              <button
+                onClick={handleUpdateOrder}
+                className={`cursor-pointer px-4 py-2 text-sm rounded-lg text-white font-semibold transition ${
+                  loading
+                    ? "bg-indigo-400"
+                    : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
+                disabled={loading}
+              >
+                {loading ? "Saveing..." : "Save"}
+              </button>
+            </div>
             {/* Raw Input Text */}
             <label htmlFor="rawInputText" className="text-sm">
               Raw Text
@@ -438,10 +458,10 @@ export default function OrderBubble({ order, onUpdate }) {
               disabled={loading}
             />
             {/* ঠিকানা */}
-            <label htmlFor="address" className="text-sm">
+            {/* <label htmlFor="address" className="text-sm">
               Address
-            </label>
-            <textarea
+            </label> */}
+            {/* <textarea
               name="castomerAddress"
               value={formData.castomerAddress}
               onChange={handleFormChange}
@@ -449,28 +469,9 @@ export default function OrderBubble({ order, onUpdate }) {
               rows="2"
               className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
               disabled={loading}
-            />
+            /> */}
 
-            <div className="flex justify-end space-x-2 pt-2 border-t border-gray-200">
-              <button
-                onClick={() => setIsEditing(false)}
-                className="cursor-pointer px-4 py-2 text-sm rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
-                disabled={loading}
-              >
-                বাতিল
-              </button>
-              <button
-                onClick={handleUpdateOrder}
-                className={`cursor-pointer px-4 py-2 text-sm rounded-lg text-white font-semibold transition ${
-                  loading
-                    ? "bg-indigo-400"
-                    : "bg-indigo-600 hover:bg-indigo-700"
-                }`}
-                disabled={loading}
-              >
-                {loading ? "সেভ হচ্ছে..." : "পরিবর্তন সেভ করুন"}
-              </button>
-            </div>
+          
           </div>
         ) : (
           // --- ডিসপ্লে মোড
@@ -554,11 +555,9 @@ export default function OrderBubble({ order, onUpdate }) {
 
               {/* পার্স করা মূল তথ্য */}
               <p className="text-sm font-bold text-gray-800">
-                <span> {order.castomerName} </span> -- 
+                <span> {order.castomerName} </span> --
                 <span> {order.totalCOD} </span> --
                 <span className="text-purple-600"> {order.productCode} </span>
-                
-                
               </p>
               <div className="flex items-center gap-1">
                 {/* <p
@@ -570,17 +569,15 @@ export default function OrderBubble({ order, onUpdate }) {
                 >
                   {order.castomerPhone}
                 </p> */}
-                {
-                  order.castomerPhone.split(", ").map((phone, index) => (
-                    <p
-                      key={index}
-                      className="text-sm font-medium text-blue-600 hover:underline"
-                      onClick={(e) => (e.stopPropagation(), handleCopy(phone))}
-                    >
-                     {index > 0 && ' |'} {phone}
-                    </p>
-                  ))
-                }
+                {order.castomerPhone.split(", ").map((phone, index) => (
+                  <p
+                    key={index}
+                    className="text-sm font-medium text-blue-600 hover:underline"
+                    onClick={(e) => (e.stopPropagation(), handleCopy(phone))}
+                  >
+                    {index > 0 && " |"} {phone}
+                  </p>
+                ))}
               </div>
               <p className="text-xs text-gray-600 mt-1 h-10">
                 {order?.rawInputText || "পাওয়া যায়নি"}
