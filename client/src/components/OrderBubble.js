@@ -457,19 +457,6 @@ export default function OrderBubble({ order, onUpdate }) {
               className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
               disabled={loading}
             />
-            {/* ঠিকানা */}
-            {/* <label htmlFor="address" className="text-sm">
-              Address
-            </label> */}
-            {/* <textarea
-              name="castomerAddress"
-              value={formData.castomerAddress}
-              onChange={handleFormChange}
-              placeholder="কাস্টমার ঠিকানা"
-              rows="2"
-              className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
-              disabled={loading}
-            /> */}
 
           
           </div>
