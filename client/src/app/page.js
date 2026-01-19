@@ -72,7 +72,7 @@ export default function Dashboard() {
       } else {
         setDbOrders([]);
       }
-    }, 1000);
+    }, 600);
 
     return () => clearTimeout(timer);
   }, [query, fetchSearchFromDB]);
@@ -212,7 +212,7 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content Area: Order List */}
-      <div className="flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 pb-36">
+      <div className="flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 ">
         {" "}
         {/* pb-36 for bottom padding above fixed input */}
         {loading ? (
