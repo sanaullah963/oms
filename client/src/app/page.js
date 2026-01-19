@@ -12,10 +12,14 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
+    // --- ডাটাবেজ সার্চের জন্য স্টেট ---
+  const [dbOrders, setDbOrders] = useState([]);
+  const [dbLoading, setDbLoading] = useState(false); 
   const [searchQuery, setSearchQuery] = useState("");
   const query = searchQuery.toLowerCase().trim();
+  
 
-  const { data: socketData } = useSocket();
+  const { socket,data: socketData } = useSocket();
 
   // --- Core Functions: সমস্ত অর্ডার ফেচ করা ---
   const fetchOrders = useCallback(async () => {
@@ -30,6 +34,45 @@ export default function Dashboard() {
       setLoading(false);
     }
   }, []);
+
+  
+  // ডাটাবেজ থেকে সার্চ করার ফাংশন
+  const fetchSearchFromDB = useCallback(async (q) => {
+    if (!q) {
+      setDbOrders([]);
+      return;
+    }
+    setDbLoading(true);
+    try {
+      if(socket.connected){
+        socket.emit("searchQuery", q);
+        //recive data from socket
+        socket.on("searchResult", (data) => {
+          setDbOrders(data.orders);
+          console.log(data);
+        });
+      }
+
+
+    } catch (error) {
+      console.error("DB Search Error:", error);
+    } finally {
+      setDbLoading(false);
+    }
+  }, []);
+    // Debounced DB Search ইফেক্ট
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (query) {
+        fetchSearchFromDB(query);
+      } else {
+        setDbOrders([]);
+      }
+    }, 600); 
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [query, fetchSearchFromDB]);
+
   // --- State Management: আপডেট বা ডিলিট হ্যান্ডেল করা ---
   const handleOrderUpdate = useCallback((data, actionType = "UPDATE") => {
     setOrders((prevOrders) => {
@@ -70,37 +113,67 @@ export default function Dashboard() {
   //   (order) => order.orderStatus === activeStatus
   // );
 
+  // লোকাল এবং ডিবি রেজাল্ট কম্বাইন করা
   const filteredOrders = useMemo(() => {
-    // 1. যদি সার্চ কোয়েরি থাকে, তবে স্ট্যাটাস নির্বিশেষে সকল অর্ডারে সার্চ হবে
     if (query) {
-      return orders.filter((order) => {
-        const enNunber = convertNumber(order?.castomerPhone);
+      const localResults = orders.filter((order) => {
+        const enNumber = convertNumber(order?.castomerPhone);
         const searchableFields = [
           order?._id,
           order?.castomerName,
-          // order?.castomerPhone,
-          enNunber,
+          enNumber,
           order?.productCode,
           order?.totalCOD,
           order?.rawInputText,
           order?.courier?.trackingId,
         ];
-
-        return searchableFields.some((field) => {
-          if (field) {
-            // স্ট্রিং-এ রূপান্তর করে সার্চ করা
-            const fieldStr = String(field).toLowerCase();
-            return fieldStr.includes(query);
-          }
-          return false;
-        });
+        return searchableFields.some((field) => 
+          field && String(field).toLowerCase().includes(query)
+        );
       });
+
+      const combined = [...localResults, ...dbOrders];
+      const uniqueResults = combined.filter((v, i, a) => 
+        a.findIndex(t => t._id === v._id) === i
+      );
+      
+      return uniqueResults;
     }
-    // 2. যদি সার্চ কোয়েরি খালি থাকে, তবে শুধুমাত্র বর্তমান activeStatus অনুযায়ী ফিল্টার করা হবে
-    else {
-      return orders.filter((order) => order.orderStatus === activeStatus);
-    }
-  }, [orders, activeStatus, searchQuery]);
+    
+    return orders.filter((order) => order.orderStatus === activeStatus);
+  }, [orders, dbOrders, query, activeStatus]);
+
+  // const filteredOrders = useMemo(() => {
+  //   // 1. যদি সার্চ কোয়েরি থাকে, তবে স্ট্যাটাস নির্বিশেষে সকল অর্ডারে সার্চ হবে
+  //   if (query) {
+  //     return orders.filter((order) => {
+  //       const enNunber = convertNumber(order?.castomerPhone);
+  //       const searchableFields = [
+  //         order?._id,
+  //         order?.castomerName,
+  //         // order?.castomerPhone,
+  //         enNunber,
+  //         order?.productCode,
+  //         order?.totalCOD,
+  //         order?.rawInputText,
+  //         order?.courier?.trackingId,
+  //       ];
+
+  //       return searchableFields.some((field) => {
+  //         if (field) {
+  //           // স্ট্রিং-এ রূপান্তর করে সার্চ করা
+  //           const fieldStr = String(field).toLowerCase();
+  //           return fieldStr.includes(query);
+  //         }
+  //         return false;
+  //       });
+  //     });
+  //   }
+  //   // 2. যদি সার্চ কোয়েরি খালি থাকে, তবে শুধুমাত্র বর্তমান activeStatus অনুযায়ী ফিল্টার করা হবে
+  //   else {
+  //     return orders.filter((order) => order.orderStatus === activeStatus);
+  //   }
+  // }, [orders, activeStatus, searchQuery]);
 
   // ডাইনামিক বাটন ক্লাস তৈরি
   const getButtonClasses = (status) => {
@@ -133,27 +206,12 @@ export default function Dashboard() {
               {searchQuery && (
                 <button
                   type="button"
-                  // Positioning the button absolutely inside the relative container
-                  className="absolute cursor-pointer  inset-y-0 right-0 flex items-center pr-2 text-gray-500 hover:text-gray-900 focus:outline-none"
+                  className="absolute cursor-pointer  inset-y-0 right-0 flex items-center pr-2 text-gray-500 hover:text-gray-900"
                   // Function to clear the input field
                   onClick={() => setSearchQuery("")}
                   aria-label="Clear search query"
                 >
-                  {/* 'X' icon or character */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  X
                 </button>
               )}
             </div>

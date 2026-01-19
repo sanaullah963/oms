@@ -38,7 +38,7 @@ export default function OrderList({ orders, onOrderUpdate }) {
   const groupedOrders = groupOrdersByDate(orders);
   // const groupedOrders = groupOrdersByLastUpdatedDate(orders);
   const groupByLastUpdatedDate = groupOrdersByLastUpdatedDate(orders);
-  console.log('groupedOrders', groupedOrders);
+  // console.log('groupedOrders', groupedOrders);
 
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
   const sortedDates = Object.keys(groupedOrders);

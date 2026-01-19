@@ -7,9 +7,8 @@ const cors = require("cors");
 const orderRoutes = require("./routes/orderRoutes");
 const Order = require("./models/Order");
 const { type } = require("os");
-const axios = require('axios');
+const axios = require("axios");
 const convertNumber = require("./controllers/convertNumber");
-
 
 require("dotenv").config();
 
@@ -46,7 +45,7 @@ io.on("connection", (socket) => {
             },
           },
         },
-        { new: true }
+        { new: true },
       );
       // Send response back to requesting user
       if (!updatedOrder) {
@@ -79,7 +78,7 @@ io.on("connection", (socket) => {
         {
           note: note,
         },
-        { new: true }
+        { new: true },
       );
       if (updatedOrder) {
         return socket.emit("noteAdded", { updatedOrder });
@@ -105,7 +104,7 @@ io.on("connection", (socket) => {
             headers: {
               Authorization: `Bearer ${process.env.BDCOURIER_SECRET_KEY}`,
             },
-          }
+          },
         );
 
         if (res.data) {
@@ -119,7 +118,7 @@ io.on("connection", (socket) => {
                 "courierHistory.all.cancel": cancel,
               },
             },
-            { new: true }
+            { new: true },
           );
           return socket.emit("distributecourierHistory", {
             result: updatedOrder,
@@ -139,6 +138,33 @@ io.on("connection", (socket) => {
       }
     } catch (err) {
       console.error("Error getting order history:", err);
+    }
+  });
+  // --- recive search query ---
+  socket.on("searchQuery", async (q) => {
+    try {
+      let query = {};
+      const isNumber = !isNaN(q) && q.trim() !== "";
+      if (isNumber) {
+        query = {
+          $or: [
+            { orderId: Number(q) }, 
+            { castomerPhone: q }, 
+            { castomerName: q }, 
+            { rawInputText: q }, 
+ 
+          ],
+        };
+      } else {
+        query = { rawInputText: { $search: q } };
+      }
+      const orders = await Order.find(query);
+
+      // const orders = await Order.find({ $text: { $search: q } });
+      // console.log("-----------", orders);
+      socket.emit("searchResult", { orders });
+    } catch (err) {
+      console.error("Error getting order history:",err);
     }
   });
   // disconnect notice
