@@ -22,6 +22,9 @@ export default function Dashboard() {
 
   const { socket, data: socketData } = useSocket();
 
+
+
+
   // ---------------- FETCH ALL ORDERS ----------------
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -212,7 +215,7 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content Area: Order List */}
-      <div className="flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 ">
+      <div className="flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 pb-36">
         {" "}
         {/* pb-36 for bottom padding above fixed input */}
         {loading ? (
@@ -242,13 +245,13 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            {filteredOrders.length === 0 && (
+            {/* {filteredOrders.length === 0 && (
               <div className="text-center py-12 text-gray-500 bg-white rounded-xl shadow-md mt-4">
                 <p className="text-lg font-semibold">
                   এই স্ট্যাটাসে কোনো অর্ডার নেই।
                 </p>
               </div>
-            )}
+            )} */}
 
             {/* onOrderUpdate prop টি OrderList এর মাধ্যমে পাস করা হলো */}
             <OrderList
