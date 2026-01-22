@@ -129,6 +129,8 @@ exports.bookSteadfast = async (req, res) => {
 
     order.orderStatus = "Booked";
     const newUpdatedOrder = await order.save();
+
+    
     return res.status(200).json({
       message: "Order booked successfully!",
       status: "success",

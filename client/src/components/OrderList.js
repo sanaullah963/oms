@@ -28,9 +28,6 @@ export default function OrderList({ orders, onOrderUpdate }) {
     return (
       <div className="text-center py-12 text-gray-500 bg-white rounded-xl shadow-md mt-4">
         <p className="text-lg font-semibold">🔍 কোনো অর্ডার পাওয়া যায়নি।</p>
-        <p className="text-sm mt-1">
-          ম্যানুয়াল ইনপুট ব্যবহার করে একটি নতুন অর্ডার তৈরি করুন।
-        </p>
       </div>
     );
   }

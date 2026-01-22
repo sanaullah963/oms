@@ -32,12 +32,7 @@ const ActivitySchema = new mongoose.Schema(
 
 // --- ২. মূল Order স্কিমা ---
 const OrderSchema = new mongoose.Schema({
-  // কাস্টমারের কাছ থেকে আসা মূল টেক্সট
-  rawInputText: {
-    type: String,
-    required: true,
-  },
-  // পার্স করা এবং চূড়ান্ত ডেটা
+  rawInputText: {type: String, required: true},
   castomerName: { type: String, required: true },
   castomerPhone: { type: String, required: true },
   // castomerAddress: { type: String, required: true },
@@ -46,20 +41,20 @@ const OrderSchema = new mongoose.Schema({
   orderSource: { type: String, default: "Manual Messenger" },
   note: { type: String, required: false },
   courierHistory: {
-    our: {
-      success: {
-        type: String,
-        required: false,
-      },
-      pending: {
-        type: String,
-        required: false,
-      },
-      cancel: {
-        type: String,
-        required: false,
-      },
-    },
+    // our: {
+    //   success: {
+    //     type: String,
+    //     required: false,
+    //   },
+    //   pending: {
+    //     type: String,
+    //     required: false,
+    //   },
+    //   cancel: {
+    //     type: String,
+    //     required: false,
+    //   },
+    // },
     all: {
       success: {
         type: String,
@@ -89,7 +84,6 @@ const OrderSchema = new mongoose.Schema({
     required: false,
   },
 
-  // এডিট হিস্ট্রি (ঐচ্ছিক কিন্তু এডিটের জন্য সহায়ক)
   activities: {
     type: [ActivitySchema],
     default: [],

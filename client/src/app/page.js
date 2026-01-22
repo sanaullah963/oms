@@ -22,9 +22,6 @@ export default function Dashboard() {
 
   const { socket, data: socketData } = useSocket();
 
-
-
-
   // ---------------- FETCH ALL ORDERS ----------------
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -105,10 +102,15 @@ export default function Dashboard() {
   // ---------------- REAL-TIME SOCKET UPDATE ----------------
   useEffect(() => {
     if (socketData && socketData._id) {
-     handleOrderUpdate(socketData, "UPDATE");
+      handleOrderUpdate(socketData, "UPDATE");
     }
   }, [socketData, handleOrderUpdate]);
 
+  // ---------------- PENDING ORDERS ----------------
+  let allPendingOrder = orders?.filter(
+    (order) =>
+      order.orderStatus !== "Booked" && order.orderStatus !== "Cancelled",
+  );
   // ---------------- FILTERED ORDERS ----------------
   const filteredOrders = useMemo(() => {
     if (query) {
@@ -132,8 +134,10 @@ export default function Dashboard() {
       return combined.filter(
         (v, i, a) => a.findIndex((t) => t._id === v._id) === i,
       );
-    } 
-
+    }
+    if (activeStatus === "All") {
+      return allPendingOrder;
+    }
     return orders.filter((o) => o.orderStatus === activeStatus);
   }, [orders, dbOrders, query, activeStatus]);
 
@@ -146,7 +150,7 @@ export default function Dashboard() {
       : `${base} bg-gray-200 text-gray-700`;
   };
 
-   // ---------------- UI ----------------
+  // ---------------- UI ----------------
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-50">
       {/* Header / Status Tabs */}
@@ -180,13 +184,7 @@ export default function Dashboard() {
           <h1 className="text-lg font-extrabold text-indigo-700 mb-1 md:mb-2">
             <span> অর্ডার</span>
             <span className="text-green-700 text-2xl ml-2 font-mono">
-              {
-                orders?.filter(
-                  (order) =>
-                    order.orderStatus !== "Booked" &&
-                    order.orderStatus !== "Cancelled",
-                ).length
-              }
+              {allPendingOrder.length}
             </span>
           </h1>
         </div>
@@ -207,7 +205,9 @@ export default function Dashboard() {
               className={getButtonClasses(tab.key)}
             >
               {`${tab.label} ${
-                orders.filter((o) => o.orderStatus === tab.key).length
+                tab.key === "All"
+                  ? allPendingOrder.length
+                  : orders.filter((o) => o.orderStatus === tab.key).length
               }`}
             </button>
           ))}

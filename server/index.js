@@ -149,32 +149,6 @@ io.on("connection", (socket) => {
     }
   });
   // --- recive search query ---
-  // socket.on("searchQuery", async (q) => {
-  //   try {
-  //     let query = {};
-  //     const isNumber = !isNaN(q) && q.trim() !== "";
-  //     if (isNumber) {
-  //       query = {
-  //         $or: [
-  //           { orderId: Number(q) },
-  //           { castomerPhone: q },
-  //           { castomerName: q },
-  //           { rawInputText: q },
-
-  //         ],
-  //       };
-  //     } else {
-  //       query = { rawInputText: { $search: q } };
-  //     }
-  //     const orders = await Order.find(query);
-
-  //     // const orders = await Order.find({ $text: { $search: q } });
-  //     // console.log("-----------", orders);
-  //     socket.emit("searchResult", { orders });
-  //   } catch (err) {
-  //     console.error("Error getting order history:",err);
-  //   }
-  // });
   socket.on("searchQuery", async (q) => {
     try {
       const safeQuery = q.trim();
@@ -182,7 +156,6 @@ io.on("connection", (socket) => {
         socket.emit("searchResult", { orders: [] });
         return;
       }
-
       const regex = new RegExp(safeQuery, "i"); // case-insensitive partial match
 
       const orders = await Order.find({

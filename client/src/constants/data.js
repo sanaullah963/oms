@@ -39,6 +39,7 @@ export const STATUS_SHORTCUTS = [
 // --- 2. স্ট্যাটাস ট্যাব কনফিগারেশন ---
 export const STATUS_TABS = [
   { key: "Pending", label: "পেন্ডিং" },
+  { key: "All", label: "সব" },
   { key: "Custom", label: "কাস্টম" },
   { key: "Call Not Received", label: "কল ধরেনি" },
   { key: "Phone Off", label: "ফোন বন্ধ" },
