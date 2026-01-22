@@ -1,5 +1,11 @@
 "use client";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import axios from "axios";
 import OrderList from "../components/OrderList";
 import ManualInput from "../components/ManualInput";
@@ -22,6 +28,10 @@ export default function Dashboard() {
 
   const { socket, data: socketData } = useSocket();
 
+  // ---------------- SWIPE REFS (NEW) ----------------
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
   // ---------------- FETCH ALL ORDERS ----------------
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -35,7 +45,7 @@ export default function Dashboard() {
     }
   }, []);
 
-  // ---------------- SOCKET SEARCH LISTENER (ONCE) ----------------
+  // ---------------- SOCKET SEARCH LISTENER ----------------
   useEffect(() => {
     if (!socket) return;
 
@@ -61,7 +71,7 @@ export default function Dashboard() {
       setDbLoading(true);
       socket.emit("searchQuery", q);
     },
-    [socket],
+    [socket]
   );
 
   // ---------------- DEBOUNCE SEARCH ----------------
@@ -106,11 +116,38 @@ export default function Dashboard() {
     }
   }, [socketData, handleOrderUpdate]);
 
+  // ---------------- SWIPE HANDLERS (NEW) ----------------
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) < 50) return;
+
+    const currentIndex = STATUS_TABS.findIndex(
+      (tab) => tab.key === activeStatus
+    );
+
+    if (diff > 0 && currentIndex < STATUS_TABS.length - 1) {
+      setActiveStatus(STATUS_TABS[currentIndex + 1].key);
+    }
+
+    if (diff < 0 && currentIndex > 0) {
+      setActiveStatus(STATUS_TABS[currentIndex - 1].key);
+    }
+  };
+
   // ---------------- PENDING ORDERS ----------------
   let allPendingOrder = orders?.filter(
     (order) =>
-      order.orderStatus !== "Booked" && order.orderStatus !== "Cancelled",
+      order.orderStatus !== "Booked" && order.orderStatus !== "Cancelled"
   );
+
   // ---------------- FILTERED ORDERS ----------------
   const filteredOrders = useMemo(() => {
     if (query) {
@@ -126,18 +163,18 @@ export default function Dashboard() {
           order?.courier?.trackingId,
         ];
 
-        return fields.some((f) => f && String(f).toLowerCase().includes(query));
+        return fields.some(
+          (f) => f && String(f).toLowerCase().includes(query)
+        );
       });
 
-      // merge local + db result (remove duplicate)
       const combined = [...localResults, ...dbOrders];
       return combined.filter(
-        (v, i, a) => a.findIndex((t) => t._id === v._id) === i,
+        (v, i, a) => a.findIndex((t) => t._id === v._id) === i
       );
     }
-    if (activeStatus === "All") {
-      return allPendingOrder;
-    }
+
+    if (activeStatus === "All") return allPendingOrder;
     return orders.filter((o) => o.orderStatus === activeStatus);
   }, [orders, dbOrders, query, activeStatus]);
 
@@ -157,7 +194,6 @@ export default function Dashboard() {
       <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
         {/* search bar */}
         <div className="flex justify-between ">
-          {/* search bar input box */}
           <div className="flex-1 mr-4">
             <div className="relative">
               <input
@@ -167,20 +203,18 @@ export default function Dashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-200 focus:border-indigo-200 transition duration-150 text-sm"
               />
-              {/* clear search button */}
               {searchQuery && (
                 <button
                   type="button"
-                  className="absolute cursor-pointer  inset-y-0 right-0 flex items-center pr-2 text-gray-500 hover:text-gray-900"
-                  // Function to clear the input field
+                  className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500"
                   onClick={() => setSearchQuery("")}
-                  aria-label="Clear search query"
                 >
                   X
                 </button>
               )}
             </div>
           </div>
+
           <h1 className="text-lg font-extrabold text-indigo-700 mb-1 md:mb-2">
             <span> অর্ডার</span>
             <span className="text-green-700 text-2xl ml-2 font-mono">
@@ -189,15 +223,7 @@ export default function Dashboard() {
           </h1>
         </div>
 
-        <div
-          className="flex overflow-x-auto  w-auto gap-0.5 md:gap-2 whitespace-nowrap"
-          style={{
-            // Firefox-এর জন্য hide scrollbar
-            scrollbarWidth: "none",
-            // IE এবং Edge-এর জন্য hide scrollbar
-            msOverflowStyle: "none",
-          }}
-        >
+        <div className="flex overflow-x-auto w-auto gap-0.5 md:gap-2 whitespace-nowrap">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.key}
@@ -214,56 +240,27 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content Area: Order List */}
-      <div className="flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 pb-36">
-        {" "}
-        {/* pb-36 for bottom padding above fixed input */}
+      {/* Main Content Area */}
+      <div
+        className="flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 pb-36"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {loading ? (
-          // Loading Spinner when loding
           <div className="text-center py-10 text-gray-500">
-            <svg
-              className="animate-spin h-8 w-8 text-indigo-500 mx-auto"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <p className="mt-3 text-lg">অর্ডার লোড হচ্ছে...</p>
+            অর্ডার লোড হচ্ছে...
           </div>
         ) : (
-          <>
-            {/* {filteredOrders.length === 0 && (
-              <div className="text-center py-12 text-gray-500 bg-white rounded-xl shadow-md mt-4">
-                <p className="text-lg font-semibold">
-                  এই স্ট্যাটাসে কোনো অর্ডার নেই।
-                </p>
-              </div>
-            )} */}
-
-            {/* onOrderUpdate prop টি OrderList এর মাধ্যমে পাস করা হলো */}
-            <OrderList
-              orders={filteredOrders}
-              onOrderUpdate={handleOrderUpdate} // স্ট্যাটাস বা ডিলিট আপডেট হ্যান্ডেল করার জন্য
-            />
-          </>
+          <OrderList
+            orders={filteredOrders}
+            onOrderUpdate={handleOrderUpdate}
+          />
         )}
       </div>
 
-      {/* Fixed Bottom Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 px-1 py-2  bg-white border-t border-gray-200 shadow-2xl z-20">
+      {/* Fixed Bottom Input */}
+      <div className="fixed bottom-0 left-0 right-0 px-1 py-2 bg-white border-t border-gray-200 shadow-2xl z-20">
         <ManualInput onUpdate={handleOrderUpdate} />
       </div>
     </div>
