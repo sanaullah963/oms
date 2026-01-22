@@ -18,15 +18,14 @@ export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
+  const { socket, data: socketData } = useSocket();
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // ---------------- DB search state ----------------
   const [dbOrders, setDbOrders] = useState([]);
   const [dbLoading, setDbLoading] = useState(false);
-
   const [searchQuery, setSearchQuery] = useState("");
   const query = searchQuery.toLowerCase().trim();
-
-  const { socket, data: socketData } = useSocket();
 
   // ---------------- SWIPE REFS (NEW) ----------------
   const touchStartX = useRef(0);
@@ -71,7 +70,7 @@ export default function Dashboard() {
       setDbLoading(true);
       socket.emit("searchQuery", q);
     },
-    [socket]
+    [socket],
   );
 
   // ---------------- DEBOUNCE SEARCH ----------------
@@ -116,6 +115,11 @@ export default function Dashboard() {
     }
   }, [socketData, handleOrderUpdate]);
 
+  useEffect(() => {
+    setIsAnimating(true);
+    const t = setTimeout(() => setIsAnimating(false), 180);
+    return () => clearTimeout(t);
+  }, [activeStatus]);
   // ---------------- SWIPE HANDLERS (NEW) ----------------
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
@@ -130,7 +134,7 @@ export default function Dashboard() {
     if (Math.abs(diff) < 50) return;
 
     const currentIndex = STATUS_TABS.findIndex(
-      (tab) => tab.key === activeStatus
+      (tab) => tab.key === activeStatus,
     );
 
     if (diff > 0 && currentIndex < STATUS_TABS.length - 1) {
@@ -145,7 +149,7 @@ export default function Dashboard() {
   // ---------------- PENDING ORDERS ----------------
   let allPendingOrder = orders?.filter(
     (order) =>
-      order.orderStatus !== "Booked" && order.orderStatus !== "Cancelled"
+      order.orderStatus !== "Booked" && order.orderStatus !== "Cancelled",
   );
 
   // ---------------- FILTERED ORDERS ----------------
@@ -163,14 +167,12 @@ export default function Dashboard() {
           order?.courier?.trackingId,
         ];
 
-        return fields.some(
-          (f) => f && String(f).toLowerCase().includes(query)
-        );
+        return fields.some((f) => f && String(f).toLowerCase().includes(query));
       });
 
       const combined = [...localResults, ...dbOrders];
       return combined.filter(
-        (v, i, a) => a.findIndex((t) => t._id === v._id) === i
+        (v, i, a) => a.findIndex((t) => t._id === v._id) === i,
       );
     }
 
@@ -242,7 +244,10 @@ export default function Dashboard() {
 
       {/* Main Content Area */}
       <div
-        className="flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 pb-36"
+        className={`flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 pb-36
+    transition-all duration-200 ease-out
+    ${isAnimating ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0"}
+  `}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -259,7 +264,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Fixed Bottom Input */}
+      {/* input section Fixed Bottom Input */}
       <div className="fixed bottom-0 left-0 right-0 px-1 py-2 bg-white border-t border-gray-200 shadow-2xl z-20">
         <ManualInput onUpdate={handleOrderUpdate} />
       </div>
