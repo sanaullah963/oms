@@ -1,11 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import OrderBubble from "./OrderBubble";
-import { groupOrdersByDate, formatDate, groupOrdersByLastUpdatedDate } from "../constants/data";
+import {
+  groupOrdersByDate,
+  formatDate,
+  groupOrdersByLastUpdatedDate,
+} from "../constants/data";
 import { useSocket } from "@/hooks/useSocket";
-
-
+import ToggleSwitch from "./ToggleSwitch";
 
 export default function OrderList({ orders, onOrderUpdate }) {
+  const [groupedOrders, setgroupedOrders] = useState({});
   // if orders is empty
   if (!orders || orders.length === 0) {
     return (
@@ -15,19 +19,30 @@ export default function OrderList({ orders, onOrderUpdate }) {
     );
   }
 
-  const groupedOrders = groupOrdersByDate(orders);
+  // const groupedOrders = groupOrdersByDate(orders);
   // const groupedOrders = groupOrdersByLastUpdatedDate(orders);
-  const groupByLastUpdatedDate = groupOrdersByLastUpdatedDate(orders);
-  console.log('groupedOrders insart date', groupedOrders);
+  // console.log("groupedOrders insart date", groupedOrders);
+  const handleOrderSort = (value) => {
+    value
+      ? setgroupedOrders(groupOrdersByLastUpdatedDate(orders))
+      : setgroupedOrders(groupOrdersByDate(orders)); // true or false
+  };
 
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
   const sortedDates = Object.keys(groupedOrders);
-  
+  console.log("sortedDates", sortedDates);
+  console.log("groupedOrders", groupedOrders);
+
   return (
     <div className="flex flex-col space-y-4">
-      <div className="">
-        <input type="radio" />
-      </div>
+      {/* on off toggle button */}
+      <ToggleSwitch
+        storageKey="sort_order_by_date"
+        onValue={handleOrderSort}
+        offText="অ্যাড করার সময় অনুসারে"
+        onText="সর্বশেষ অপডেট অনুসারে"
+      />
+
       {sortedDates.map((date) => (
         <div key={date}>
           {/* Date Divider (WhatsApp স্টাইল অনুকরণ) */}
