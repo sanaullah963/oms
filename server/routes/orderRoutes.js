@@ -10,7 +10,7 @@ router.get("/", async (req, res) => {
     // ১. সঠিক টাইমজোন মেইনটেইন করে ৩ দিন আগের সময় বের করা
     const today = new Date();
     const threeDaysAgo = new Date(today);
-    threeDaysAgo.setDate(today.getDate() - 3);
+    threeDaysAgo.setDate(today.getDate() - 1);
     // const query = {
     //   $or: [
     //     {
