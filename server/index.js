@@ -41,7 +41,6 @@ io.on("connection", (socket) => {
             activities: {
               description: note,
               type: newStatus,
-              changedAt: new Date(),
             },
           },
         },

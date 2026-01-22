@@ -5,36 +5,57 @@ const Order = require("../models/Order");
 const { parseOrderDetails } = require("../utils/parser"); // পরবর্তী ধাপে তৈরি করা হবে
 const { bookSteadfast } = require("../controllers/steadfastController");
 
-// --- ১. GET /api/orders - সমস্ত অর্ডার ফেচ করা ---
-// router.get("/", async (req, res) => {
-//   try {
-//     // নতুন অর্ডারগুলি সবার উপরে দেখানোর জন্য createdAt: -1 (Descending) ব্যবহার করা হয়েছে
-//     const orders = await Order.find().sort({ createdAt: -1 });
-//     res.status(200).json(orders);
-//   } catch (error) {
-//     console.error("Error fetching orders:", error);
-//     res.status(500).json({ message: "Failed to fetch orders." });
-//   }
-// });
 router.get("/", async (req, res) => {
   try {
     // ১. সঠিক টাইমজোন মেইনটেইন করে ৩ দিন আগের সময় বের করা
     const today = new Date();
     const threeDaysAgo = new Date(today);
     threeDaysAgo.setDate(today.getDate() - 3);
-    const query = {
-      $or: [
-        {
-          orderStatus: { $in: ["Cancelled", "Booked"] },
-          createdAt: { $gte: threeDaysAgo }, // শুধুমাত্র ৩ দিনের ডেটা
-        },
-        {
-          orderStatus: { $nin: ["Cancelled", "Booked"] }, // বাকি সব স্ট্যাটাসের সব ডেটা
-        },
-      ],
-    };
+    // const query = {
+    //   $or: [
+    //     {
+    //       orderStatus: { $in: ["Cancelled", "Booked"] },
+    //       // createdAt: { $gte: threeDaysAgo }, // শুধুমাত্র ৩ দিনের ডেটা
+    //       "activities[activities.length - 1].tmestamp": { $gte: threeDaysAgo },
+    //     },
+    //     {
+    //       orderStatus: { $nin: ["Cancelled", "Booked"] }, // বাকি সব স্ট্যাটাসের সব ডেটা
+    //     },
+    //   ],
+    // };
 
-    const orders = await Order.find(query).sort({ createdAt: -1 });
+    const orders = await Order.aggregate([
+      // 1️⃣ last activity বের করা
+      {
+        $addFields: {
+          lastActivityTime: {
+            $arrayElemAt: ["$activities.timestamp", -1],
+          },
+        },
+      },
+
+      // 2️⃣ filter
+      {
+        $match: {
+          $or: [
+            {
+              orderStatus: { $in: ["Cancelled", "Booked"] },
+              lastActivityTime: { $gte: threeDaysAgo },
+            },
+            {
+              orderStatus: { $nin: ["Cancelled", "Booked"] },
+            },
+          ],
+        },
+      },
+
+      // 3️⃣ sort by last activity
+      {
+        $sort: {
+          lastActivityTime: -1,
+        },
+      },
+    ]); // সর্ট করা;
 
     // ৪. যদি কোনো ডেটা না পাওয়া যায়
     if (!orders || orders.length === 0) {
@@ -81,7 +102,7 @@ router.post("/manual-single", async (req, res) => {
       {
         type: "Order Created",
         description: "Manual order created",
-        details: { newStatus: "Pending" },
+        changedAt: new Date(),
       },
     ];
 
@@ -201,7 +222,7 @@ router.post("/webhook/steadfast", async (req, res) => {
           },
         },
       },
-      { new: true }
+      { new: true },
     );
 
     if (updatedOrder) {

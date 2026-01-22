@@ -255,7 +255,9 @@ export default function OrderBubble({ order, onUpdate }) {
 
   // অ্যাক্টিভিটি টাইমলাইন তৈরি (নতুনটি উপরে)
   const sortedActivities = [...(order.activities || [])].sort(
-    (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
+    (a, b) =>
+      new Date(b?.timestamp) -
+      new Date(a?.timestamp),
   );
 
   // --- অ্যাকশন বাটন লজিক (নাম্বার ও টেক্সট কপি) ---
@@ -529,23 +531,22 @@ export default function OrderBubble({ order, onUpdate }) {
                 </div>
                 {/* টাইমস্ট্যাম্প */}
                 <div className="text-xs  font-medium flex flex-col">
+                  {/* create time */}
                   <span className="text-gray-800">
                     <span className="text-indigo-700 hidden md:inline">
                       Created At{" "}
                     </span>
-                    {`${formatDate(order.createdAt)}.  .${formatTime(
-                      order.createdAt,
+                    {`${formatDate(order.activities[0]?.timestamp)}.  .${formatTime(
+                      order.activities[0]?.timestamp,
                     )}`}
                   </span>
+                  {/* last update */}
                   <span className="text-green-500">
                     <span className="text-indigo-700 hidden md:inline">
                       Last Update{" "}
                     </span>
-                    {`${formatDate(
-                      order.activities[order.activities.length - 1].timestamp,
-                    )}.  .${formatTime(
-                      order.activities[order.activities.length - 1].timestamp,
-                    )}`}
+                    {`${formatDate(order.activities[order.activities.length - 1].timestamp)}.  .${formatTime(
+                      order.activities[order.activities.length - 1].timestamp)}`}
                   </span>
                 </div>
               </div>
@@ -773,32 +774,22 @@ export default function OrderBubble({ order, onUpdate }) {
                     <div key={index} className="flex items-start text-xs">
                       <div className="w-1/4 flex flex-col">
                         {/* formate time */}
-                        <span
-                          className={` font-bold ${
-                            ACTIVITY_STATUS_COLORS[activity.type] ||
-                            "text-gray-500"
-                          }`}
-                        >
+                        <span className={` font-bold`}>
                           {formatTime(activity.timestamp)}
                         </span>
                         {/* formate date */}
-                        <span
-                          className={` font-bold ${
-                            ACTIVITY_STATUS_COLORS[activity.type] ||
-                            "text-gray-500"
-                          }`}
-                        >
+                        <span className={` font-bold text-gray-500 `}>
                           {formatDate(activity.timestamp)}
                         </span>
                       </div>
                       <div className="w-3/4 pl-3 border-l-2 border-dashed border-gray-200">
                         <p className="font-semibold text-gray-800">
-                          {activity.type}
+                          {activity?.type}
                         </p>
                         <p className="text-gray-600 mt-0.5">
-                          {activity.details?.description ||
-                            activity.description ||
-                            activity.note ||
+                          {activity?.details?.description ||
+                            activity?.description ||
+                            activity?.note ||
                             "নোট নেই"}
                         </p>
                       </div>

@@ -62,7 +62,7 @@ export const ACTIVITY_STATUS_COLORS = {
 export const groupOrdersByDate = (orders) => {
   return orders.reduce((acc, order) => {
     // তারিখের শুধুমাত্র YYYY-MM-DD অংশটি নেওয়া হচ্ছে
-    const dateKey = new Date(order.createdAt).toISOString().split("T")[0];
+    const dateKey = new Date(order.activities[0]?.timestamp).toISOString().split("T")[0];
     if (!acc[dateKey]) {
       acc[dateKey] = [];
     }
