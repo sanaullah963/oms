@@ -123,10 +123,8 @@ export default function Dashboard() {
   }, [activeStatus]);
   // ---------------- SWIPE HANDLERS (NEW) ----------------
   const handleTouchStart = (e) => {
-    const handleTouchStart = (e) => {
-      touchStartX.current = e.touches[0].clientX;
-      touchStartY.current = e.touches[0].clientY;
-    };
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
   };
 
   const handleTouchMove = (e) => {
