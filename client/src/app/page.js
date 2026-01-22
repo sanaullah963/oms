@@ -163,7 +163,7 @@ export default function Dashboard() {
     (order) =>
       order.orderStatus !== "Booked" &&
       order.orderStatus !== "Cancelled" &&
-      order.orderStatus !== "confirmed",
+      order.orderStatus !== "Confirmed",
   );
 
   // ---------------- FILTERED ORDERS ----------------
