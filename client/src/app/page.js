@@ -30,6 +30,7 @@ export default function Dashboard() {
   // ---------------- SWIPE REFS (NEW) ----------------
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
+  const touchStartY = useRef(0);
 
   // ---------------- FETCH ALL ORDERS ----------------
   const fetchOrders = useCallback(async () => {
@@ -122,26 +123,39 @@ export default function Dashboard() {
   }, [activeStatus]);
   // ---------------- SWIPE HANDLERS (NEW) ----------------
   const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
+    const handleTouchStart = (e) => {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+    };
   };
 
   const handleTouchMove = (e) => {
     touchEndX.current = e.touches[0].clientX;
   };
 
-  const handleTouchEnd = () => {
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) < 150) return;
+  const handleTouchEnd = (e) => {
+    const diffX = touchStartX.current - touchEndX.current;
+    const diffY = Math.abs(
+      touchStartY.current - (e.changedTouches?.[0]?.clientY || 0),
+    );
+
+    // ❌ small movement ignore
+    if (Math.abs(diffX) < 150) return;
+
+    // ❌ vertical scroll হলে swipe cancel
+    if (Math.abs(diffX) < diffY) return;
 
     const currentIndex = STATUS_TABS.findIndex(
       (tab) => tab.key === activeStatus,
     );
 
-    if (diff > 0 && currentIndex < STATUS_TABS.length - 1) {
+    // swipe left → next tab
+    if (diffX > 0 && currentIndex < STATUS_TABS.length - 1) {
       setActiveStatus(STATUS_TABS[currentIndex + 1].key);
     }
 
-    if (diff < 0 && currentIndex > 0) {
+    // swipe right → previous tab
+    if (diffX < 0 && currentIndex > 0) {
       setActiveStatus(STATUS_TABS[currentIndex - 1].key);
     }
   };
@@ -149,7 +163,9 @@ export default function Dashboard() {
   // ---------------- PENDING ORDERS ----------------
   let allPendingOrder = orders?.filter(
     (order) =>
-      order.orderStatus !== "Booked" && order.orderStatus !== "Cancelled" && order.orderStatus !== "confirmed",
+      order.orderStatus !== "Booked" &&
+      order.orderStatus !== "Cancelled" &&
+      order.orderStatus !== "confirmed",
   );
 
   // ---------------- FILTERED ORDERS ----------------
