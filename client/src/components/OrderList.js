@@ -3,24 +3,7 @@ import OrderBubble from "./OrderBubble";
 import { groupOrdersByDate, formatDate, groupOrdersByLastUpdatedDate } from "../constants/data";
 import { useSocket } from "@/hooks/useSocket";
 
-// এই ফাংশনটি অর্ডারগুলোকে তাদের তৈরির তারিখ অনুযায়ী গ্রুপ করে।
-// const groupOrdersByDate = (orders) => {
-//     return orders.reduce((acc, order) => {
-//         // তারিখের শুধুমাত্র YYYY-MM-DD অংশটি নেওয়া হচ্ছে
-//         const dateKey = new Date(order.activities[0]?.timestamp).toISOString().split('T')[0];
-//         if (!acc[dateKey]) { acc[dateKey] = []; }
-//         acc[dateKey].push(order);
-//         return acc;
-//     }, {});
-// };
 
-// --- ২. তারিখকে বাংলা ফরম্যাটে রূপান্তর ---
-// const formatDate = (dateString) => {
-//     // যদি dateString না থাকে, তাহলে একটি ডিফল্ট স্ট্রিং ফেরত দেওয়া হবে
-//     if (!dateString) return 'N/A';
-//     const options = { year: 'numeric', month: 'long', day: 'numeric' };
-//     return new Date(dateString).toLocaleDateString('bn-BD', options);
-// };
 
 export default function OrderList({ orders, onOrderUpdate }) {
   // if orders is empty
@@ -35,13 +18,16 @@ export default function OrderList({ orders, onOrderUpdate }) {
   const groupedOrders = groupOrdersByDate(orders);
   // const groupedOrders = groupOrdersByLastUpdatedDate(orders);
   const groupByLastUpdatedDate = groupOrdersByLastUpdatedDate(orders);
-  // console.log('groupedOrders', groupedOrders);
+  console.log('groupedOrders insart date', groupedOrders);
 
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
   const sortedDates = Object.keys(groupedOrders);
   
   return (
     <div className="flex flex-col space-y-4">
+      <div className="">
+        <input type="radio" />
+      </div>
       {sortedDates.map((date) => (
         <div key={date}>
           {/* Date Divider (WhatsApp স্টাইল অনুকরণ) */}

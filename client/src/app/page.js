@@ -131,7 +131,7 @@ export default function Dashboard() {
 
   const handleTouchEnd = () => {
     const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) < 50) return;
+    if (Math.abs(diff) < 150) return;
 
     const currentIndex = STATUS_TABS.findIndex(
       (tab) => tab.key === activeStatus,
@@ -149,7 +149,7 @@ export default function Dashboard() {
   // ---------------- PENDING ORDERS ----------------
   let allPendingOrder = orders?.filter(
     (order) =>
-      order.orderStatus !== "Booked" && order.orderStatus !== "Cancelled",
+      order.orderStatus !== "Booked" && order.orderStatus !== "Cancelled" && order.orderStatus !== "confirmed",
   );
 
   // ---------------- FILTERED ORDERS ----------------
@@ -191,7 +191,7 @@ export default function Dashboard() {
 
   // ---------------- UI ----------------
   return (
-    <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-50">
+    <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-1">
       {/* Header / Status Tabs */}
       <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
         {/* search bar */}
@@ -203,12 +203,12 @@ export default function Dashboard() {
                 placeholder="নাম, ফোন, বা অর্ডার ID দিয়ে খুঁজুন..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-200 focus:border-indigo-200 transition duration-150 text-sm"
+                className="w-full pl-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-200 focus:border-indigo-200 transition duration-11 text-sm"
               />
               {searchQuery && (
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-500"
+                  className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-10"
                   onClick={() => setSearchQuery("")}
                 >
                   X
@@ -253,7 +253,7 @@ export default function Dashboard() {
         onTouchEnd={handleTouchEnd}
       >
         {loading ? (
-          <div className="text-center py-10 text-gray-500">
+          <div className="text-center py-10 text-gray-10">
             অর্ডার লোড হচ্ছে...
           </div>
         ) : (
