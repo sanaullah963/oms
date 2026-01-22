@@ -28,9 +28,9 @@ export default function Dashboard() {
   const query = searchQuery.toLowerCase().trim();
 
   // ---------------- SWIPE REFS (NEW) ----------------
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
-  const touchStartY = useRef(0);
+  // const touchStartX = useRef(0);
+  // const touchEndX = useRef(0);
+  // const touchStartY = useRef(0);
 
   // ---------------- FETCH ALL ORDERS ----------------
   const fetchOrders = useCallback(async () => {
@@ -122,41 +122,41 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [activeStatus]);
   // ---------------- SWIPE HANDLERS (NEW) ----------------
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-  };
+  // const handleTouchStart = (e) => {
+  //   touchStartX.current = e.touches[0].clientX;
+  //   touchStartY.current = e.touches[0].clientY;
+  // };
 
-  const handleTouchMove = (e) => {
-    touchEndX.current = e.touches[0].clientX;
-  };
+  // const handleTouchMove = (e) => {
+  //   touchEndX.current = e.touches[0].clientX;
+  // };
 
-  const handleTouchEnd = (e) => {
-    const diffX = touchStartX.current - touchEndX.current;
-    const diffY = Math.abs(
-      touchStartY.current - (e.changedTouches?.[0]?.clientY || 0),
-    );
+  // const handleTouchEnd = (e) => {
+  //   const diffX = touchStartX.current - touchEndX.current;
+  //   const diffY = Math.abs(
+  //     touchStartY.current - (e.changedTouches?.[0]?.clientY || 0),
+  //   );
 
-    // ❌ small movement ignore
-    if (Math.abs(diffX) < 150) return;
+  //   // ❌ small movement ignore
+  //   if (Math.abs(diffX) < 150) return;
 
-    // ❌ vertical scroll হলে swipe cancel
-    if (Math.abs(diffX) < diffY) return;
+  //   // ❌ vertical scroll হলে swipe cancel
+  //   if (Math.abs(diffX) < diffY) return;
 
-    const currentIndex = STATUS_TABS.findIndex(
-      (tab) => tab.key === activeStatus,
-    );
+  //   const currentIndex = STATUS_TABS.findIndex(
+  //     (tab) => tab.key === activeStatus,
+  //   );
 
-    // swipe left → next tab
-    if (diffX > 0 && currentIndex < STATUS_TABS.length - 1) {
-      setActiveStatus(STATUS_TABS[currentIndex + 1].key);
-    }
+  //   // swipe left → next tab
+  //   if (diffX > 0 && currentIndex < STATUS_TABS.length - 1) {
+  //     setActiveStatus(STATUS_TABS[currentIndex + 1].key);
+  //   }
 
-    // swipe right → previous tab
-    if (diffX < 0 && currentIndex > 0) {
-      setActiveStatus(STATUS_TABS[currentIndex - 1].key);
-    }
-  };
+  //   // swipe right → previous tab
+  //   if (diffX < 0 && currentIndex > 0) {
+  //     setActiveStatus(STATUS_TABS[currentIndex - 1].key);
+  //   }
+  // };
 
   // ---------------- PENDING ORDERS ----------------
   let allPendingOrder = orders?.filter(
@@ -259,12 +259,11 @@ export default function Dashboard() {
       {/* Main Content Area */}
       <div
         className={`flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 pb-36
-    transition-all duration-200 ease-out
     ${isAnimating ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0"}
   `}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        // onTouchStart={handleTouchStart}
+        // onTouchMove={handleTouchMove}
+        // onTouchEnd={handleTouchEnd}
       >
         {loading ? (
           <div className="text-center py-10 text-gray-10">
