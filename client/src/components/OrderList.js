@@ -28,6 +28,8 @@ export default function OrderList({ orders, onOrderUpdate }) {
       : setgroupedOrders(groupOrdersByDate(orders)); // true or false
   };
 
+  console.log("groupedOrders------", groupedOrders);
+
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
   const sortedDates = Object.keys(groupedOrders);
   console.log("sortedDates", sortedDates);

@@ -5,6 +5,7 @@ const { Server } = require("socket.io");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const orderRoutes = require("./routes/orderRoutes");
+const webhookRoutes = require("./routes/webhookRouter");
 const Order = require("./models/Order");
 const { type } = require("os");
 const axios = require("axios");
@@ -57,10 +58,6 @@ io.on("connection", (socket) => {
           success: true,
           order: updatedOrder,
         });
-        // socket.broadcast.emit("statusUpdated",{
-        //   success: true,
-        //   order: updatedOrder,
-        // });
       }
 
       // Inform all other clients (admin dashboard, etc.)
@@ -197,7 +194,8 @@ const connectToMongoDB = async () => {
 connectToMongoDB();
 
 // ------ 4. Routes Integration ---
-app.use("/api/orders", orderRoutes); // Base route for all order operations
+app.use("/api/orders", orderRoutes);
+app.use("/api/webhook", webhookRoutes);
 
 // --- 5. Server Start ---
 httpServer.listen(PORT, () => {

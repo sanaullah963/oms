@@ -109,6 +109,8 @@ export default function Dashboard() {
     fetchOrders();
   }, [fetchOrders]);
 
+  // page.js এর ভেতর নিচের useEffect-টি যোগ করুন বা আপডেট করুন
+
   // ---------------- REAL-TIME SOCKET UPDATE ----------------
   useEffect(() => {
     if (socketData && socketData._id) {
@@ -121,6 +123,35 @@ export default function Dashboard() {
     const t = setTimeout(() => setIsAnimating(false), 180);
     return () => clearTimeout(t);
   }, [activeStatus]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    // Webhook বা অন্য কোথাও থেকে স্ট্যাটাস চেঞ্জ হলে এটি কাজ করবে
+    const handleOrderStatusChange = (orderData) => {
+      setOrders((prevOrders) => {
+        // চেক করুন এই আইডি-র অর্ডার অলরেডি লিস্টে আছে কি না
+        const exists = prevOrders.find((o) => o._id === orderData._id);
+
+        if (exists) {
+          // যদি থাকে, তবে স্ট্যাটাস আপডেট করুন
+          return prevOrders.map((order) =>
+            order._id === orderData._id ? orderData : order,
+          );
+        } else {
+          // যদি না থাকে (মানে নতুন অর্ডার), তবে লিস্টের শুরুতে যোগ করুন
+          return [orderData, ...prevOrders];
+        }
+      });
+    };
+
+    socket.on("orderStatusChange", handleOrderStatusChange);
+
+    return () => {
+      socket.off("orderStatusChange", handleOrderStatusChange);
+    };
+  }, [socket]);
+
   // ---------------- SWIPE HANDLERS (NEW) ----------------
   // const handleTouchStart = (e) => {
   //   touchStartX.current = e.touches[0].clientX;

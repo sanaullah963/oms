@@ -6,6 +6,8 @@ const { parseOrderDetails } = require("../utils/parser"); // পরবর্ত�
 const { bookSteadfast } = require("../controllers/steadfastController");
 
 router.get("/", async (req, res) => {
+
+    
   try {
     // ১. সঠিক টাইমজোন মেইনটেইন করে ৩ দিন আগের সময় বের করা
     const today = new Date();
@@ -140,7 +142,7 @@ router.post("/manual-single", async (req, res) => {
     const savedOrder = await newOrder.save();
     // ঙ. রিয়েল-টাইম আপডেট (ভার্সন ২.০ এর জন্য সেটআপ)
     if (io) {
-      io.emit("new_order_added", savedOrder);
+      io.emit("orderStatusChange", savedOrder);
     }
 
     res.status(201).json({
