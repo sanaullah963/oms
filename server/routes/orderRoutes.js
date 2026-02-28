@@ -6,8 +6,6 @@ const { parseOrderDetails } = require("../utils/parser"); // পরবর্ত�
 const { bookSteadfast } = require("../controllers/steadfastController");
 
 router.get("/", async (req, res) => {
-
-    
   try {
     // ১. সঠিক টাইমজোন মেইনটেইন করে ৩ দিন আগের সময় বের করা
     const today = new Date();
@@ -73,80 +71,91 @@ router.get("/", async (req, res) => {
 
 // --- ২. POST /api/orders/manual-single - ম্যানুয়াল অর্ডার সেভ করা ---
 router.post("/manual-single", async (req, res) => {
-  // এখানে io (Socket.IO instance) access করার জন্য app.get('io') ব্যবহার করতে হবে
   const io = req.app.get("io");
   try {
-    const { rawInputText, totalCOD, productCode } = req.body;
+    const { rawInputText } = req.body;
 
-    // ফ্রন্ট-এন্ড নিশ্চিত করবে যে rawInputText এবং totalCOD আছে
-    if (!rawInputText || !totalCOD) {
+        if (!rawInputText) {
       return res.status(400).json({
-        message: "Raw input text and COD amount are required.",
+        message: "Raw input text are required.",
         status: "error",
       });
     }
-    const parsedData = parseOrderDetails(rawInputText);
 
-    // খ. ডেটা যাচাই
-    if (
-      !parsedData.castomerName ||
-      !parsedData.castomerPhone
-      // !parsedData.castomerAddress
-    ) {
+    const multipleOrdersPattern =/\[\d{1,2}\/\d{1,2},\s\d{1,2}:\d{2}\s(?:AM|PM|am|pm)\]\s[^:]+:\s?/g; //for multiple order
+
+// multipleOrders === orderBlocks
+    let multipleOrders = rawInputText
+      .split(multipleOrdersPattern)
+      .filter((content) => content.trim().length > 5);
+
+if (multipleOrders.length === 0) {
+      multipleOrders = [rawInputText];
+    }
+
+    const ordersToSave = [];
+
+    multipleOrders.map((order, index) => {
+      const Splitwords = order.trim().split(/\s+/); //for cod and product code
+      const totalCOD =Splitwords.length >= 1 ? Splitwords[Splitwords.length - 1] : "0";//for cod
+      const productCode =Splitwords.length >= 2 ? Splitwords[Splitwords.length - 2] : "empty";
+      const parsedData = parseOrderDetails(order);//parce order details
+
+      // খ. ডেটা যাচাই
+
+    if (parsedData.castomerName && parsedData.castomerPhone) {
+        ordersToSave.push({
+          rawInputText: order,
+          castomerName: parsedData.castomerName,
+          castomerPhone: parsedData.castomerPhone,
+          productCode: productCode,
+          totalCOD: totalCOD,
+          activities: [
+            {
+              type: "Order Created",
+              description: multipleOrders.length > 1 ? "Bulk created" : "Manual single created",
+              // timestamp: new Date(),
+            },
+          ],
+        });
+      }
+    });
+
+    // ৪. যদি কোনো বৈধ অর্ডার না পাওয়া যায়
+    if (ordersToSave.length === 0) {
       return res.status(400).json({
-        message:
-          "Parsing failed. Please ensure Name, Phone, and Address are present in the text.",
+        message: "Parsing failed. Could not identify valid order in the provided text.",
       });
     }
 
-    // গ. নতুন অ্যাক্টিভিটি তৈরি
-    const initialActivities = [
-      {
-        type: "Order Created",
-        description: "Manual order created",
-        // changedAt: new Date(),
-      },
-    ];
+    // const parsedData = parseOrderDetails(rawInputText);
 
-    // ঘ. নতুন অর্ডার ডকুমেন্ট তৈরি ও সেভ
-    // console.log("courier histroy", histroy);
+    
 
-    // const phones = parsedData.castomerPhone.split(", ");
-    // if (phones[0].startsWith("01") && phones[0].length === 11) {
-    //   try {
-    //     const response = await axios.get(
-    //     `https://portal.steadfast.com.bd/api/v1/merchant/parcels?customer_phone=${phones[0]}`,
-    //     {
-    //       headers: {
-    //         // "Content-Type": "application/json",
-    //         "Api-Key": process.env.STEADFAST_API_KEY,
-    //         "Secret-Key": process.env.STEADFAST_SECRET_KEY,
-    //       },
-    //     }
-    //   );
-    //   console.log("steadfast response-------", response.data);
-    //   } catch (error) {
-    //     console.log("steadfast error--------", error);
-    //   }
+
+// 
+    // const newOrder = new Order({
+    //   rawInputText,
+    //   castomerName: parsedData.castomerName,
+    //   castomerPhone: parsedData.castomerPhone,
+    //   productCode: productCode, // ফ্রন্ট-এন্ড থেকে বা পার্সিং লজিক থেকে আসবে
+    //   totalCOD: totalCOD,
+    //   activities: initialActivities,
+    // });
+    // savedOrder  === savedOrders
+        const savedOrder = await Order.insertMany(ordersToSave);
+    // const savedOrder = await newOrder.save();
+    if (io) {
+      savedOrder.forEach(order => {
+        io.emit("orderStatusChange", order);
+      });
+    }
+    // if (io) {
+    //   io.emit("orderStatusChange", savedOrder);
     // }
 
-    const newOrder = new Order({
-      rawInputText,
-      castomerName: parsedData.castomerName,
-      castomerPhone: parsedData.castomerPhone,
-      // castomerAddress: parsedData.castomerAddress,
-      productCode: productCode, // ফ্রন্ট-এন্ড থেকে বা পার্সিং লজিক থেকে আসবে
-      totalCOD: totalCOD,
-      activities: initialActivities,
-    });
-    const savedOrder = await newOrder.save();
-    // ঙ. রিয়েল-টাইম আপডেট (ভার্সন ২.০ এর জন্য সেটআপ)
-    if (io) {
-      io.emit("orderStatusChange", savedOrder);
-    }
-
     res.status(201).json({
-      message: "Order created successfully!",
+      message: `${savedOrder.length} orders created`,
       order: savedOrder,
     });
   } catch (error) {

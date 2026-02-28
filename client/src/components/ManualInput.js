@@ -5,14 +5,12 @@ import { IoIosSend } from "react-icons/io";
 import { RiLoader2Fill } from "react-icons/ri";
 import { useSocket } from "../hooks/useSocket";
 
-
 export default function ManualInput({ onUpdate }) {
   // Socket Hook Access
   const { socket, isConnected } = useSocket();
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  // Hydration Fix State
   const [isClient, setIsClient] = useState(false);
 
   // Client Side Rendering check
@@ -57,41 +55,43 @@ export default function ManualInput({ onUpdate }) {
       return;
     }
     // Data Extraction/Parsing Logic (আপনার পূর্বের কোড থেকে)
-    const words = inputValue.trim().split(/\s+/);
-    // Assuming the last word is COD, and the second last is Product Code
-    const totalCOD = words.length >= 1 ? words[words.length - 1] : "";
-    const productCode = words.length >= 2 ? words[words.length - 2] : "";
+    // const words = inputValue.trim().split(/\s+/);
+    // const totalCOD = words.length >= 1 ? words[words.length - 1] : "";
+    // const productCode = words.length >= 2 ? words[words.length - 2] : "";
 
     const dataToSend = {
       rawInputText: inputValue,
-      totalCOD,
-      productCode,
+      // totalCOD,
+      // productCode,
     };
 
+    // --------- send data to server (steadfast) ---------
+    // 1. HTTP POST Request (ডেটাবেসে সেভ করার জন্য)
+    console.log("dataToSend", dataToSend);
     try {
       // 2. HTTP POST Request (ডেটাবেসে সেভ করার জন্য)
       const httpResponse = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/orders/manual-single`,
-        dataToSend
+        dataToSend,
       );
       if (httpResponse.status === 201) {
-        setMessage(`✅অর্ডার তৈরি হয়েছে!`);
+        setMessage(`${httpResponse.data?.message}`);
         if (onUpdate) {
           onUpdate(httpResponse.data?.order);
         }
         setTimeout(() => {
           setMessage("");
-        }, 3000);
+        }, 4000);
         setInputValue(""); // ইনপুট খালি করা
       } else {
         setMessage(
-          `❌ অর্ডার তৈরি করার সময় অপ্রত্যাশিত HTTP স্ট্যাটাস: ${httpResponse.status}`
+          `❌ অর্ডার তৈরি করার সময় অপ্রত্যাশিত HTTP স্ট্যাটাস: ${httpResponse.status}`,
         );
       }
     } catch (error) {
       console.error(
         "Manual order submission failed:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       const errorMessage = error.response?.data?.message
         ? error.response.data.message
@@ -100,7 +100,7 @@ export default function ManualInput({ onUpdate }) {
       setMessage(`❌ ত্রুটি: ${errorMessage}`);
       setTimeout(() => {
         setMessage("");
-      }, 3000);
+      }, 4000);
     } finally {
       setLoading(false);
     }
@@ -136,11 +136,8 @@ export default function ManualInput({ onUpdate }) {
         </div>
       )}
 
-      {/* হোয়াটসঅ্যাপ-স্টাইল ইনপুট ফর্ম */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex items-end"
-      >
+      {/*  ইনপুট ফর্ম */}
+      <form onSubmit={handleSubmit} className="flex items-end">
         {/* টেক্সট এরিয়া - হোয়াটসঅ্যাপ মেসেজ বক্সের মতো */}
 
         <textarea

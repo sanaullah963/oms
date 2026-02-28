@@ -238,6 +238,7 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-1">
       {/* Header / Status Tabs */}
+
       <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
         {/* search bar */}
         <div className="flex justify-between ">
