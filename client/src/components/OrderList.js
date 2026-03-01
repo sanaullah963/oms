@@ -19,22 +19,15 @@ export default function OrderList({ orders, onOrderUpdate }) {
     );
   }
 
-  // const groupedOrders = groupOrdersByDate(orders);
-  // const groupedOrders = groupOrdersByLastUpdatedDate(orders);
-  // console.log("groupedOrders insart date", groupedOrders);
+
   const handleOrderSort = (value) => {
     value
       ? setgroupedOrders(groupOrdersByLastUpdatedDate(orders))
       : setgroupedOrders(groupOrdersByDate(orders)); // true or false
   };
 
-  console.log("groupedOrders------", groupedOrders);
-
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
   const sortedDates = Object.keys(groupedOrders);
-  console.log("sortedDates", sortedDates);
-  console.log("groupedOrders", groupedOrders);
-
   return (
     <div className="flex flex-col space-y-4">
       {/* on off toggle button */}

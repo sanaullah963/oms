@@ -38,36 +38,25 @@ export default function ManualInput({ onUpdate }) {
       }, 3000);
       setLoading(false);
       return;
-    }
+    } 
 
     // Check if input is empty after trim
-    if (inputValue.trim() === "") {
+    if (inputValue.length < 11 || inputValue.trim().split(/\s+/).length < 2 ) {
       setMessage("⚠️ অনুগ্রহ করে অর্ডার বিবরণ লিখুন।");
+
       setTimeout(() => {
         setMessage("");
       }, 3000);
       setLoading(false);
       return;
     }
-    if (inputValue.trim().split(/\s+/).length < 2) {
-      setMessage("⚠️ অনুগ্রহ করে অর্ডার বিবরণ লিখুন।");
-      setLoading(false);
-      return;
-    }
-    // Data Extraction/Parsing Logic (আপনার পূর্বের কোড থেকে)
-    // const words = inputValue.trim().split(/\s+/);
-    // const totalCOD = words.length >= 1 ? words[words.length - 1] : "";
-    // const productCode = words.length >= 2 ? words[words.length - 2] : "";
 
     const dataToSend = {
       rawInputText: inputValue,
-      // totalCOD,
-      // productCode,
     };
 
     // --------- send data to server (steadfast) ---------
     // 1. HTTP POST Request (ডেটাবেসে সেভ করার জন্য)
-    console.log("dataToSend", dataToSend);
     try {
       // 2. HTTP POST Request (ডেটাবেসে সেভ করার জন্য)
       const httpResponse = await axios.post(
@@ -90,7 +79,7 @@ export default function ManualInput({ onUpdate }) {
       }
     } catch (error) {
       console.error(
-        "Manual order submission failed:",
+        "Manual order submission failed:manualinput.js",
         error.response?.data || error.message,
       );
       const errorMessage = error.response?.data?.message

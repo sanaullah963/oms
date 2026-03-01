@@ -81,7 +81,6 @@ router.post("/manual-single", async (req, res) => {
         status: "error",
       });
     }
-
     const multipleOrdersPattern =/\[\d{1,2}\/\d{1,2},\s\d{1,2}:\d{2}\s(?:AM|PM|am|pm)\]\s[^:]+:\s?/g; //for multiple order
 
 // multipleOrders === orderBlocks
@@ -114,7 +113,6 @@ if (multipleOrders.length === 0) {
             {
               type: "Order Created",
               description: multipleOrders.length > 1 ? "Bulk created" : "Manual single created",
-              // timestamp: new Date(),
             },
           ],
         });
@@ -128,31 +126,12 @@ if (multipleOrders.length === 0) {
       });
     }
 
-    // const parsedData = parseOrderDetails(rawInputText);
-
-    
-
-
-// 
-    // const newOrder = new Order({
-    //   rawInputText,
-    //   castomerName: parsedData.castomerName,
-    //   castomerPhone: parsedData.castomerPhone,
-    //   productCode: productCode, // ফ্রন্ট-এন্ড থেকে বা পার্সিং লজিক থেকে আসবে
-    //   totalCOD: totalCOD,
-    //   activities: initialActivities,
-    // });
-    // savedOrder  === savedOrders
         const savedOrder = await Order.insertMany(ordersToSave);
-    // const savedOrder = await newOrder.save();
     if (io) {
       savedOrder.forEach(order => {
         io.emit("orderStatusChange", order);
       });
     }
-    // if (io) {
-    //   io.emit("orderStatusChange", savedOrder);
-    // }
 
     res.status(201).json({
       message: `${savedOrder.length} orders created`,
@@ -168,7 +147,6 @@ if (multipleOrders.length === 0) {
 router.delete("/delete/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
-    // console.log(orderId);
 
     const deletedOrder = await Order.findByIdAndDelete(orderId);
     if (!deletedOrder) {

@@ -26,7 +26,6 @@ router.post("/steadfast", async (req, res) => {
     });
   }
 
-  console.log("main data :", data);
 
   // এখানে আপনার ডাটাবেজ আপডেট করার লজিক লিখুন
   const updatedOrder = await Order.findOneAndUpdate(
@@ -46,7 +45,6 @@ router.post("/steadfast", async (req, res) => {
   // ৩. রিয়েল-টাইম আপডেট (Socket.IO)
   if (updatedOrder && io) {
     io.emit("orderStatusChange", updatedOrder);
-    // console.log("Database updated for Tracking ID:", data.tracking_id);
   }
 
   // অবশ্যই একটি 200 OK রেসপন্স পাঠাতে হবে

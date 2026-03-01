@@ -373,8 +373,7 @@ export default function OrderBubble({ order, onUpdate }) {
           ? "text-red-600 bg-red-100"
           : "text-indigo-600 bg-indigo-100";
 
-  // const castomerPhoneArr = order.castomerPhone.split(', ');
-  // console.log('split',castomerPhoneArr[0])
+
   return (
     <>
       <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 mb-1 border border-gray-300 hover:shadow-xl transition-all duration-300">
