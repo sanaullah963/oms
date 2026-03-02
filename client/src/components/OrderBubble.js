@@ -362,7 +362,7 @@ export default function OrderBubble({ order, onUpdate }) {
       setIsLoading({ ...isLoading, histryBtn: false });
     });
   };
-  // courierHistory: { all: { cancel: '2', success: '4' } },
+
   // স্ট্যাটাস কালার ডাইনামিকালি সেট করা
   const statusColor =
     order.orderStatus === "Pending"

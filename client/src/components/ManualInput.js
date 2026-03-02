@@ -64,7 +64,7 @@ export default function ManualInput({ onUpdate }) {
         dataToSend,
       );
       if (httpResponse.status === 201) {
-        setMessage(`${httpResponse.data?.message}`);
+        setMessage(`✅ ${httpResponse.data?.message}`);
         if (onUpdate) {
           onUpdate(httpResponse.data?.order);
         }
