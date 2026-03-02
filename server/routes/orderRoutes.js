@@ -72,9 +72,10 @@ router.get("/", async (req, res) => {
 // --- ২. POST /api/orders/manual-single - ম্যানুয়াল অর্ডার সেভ করা ---
 router.post("/manual-single", async (req, res) => {
   const io = req.app.get("io");
+  
   try {
     const { rawInputText } = req.body;
-
+    console.log("request for add order--");
     if (!rawInputText) {
       return res.status(400).json({
         message: "Raw input text are required.",
@@ -201,23 +202,7 @@ router.post("/courier/steadfast/:orderId", bookSteadfast);
 // status check for steadfast
 // --- Steadfast Webhook Endpoint ---
 router.post("/webhook/steadfast", async (req, res) => {
-  //   {
-  //     "notification_type": "delivery_status",
-  //     "consignment_id": 12345,
-  //     "invoice": "INV-67890",
-  //     "cod_amount": 1500.00,
-  //     "status": "Delivered",
-  //     "delivery_charge": 100.00,
-  //     "tracking_message": "Your package has been delivered successfully.",
-  //     "updated_at": "2025-03-02 12:45:30"
-  // }
-  // {
-  //     "notification_type": "tracking_update",
-  //     "consignment_id": 12345,
-  //     "invoice": "INV-67890",
-  //     "tracking_message": "Package arrived at the sorting center.",
-  //     "updated_at": "2025-03-02 13:15:00"
-  // }
+
   const io = req.app.get("io"); // Socket.io instance
   const {
     consignment_id,
@@ -225,7 +210,6 @@ router.post("/webhook/steadfast", async (req, res) => {
     status,
     notification_type,
     tracking_message,
-    tracking_code,
   } = req.body;
 
   try {
@@ -254,7 +238,7 @@ router.post("/webhook/steadfast", async (req, res) => {
       updateData,
       { new: true },
     );
-
+    console.log("updatedOrder=======", updatedOrder);
     if (updatedOrder) {
       // ২. রিয়েল-টাইম ফ্রন্টএন্ড আপডেট (Admin Dashboard এ সরাসরি পরিবর্তন দেখা যাবে)
       if (io) {

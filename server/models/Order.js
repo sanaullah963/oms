@@ -101,7 +101,7 @@ const OrderSchema = new mongoose.Schema({
         "Shipping",
         "Delivered",
       ],
-      default: "Pending",
+      default: "in-review",
     },
   },
 
