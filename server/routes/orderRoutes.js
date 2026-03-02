@@ -75,20 +75,21 @@ router.post("/manual-single", async (req, res) => {
   try {
     const { rawInputText } = req.body;
 
-        if (!rawInputText) {
+    if (!rawInputText) {
       return res.status(400).json({
         message: "Raw input text are required.",
         status: "error",
       });
     }
-    const multipleOrdersPattern =/\[\d{1,2}\/\d{1,2},\s\d{1,2}:\d{2}\s(?:AM|PM|am|pm)\]\s[^:]+:\s?/g; //for multiple order
+    const multipleOrdersPattern =
+      /\[\d{1,2}\/\d{1,2},\s\d{1,2}:\d{2}\s(?:AM|PM|am|pm)\]\s[^:]+:\s?/g; //for multiple order
 
-// multipleOrders === orderBlocks
+    // multipleOrders === orderBlocks
     let multipleOrders = rawInputText
       .split(multipleOrdersPattern)
       .filter((content) => content.trim().length > 5);
 
-if (multipleOrders.length === 0) {
+    if (multipleOrders.length === 0) {
       multipleOrders = [rawInputText];
     }
 
@@ -96,13 +97,15 @@ if (multipleOrders.length === 0) {
 
     multipleOrders.map((order, index) => {
       const Splitwords = order.trim().split(/\s+/); //for cod and product code
-      const totalCOD =Splitwords.length >= 1 ? Splitwords[Splitwords.length - 1] : "0";//for cod
-      const productCode =Splitwords.length >= 2 ? Splitwords[Splitwords.length - 2] : "empty";
-      const parsedData = parseOrderDetails(order);//parce order details
+      const totalCOD =
+        Splitwords.length >= 1 ? Splitwords[Splitwords.length - 1] : "0"; //for cod
+      const productCode =
+        Splitwords.length >= 2 ? Splitwords[Splitwords.length - 2] : "empty";
+      const parsedData = parseOrderDetails(order); //parce order details
 
       // খ. ডেটা যাচাই
 
-    if (parsedData.castomerName && parsedData.castomerPhone) {
+      if (parsedData.castomerName && parsedData.castomerPhone) {
         ordersToSave.push({
           rawInputText: order,
           castomerName: parsedData.castomerName,
@@ -112,7 +115,10 @@ if (multipleOrders.length === 0) {
           activities: [
             {
               type: "Order Created",
-              description: multipleOrders.length > 1 ? "Bulk created" : "Manual single created",
+              description:
+                multipleOrders.length > 1
+                  ? "Bulk created"
+                  : "Manual single created",
             },
           ],
         });
@@ -122,13 +128,14 @@ if (multipleOrders.length === 0) {
     // ৪. যদি কোনো বৈধ অর্ডার না পাওয়া যায়
     if (ordersToSave.length === 0) {
       return res.status(400).json({
-        message: "Parsing failed. Could not identify valid order in the provided text.",
+        message:
+          "Parsing failed. Could not identify valid order in the provided text.",
       });
     }
 
-        const savedOrder = await Order.insertMany(ordersToSave);
+    const savedOrder = await Order.insertMany(ordersToSave);
     if (io) {
-      savedOrder.forEach(order => {
+      savedOrder.forEach((order) => {
         io.emit("orderStatusChange", order);
       });
     }
@@ -187,30 +194,64 @@ router.put("/update-order/:id", async (req, res) => {
     res.status(500).json({ message: "Server error while updating order." });
   }
 });
-// steadfast booking
+
+// --------steadfast booking
 router.post("/courier/steadfast/:orderId", bookSteadfast);
 
 // status check for steadfast
 // --- Steadfast Webhook Endpoint ---
 router.post("/webhook/steadfast", async (req, res) => {
+  //   {
+  //     "notification_type": "delivery_status",
+  //     "consignment_id": 12345,
+  //     "invoice": "INV-67890",
+  //     "cod_amount": 1500.00,
+  //     "status": "Delivered",
+  //     "delivery_charge": 100.00,
+  //     "tracking_message": "Your package has been delivered successfully.",
+  //     "updated_at": "2025-03-02 12:45:30"
+  // }
+  // {
+  //     "notification_type": "tracking_update",
+  //     "consignment_id": 12345,
+  //     "invoice": "INV-67890",
+  //     "tracking_message": "Package arrived at the sorting center.",
+  //     "updated_at": "2025-03-02 13:15:00"
+  // }
   const io = req.app.get("io"); // Socket.io instance
-  const { order_id, status, tracking_code } = req.body;
+  const {
+    consignment_id,
+    invoice,
+    status,
+    notification_type,
+    tracking_message,
+    tracking_code,
+  } = req.body;
 
   try {
-    // ১. ডাটাবেজে অর্ডারটি খুঁজে বের করে আপডেট করা
-    // এখানে 'order_id' হলো আপনার ডাটাবেজের অর্ডার আইডি অথবা ইনভয়েস আইডি যা আপনি বুকিং এর সময় পাঠিয়েছিলেন
-    const updatedOrder = await Order.findOneAndUpdate(
-      { _id: order_id }, // অথবা আপনার অর্ডারের ইনভয়েস ফিল্ড
-      {
-        $set: { "courier.bookingStatus": status, orderCourierStatus: status },
-        $push: {
-          activities: {
-            type: "Courier Update",
-            description: `Steadfast Status: ${status}`,
-            changedAt: new Date(),
-          },
+    // --- 1.  Update  object for MongoDB ---
+    const updateData = {
+      $push: {
+        activities: {
+          actor: "Steadfast",
+          type: notification_type,
+          description: tracking_message,
         },
       },
+    };
+
+    if (status) {
+      // undefined, null, "", false সব falsey হিসেবে কাজ করবে
+      updateData.$set = {
+        "courier.bookingStatus": status,
+      };
+    }
+
+    const updatedOrder = await Order.findOneAndUpdate(
+      {
+        $or: [{ _id: invoice }, { "courier.trackingId": consignment_id }],
+      },
+      updateData,
       { new: true },
     );
 
