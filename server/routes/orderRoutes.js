@@ -95,7 +95,7 @@ router.post("/manual-single", async (req, res) => {
 
     const ordersToSave = [];
 
-    multipleOrders.map((order, index) => {
+    multipleOrders.map((order) => {
       const Splitwords = order.trim().split(/\s+/); //for cod and product code
       const totalCOD =
         Splitwords.length >= 1 ? Splitwords[Splitwords.length - 1] : "0"; //for cod

@@ -41,7 +41,7 @@ export default function ManualInput({ onUpdate }) {
     } 
 
     // Check if input is empty after trim
-    if (inputValue.length < 11 || inputValue.trim().split(/\s+/).length < 2 ) {
+    if (inputValue.length < 11) {
       setMessage("⚠️ অনুগ্রহ করে অর্ডার বিবরণ লিখুন।");
 
       setTimeout(() => {

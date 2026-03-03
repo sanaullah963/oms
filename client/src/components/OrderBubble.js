@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useSocket } from "../hooks/useSocket";
 import { ToastContainer, toast } from "react-toastify";
-
+import ReactDOM from "react-dom";
 import {
   STATUS_SHORTCUTS,
   ACTIVITY_STATUS_COLORS,
@@ -26,8 +26,8 @@ const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {
       ? "ত্রুটি!"
       : "সফল!";
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-50 bg-gray-400 flex justify-center items-center p-4">
       <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm transform transition-all duration-300 scale-100">
         <h3
           className={`text-lg font-bold mb-3 ${
@@ -61,7 +61,8 @@ const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
