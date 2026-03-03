@@ -94,14 +94,14 @@ const OrderSchema = new mongoose.Schema({
     bookingStatus: {
       type: String,
       enum: [
-        "In-review",
+        // "In-review",
         "Pending",
         "Failed",
         "Booked",
         "Shipping",
         "Delivered",
       ],
-      default: "in-review",
+      default: "Pending",
     },
   },
 

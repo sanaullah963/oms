@@ -75,7 +75,6 @@ router.post("/manual-single", async (req, res) => {
   
   try {
     const { rawInputText } = req.body;
-    console.log("request for add order--");
     if (!rawInputText) {
       return res.status(400).json({
         message: "Raw input text are required.",

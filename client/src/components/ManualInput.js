@@ -63,6 +63,8 @@ export default function ManualInput({ onUpdate }) {
         `${process.env.NEXT_PUBLIC_API_URL}/api/orders/manual-single`,
         dataToSend,
       );
+
+
       if (httpResponse.status === 201) {
         setMessage(`✅ ${httpResponse.data?.message}`);
         if (onUpdate) {
