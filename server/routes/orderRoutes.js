@@ -72,7 +72,7 @@ router.get("/", async (req, res) => {
 // --- ২. POST /api/orders/manual-single - ম্যানুয়াল অর্ডার সেভ করা ---
 router.post("/manual-single", async (req, res) => {
   const io = req.app.get("io");
-  
+
   try {
     const { rawInputText } = req.body;
     if (!rawInputText) {
@@ -93,7 +93,7 @@ router.post("/manual-single", async (req, res) => {
       multipleOrders = [rawInputText];
     }
 
-    const ordersToSave = [];
+    const ordersToSave = []; //const parsedOrders = [];
 
     multipleOrders.map((order) => {
       const Splitwords = order.trim().split(/\s+/); //for cod and product code
@@ -133,7 +133,30 @@ router.post("/manual-single", async (req, res) => {
       });
     }
 
-    const savedOrder = await Order.insertMany(ordersToSave);
+    // ২. বাল্ক চেক: সব ফোন নাম্বারগুলো বের করে আনি
+    const phoneNumbers = ordersToSave.map((o) => o.castomerPhone);
+    // ৩. ডাটাবেজে একবারে চেক করি কোন নাম্বারে কয়টি অর্ডার আছে কি না
+    const historyData = await Order.aggregate([
+      { $match: { castomerPhone: { $in: phoneNumbers } } },
+      { $group: { _id: "$castomerPhone", count: { $sum: 1 } } },
+    ]);
+    // হিস্ট্রি ডেটাকে একটি সহজ ম্যাপে রূপান্তর করি { "017xxx": 2, "018xxx": 5 }
+    const historyMap = {};
+    historyData.forEach((item) => {
+      historyMap[item._id] = item.count;
+    });
+
+    const ordersToSaveaa = ordersToSave.map((order) => {
+      const previousOrderCount = historyMap[order.castomerPhone] || 0;
+      return {
+        ...order,
+        courierHistory: {
+          our: previousOrderCount.toString(),
+        },
+      };
+    });
+
+    const savedOrder = await Order.insertMany(ordersToSaveaa);
     if (io) {
       savedOrder.forEach((order) => {
         io.emit("orderStatusChange", order);
@@ -201,7 +224,6 @@ router.post("/courier/steadfast/:orderId", bookSteadfast);
 // status check for steadfast
 // --- Steadfast Webhook Endpoint ---
 router.post("/webhook/steadfast", async (req, res) => {
-
   const io = req.app.get("io"); // Socket.io instance
   const {
     consignment_id,

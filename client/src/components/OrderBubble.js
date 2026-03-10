@@ -15,7 +15,7 @@ import LoadingSpinner from "./LoadingSpinner";
 // API Endpoint Configuration
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
 
-// --- ২. কাস্টম Modal কম্পোনেন্ট ---
+// ------------- ২. কাস্টম Modal UI কম্পোনেন্ট ---
 const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {
   if (!isVisible) return null;
 
@@ -62,7 +62,7 @@ const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 
@@ -256,9 +256,7 @@ export default function OrderBubble({ order, onUpdate }) {
 
   // অ্যাক্টিভিটি টাইমলাইন তৈরি (নতুনটি উপরে)
   const sortedActivities = [...(order.activities || [])].sort(
-    (a, b) =>
-      new Date(b?.timestamp) -
-      new Date(a?.timestamp),
+    (a, b) => new Date(b?.timestamp) - new Date(a?.timestamp),
   );
 
   // --- অ্যাকশন বাটন লজিক (নাম্বার ও টেক্সট কপি) ---
@@ -373,7 +371,6 @@ export default function OrderBubble({ order, onUpdate }) {
         : order.orderStatus === "Cancelled"
           ? "text-red-600 bg-red-100"
           : "text-indigo-600 bg-indigo-100";
-
 
   return (
     <>
@@ -491,13 +488,16 @@ export default function OrderBubble({ order, onUpdate }) {
                       {order.orderStatus}
                     </span>
                     {/* our history */}
-                    {/* <div>
-                      <span className="text-xs text-black gap-3 font-medium bg-red-200 px-2 py-0.5 rounded-lg">
-                        <span> Our </span>
-                        <span className="text-green-700">5</span>/
-                        <span className="text-red-600">5</span>
-                      </span>
-                    </div> */}
+                    <div>
+                      {/* <span> OUR </span> */}
+                      {order?.courierHistory?.our > 0 && (
+                        <span className="text-xs text-black gap-3 font-medium bg-green-300 px-2 py-0.5 rounded-lg">
+                          <span className="text-green-700">
+                            {order?.courierHistory?.our}
+                          </span>
+                        </span>
+                      )}
+                    </div>
                     {/* oll history */}
                     <div>
                       {/* get all history button */}
@@ -546,7 +546,8 @@ export default function OrderBubble({ order, onUpdate }) {
                       Last Update{" "}
                     </span>
                     {`${formatDate(order.activities[order.activities.length - 1].timestamp)}.  .${formatTime(
-                      order.activities[order.activities.length - 1].timestamp)}`}
+                      order.activities[order.activities.length - 1].timestamp,
+                    )}`}
                   </span>
                 </div>
               </div>

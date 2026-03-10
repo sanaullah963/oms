@@ -75,7 +75,7 @@ export const groupOrdersByDate = (orders) => {
 export const groupOrdersByLastUpdatedDate = (orders) => {
   return orders.reduce((acc, order) => {
     // তারিখের শুধুমাত্র YYYY-MM-DD অংশটি নেওয়া হচ্ছে
-    const dateKey = new Date(order.activities[order.activities.length - 1].timestamp).toISOString().split("T")[0];
+    const dateKey = new Date(order?.activities[order?.activities?.length - 1].timestamp).toISOString().split("T")[0];
     if (!acc[dateKey]) {
       acc[dateKey] = [];
     }

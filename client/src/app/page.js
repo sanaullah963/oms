@@ -1,11 +1,5 @@
 "use client";
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import OrderList from "../components/OrderList";
 import ManualInput from "../components/ManualInput";
@@ -37,7 +31,9 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/api/orders`);
-      setOrders(res.data);
+      if (Array.isArray(res.data)) {
+        setOrders(res.data);
+      }
     } catch (err) {
       console.error("Fetch orders error:", err);
     } finally {
@@ -90,17 +86,18 @@ export default function Dashboard() {
   // ---------------- HANDLE ORDER UPDATE ----------------
   const handleOrderUpdate = useCallback((data, actionType = "UPDATE") => {
     setOrders((prev) => {
+      const currentPrev = Array.isArray(prev) ? prev : [];
       if (actionType === "DELETE") {
-        return prev.filter((o) => o?._id !== data);
+        return currentPrev.filter((o) => o?._id !== data);
       }
 
-      const index = prev.findIndex((o) => o?._id === data?._id);
+      const index = currentPrev.findIndex((o) => o?._id === data?._id);
       if (index !== -1) {
-        const copy = [...prev];
+        const copy = [...currentPrev];
         copy[index] = data;
         return copy;
       }
-      return [data, ...prev];
+      return [data, ...currentPrev];
     });
   }, []);
 
@@ -109,7 +106,6 @@ export default function Dashboard() {
     fetchOrders();
   }, [fetchOrders]);
 
-  // page.js এর ভেতর নিচের useEffect-টি যোগ করুন বা আপডেট করুন
 
   // ---------------- REAL-TIME SOCKET UPDATE ----------------
   useEffect(() => {
@@ -190,17 +186,21 @@ export default function Dashboard() {
   // };
 
   // ---------------- PENDING ORDERS ----------------
-  let allPendingOrder = orders?.filter(
-    (order) =>
-      order.orderStatus !== "Booked" &&
-      order.orderStatus !== "Cancelled" &&
-      order.orderStatus !== "Confirmed",
-  );
+  let allPendingOrder = useMemo(() => {
+    return Array.isArray(orders) ? orders.filter(
+      (order) =>
+        order &&
+        order.orderStatus !== "Booked" &&
+        order.orderStatus !== "Cancelled" &&
+        order.orderStatus !== "Confirmed",
+    ) : [];
+  }, [orders]);
 
   // ---------------- FILTERED ORDERS ----------------
   const filteredOrders = useMemo(() => {
+    const safeOrders = Array.isArray(orders) ? orders : [];
     if (query) {
-      const localResults = orders.filter((order) => {
+      const localResults = safeOrders.filter((order) => {
         const enNumber = convertNumber(order?.castomerPhone);
         const fields = [
           order?._id,
@@ -222,7 +222,7 @@ export default function Dashboard() {
     }
 
     if (activeStatus === "All") return allPendingOrder;
-    return orders.filter((o) => o.orderStatus === activeStatus);
+    return safeOrders.filter((o) => o.orderStatus === activeStatus);
   }, [orders, dbOrders, query, activeStatus]);
 
   // ---------------- BUTTON STYLE ----------------

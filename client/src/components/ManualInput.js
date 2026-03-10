@@ -38,7 +38,7 @@ export default function ManualInput({ onUpdate }) {
       }, 3000);
       setLoading(false);
       return;
-    } 
+    }
 
     // Check if input is empty after trim
     if (inputValue.length < 11) {
@@ -63,7 +63,6 @@ export default function ManualInput({ onUpdate }) {
         `${process.env.NEXT_PUBLIC_API_URL}/api/orders/manual-single`,
         dataToSend,
       );
-
 
       if (httpResponse.status === 201) {
         setMessage(`✅ ${httpResponse.data?.message}`);
