@@ -1,17 +1,15 @@
 const express = require("express");
 const router = express.Router();
 require("dotenv").config();
+const Order = require("../models/Order");
 
-router.get("/", (req, res) => {
-  res.send("webhook router");
-});
 
-//--------- Steadfast Webhook Endpoint
-//----  http://localhost:9000/api/webhook/steadfast
 router.post("/steadfast", async (req, res) => {
   const data = req.body; // Steadfast এখান থেকে ডাটা পাঠাবে
-  const io = req.app.get("io"); // index.js থেকে io ইনস্ট্যান্স নেওয়া
+  const io = req.app.get("io");
+  console.log("Steadfast Data Received:", data);
   // check token
+  // not check for testing
   const authHeader = req.headers["authorization"];
   const mySecretToken =
     process.env.STEADFAST_WEBHOOK_TOKEN ||
@@ -19,7 +17,7 @@ router.post("/steadfast", async (req, res) => {
 
   // যদি টোকেন না মিলে তবে রিকোয়েস্ট রিজেক্ট করে দেওয়া ভালো
   if (!authHeader || authHeader !== `Bearer ${mySecretToken}`) {
-    console.error("Unauthorized Access: Invalid Token");
+    console.log("Unauthorized Access: Invalid Token");
     return res.status(401).json({
       status: "error",
       message: "Unauthorized: Invalid Token",
@@ -28,20 +26,22 @@ router.post("/steadfast", async (req, res) => {
 
 
   // এখানে আপনার ডাটাবেজ আপডেট করার লজিক লিখুন
+
   const updatedOrder = await Order.findOneAndUpdate(
     { "courier.trackingId": data.consignment_id },
     {
       // $set: { orderStatus: data.status },
       $push: {
         activities: {
+          actor: "Steadfast",
           description: data.tracking_message,
           type: existingOrder.orderStatus,
-          time: new Date(),
         },
       },
     },
     { new: true },
   );
+  console.log("Updated Order:", updatedOrder);
   // ৩. রিয়েল-টাইম আপডেট (Socket.IO)
   if (updatedOrder && io) {
     io.emit("orderStatusChange", updatedOrder);
