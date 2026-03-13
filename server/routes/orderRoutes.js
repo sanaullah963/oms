@@ -238,7 +238,7 @@ router.post("/webhook/steadfast", async (req, res) => {
     const updateData = {
       $push: {
         activities: {
-          actor: "Steadfast",
+          author: "Steadfast",
           type: notification_type,
           description: tracking_message,
         },

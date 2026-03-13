@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 
 const ActivitySchema = new mongoose.Schema(
   {
-    actor: {
+    author: {
       type: String,
       default: "User",
     },

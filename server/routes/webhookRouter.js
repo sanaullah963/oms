@@ -3,11 +3,10 @@ const router = express.Router();
 require("dotenv").config();
 const Order = require("../models/Order");
 
-
 router.post("/steadfast", async (req, res) => {
   const data = req.body; // Steadfast এখান থেকে ডাটা পাঠাবে
   const io = req.app.get("io");
-  console.log("Steadfast Data Received:", data);
+  // console.log("Steadfast Data Received:-----------", data);
   // check token
   // not check for testing
   const authHeader = req.headers["authorization"];
@@ -33,15 +32,15 @@ router.post("/steadfast", async (req, res) => {
       // $set: { orderStatus: data.status },
       $push: {
         activities: {
-          actor: "Steadfast",
+          author: "Steadfast",
           description: data.tracking_message,
-          type: existingOrder.orderStatus,
+          type: data.notification_type,
         },
       },
     },
     { new: true },
   );
-  console.log("Updated Order:", updatedOrder);
+  // console.log("Updated Order:", updatedOrder);
   // ৩. রিয়েল-টাইম আপডেট (Socket.IO)
   if (updatedOrder && io) {
     io.emit("orderStatusChange", updatedOrder);

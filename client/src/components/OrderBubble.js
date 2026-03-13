@@ -788,6 +788,9 @@ export default function OrderBubble({ order, onUpdate }) {
                           {activity?.type}
                         </p>
                         <p className="text-gray-600 mt-0.5">
+                          {activity?.actor || activity?.author}
+                        </p>
+                        <p className="text-gray-600 mt-0.5">
                           {activity?.details?.description ||
                             activity?.description ||
                             activity?.note ||
