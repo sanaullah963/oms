@@ -12,14 +12,14 @@ export const STATUS_SHORTCUTS = [
     label: "কল ধরেনি",
     color: "bg-yellow-600 hover:bg-yellow-700",
     note: "call not receive",
-    copyText:"আপনাকে কল করা হচ্ছে, কিন্তু আপনি রিসিভ করছেন না।"
+    copyText: "আপনাকে কল করা হচ্ছে, কিন্তু আপনি রিসিভ করছেন না।",
   },
   {
     key: "Phone Off",
     label: "ফোন বন্ধ",
     color: "bg-orange-600 hover:bg-orange-700",
     note: "Customer phone off.",
-    copyText:"আপনাকে কল করা হচ্ছে, কিন্তু আপনার ফোন বন্ধ বলছে।"
+    copyText: "আপনাকে কল করা হচ্ছে, কিন্তু আপনার ফোন বন্ধ বলছে।",
   },
 
   {
@@ -59,34 +59,58 @@ export const ACTIVITY_STATUS_COLORS = {
 };
 
 // --- 4. অর্ডারগুলোকে তাদের তৈরির তারিখ অনুযায়ী গ্রুপ করে। ---
+// export const groupOrdersByDate = (orders) => {
+//   return orders.reduce((acc, order) => {
+//     // তারিখের শুধুমাত্র YYYY-MM-DD অংশটি নেওয়া হচ্ছে
+//     const dateKey = new Date(order.activities[0].timestamp)
+//       .toISOString()
+//       .split("T")[0];
+//     if (!acc[dateKey]) {
+//       acc[dateKey] = [];
+//     }
+//     acc[dateKey].push(order);
+//     return acc;
+//   }, {});
+// };
+
 export const groupOrdersByDate = (orders) => {
   return orders.reduce((acc, order) => {
-    // তারিখের শুধুমাত্র YYYY-MM-DD অংশটি নেওয়া হচ্ছে
-    const dateKey = new Date(order.activities[0].timestamp).toISOString().split("T")[0];
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
-    }
+    const timestamp = order?.activities?.[0]?.timestamp;
+    if (!timestamp) return acc; // <-- skip invalid order
+    const dateKey = new Date(timestamp).toISOString().split("T")[0];
+    if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(order);
     return acc;
   }, {});
 };
 
 // sort order by last updated date
+// export const groupOrdersByLastUpdatedDate = (orders) => {
+//   return orders.reduce((acc, order) => {
+//     const dateKey = new Date(
+//       order?.activities[order?.activities?.length - 1].timestamp,
+//     )
+//       .toISOString()
+//       .split("T")[0];
+//     if (!acc[dateKey]) {
+//       acc[dateKey] = [];
+//     }
+//     acc[dateKey].push(order);
+//     return acc;
+//   }, {});
+// };
+
 export const groupOrdersByLastUpdatedDate = (orders) => {
   return orders.reduce((acc, order) => {
-    // তারিখের শুধুমাত্র YYYY-MM-DD অংশটি নেওয়া হচ্ছে
-    const dateKey = new Date(order?.activities[order?.activities?.length - 1].timestamp).toISOString().split("T")[0];
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
-    }
+    const last =
+      order?.activities?.[order?.activities?.length - 1]?.timestamp;
+    if (!last) return acc; // <-- skip
+    const dateKey = new Date(last).toISOString().split("T")[0];
+    if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(order);
     return acc;
   }, {});
 };
-
-
-
-
 
 // --- 5. তারিখকে বাংলা ফরম্যাটে রূপান্তর ---
 // export const formatDate = (dateString) => {

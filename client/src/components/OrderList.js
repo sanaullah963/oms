@@ -9,7 +9,14 @@ import { useSocket } from "@/hooks/useSocket";
 import ToggleSwitch from "./ToggleSwitch";
 
 export default function OrderList({ orders, onOrderUpdate }) {
-  const [groupedOrders, setgroupedOrders] = useState({});
+  // const [groupedOrders, setgroupedOrders] = useState({});
+  const [sortByLast, setSortByLast] = useState(false);
+  const groupedOrders = React.useMemo(() => {
+    if (!orders) return {};
+    return sortByLast
+      ? groupOrdersByLastUpdatedDate(orders)
+      : groupOrdersByDate(orders);
+  }, [orders, sortByLast]);
   // if orders is empty
   if (!orders || orders.length === 0) {
     return (
@@ -19,11 +26,13 @@ export default function OrderList({ orders, onOrderUpdate }) {
     );
   }
 
-
+  // const handleOrderSort = (value) => {
+  //   value
+  //     ? setgroupedOrders(groupOrdersByLastUpdatedDate(orders))
+  //     : setgroupedOrders(groupOrdersByDate(orders)); // true or false
+  // };
   const handleOrderSort = (value) => {
-    value
-      ? setgroupedOrders(groupOrdersByLastUpdatedDate(orders))
-      : setgroupedOrders(groupOrdersByDate(orders)); // true or false
+    setSortByLast(value);
   };
 
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
@@ -58,7 +67,7 @@ export default function OrderList({ orders, onOrderUpdate }) {
             {/* অর্ডারের টাইমলাইন অনুযায়ী সাজানোর জন্য reverse() ব্যবহার করুন (নতুনটি নিচে থাকবে) */}
             {groupedOrders[date].map((order) => (
               <OrderBubble
-                key={order._id}
+                key={order?._id}
                 order={order}
                 onUpdate={onOrderUpdate} // OrderBubble এ পাস করা হলো
               />
