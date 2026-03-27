@@ -87,7 +87,7 @@ router.post("/manual-single", async (req, res) => {
     // multipleOrders === orderBlocks
     let multipleOrders = rawInputText
       .split(multipleOrdersPattern)
-      .filter((content) => content.trim().length > 5);
+      .filter((content) => content.trim().length >= 11);
 
     if (multipleOrders.length === 0) {
       multipleOrders = [rawInputText];
@@ -96,9 +96,14 @@ router.post("/manual-single", async (req, res) => {
     const ordersToSave = []; //const parsedOrders = [];
 
     multipleOrders.map((order) => {
-      const Splitwords = order.trim().split(/\s+/); //for cod and product code
-      const totalCOD =
-        Splitwords.length >= 1 ? Splitwords[Splitwords.length - 1] : "0"; //for cod
+      const Splitwords = order.trim().split(/\s+/);
+       //for cod and product code
+      let lastWord = Splitwords[Splitwords.length - 1];
+      let secondLastWord = Splitwords.length >= 2 ? Splitwords[Splitwords.length - 2] : "empty";
+      const isNumber = /^\d+$/.test(lastWord);// চেক করা হচ্ছে শেষ শব্দটি সংখ্যা কি না
+      // const totalCOD =
+      //   Splitwords.length >= 1 ? Splitwords[Splitwords.length - 1] : "0";
+        const totalCOD = isNumber ? lastWord.length <6 ? lastWord : "0" : "0";
       const productCode =
         Splitwords.length >= 2 ? Splitwords[Splitwords.length - 2] : "empty";
       const parsedData = parseOrderDetails(order); //parce order details
