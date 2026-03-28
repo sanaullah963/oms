@@ -234,8 +234,8 @@ export default function Dashboard() {
       (v, i, a) => v && a.findIndex((t) => t?._id === v?._id) === i,
     );
     }
-    console.log("activeStatus", activeStatus);
-    console.log("safeOrders", safeOrders);
+    // console.log("activeStatus", activeStatus);
+    // console.log("safeOrders", safeOrders);
 
     if (activeStatus === "All") return allPendingOrder;
     // return safeOrders.filter((o) => o?.orderStatus === activeStatus);
