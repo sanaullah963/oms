@@ -106,7 +106,6 @@ export default function Dashboard() {
     fetchOrders();
   }, [fetchOrders]);
 
-
   // ---------------- REAL-TIME SOCKET UPDATE ----------------
   useEffect(() => {
     if (socketData && socketData._id) {
@@ -187,20 +186,32 @@ export default function Dashboard() {
 
   // ---------------- PENDING ORDERS ----------------
   let allPendingOrder = useMemo(() => {
-    return Array.isArray(orders) ? orders.filter(
+    if (!Array.isArray(orders)) return [];
+    //   return Array.isArray(orders) ? orders.filter(
+    //     (order) =>
+    //       order &&
+    //       order.orderStatus !== "Booked" &&
+    //       order.orderStatus !== "Cancelled" &&
+    //       order.orderStatus !== "Confirmed",
+    //   ) : [];
+    // }, [orders]);
+    return orders.filter(
       (order) =>
         order &&
+        order._id && 
         order.orderStatus !== "Booked" &&
         order.orderStatus !== "Cancelled" &&
         order.orderStatus !== "Confirmed",
-    ) : [];
+    );
   }, [orders]);
 
   // ---------------- FILTERED ORDERS ----------------
   const filteredOrders = useMemo(() => {
-    const safeOrders = Array.isArray(orders) ? orders : [];
+    const safeOrders = Array.isArray(orders) ? orders.filter(Boolean) : [];
+    // const safeOrders = Array.isArray(orders) ? orders : [];
     if (query) {
       const localResults = safeOrders.filter((order) => {
+        if (!order) return false; //
         const enNumber = convertNumber(order?.castomerPhone);
         const fields = [
           order?._id,
@@ -215,14 +226,20 @@ export default function Dashboard() {
         return fields.some((f) => f && String(f).toLowerCase().includes(query));
       });
 
-      const combined = [...localResults, ...dbOrders];
+      const combined = [...localResults, ...dbOrders.filter(Boolean)];
+      // const combined = [...localResults, ...dbOrders];
       return combined.filter(
-        (v, i, a) => a.findIndex((t) => t._id === v._id) === i,
-      );
+      //   (v, i, a) => a.findIndex((t) => t._id === v._id) === i,
+
+      (v, i, a) => v && a.findIndex((t) => t?._id === v?._id) === i,
+    );
     }
+    console.log("activeStatus", activeStatus);
+    console.log("safeOrders", safeOrders);
 
     if (activeStatus === "All") return allPendingOrder;
-    return safeOrders.filter((o) => o.orderStatus === activeStatus);
+    // return safeOrders.filter((o) => o?.orderStatus === activeStatus);
+    return safeOrders.filter((o) => o && o.orderStatus === activeStatus);
   }, [orders, dbOrders, query, activeStatus]);
 
   // ---------------- BUTTON STYLE ----------------

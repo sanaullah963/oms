@@ -84,7 +84,6 @@ router.post("/manual-single", async (req, res) => {
     const multipleOrdersPattern =
       /\[\d{1,2}\/\d{1,2},\s\d{1,2}:\d{2}\s(?:AM|PM|am|pm)\]\s[^:]+:\s?/g; //for multiple order
 
-    // multipleOrders === orderBlocks
     let multipleOrders = rawInputText
       .split(multipleOrdersPattern)
       .filter((content) => content.trim().length >= 11);
@@ -97,13 +96,14 @@ router.post("/manual-single", async (req, res) => {
 
     multipleOrders.map((order) => {
       const Splitwords = order.trim().split(/\s+/);
-       //for cod and product code
+      //for cod and product code
       let lastWord = Splitwords[Splitwords.length - 1];
-      let secondLastWord = Splitwords.length >= 2 ? Splitwords[Splitwords.length - 2] : "empty";
-      const isNumber = /^\d+$/.test(lastWord);// চেক করা হচ্ছে শেষ শব্দটি সংখ্যা কি না
+      let secondLastWord =
+        Splitwords.length >= 2 ? Splitwords[Splitwords.length - 2] : "empty";
+      const isNumber = /^\d+$/.test(lastWord); // চেক করা হচ্ছে শেষ শব্দটি সংখ্যা কি না
       // const totalCOD =
       //   Splitwords.length >= 1 ? Splitwords[Splitwords.length - 1] : "0";
-        const totalCOD = isNumber ? lastWord.length <6 ? lastWord : "0" : "0";
+      const totalCOD = isNumber ? (lastWord.length < 6 ? lastWord : "0") : "0";
       const productCode =
         Splitwords.length >= 2 ? Splitwords[Splitwords.length - 2] : "empty";
       const parsedData = parseOrderDetails(order); //parce order details
@@ -139,24 +139,36 @@ router.post("/manual-single", async (req, res) => {
     }
 
     // ২. বাল্ক চেক: সব ফোন নাম্বারগুলো বের করে আনি
-    const phoneNumbers = ordersToSave.map((o) => o.castomerPhone);
+    // const phoneNumbers = ordersToSave.map((o) => o.castomerPhone);
+    // ১. সব অর্ডারের সব ফোন নম্বরগুলোকে একটি ফ্ল্যাট অ্যারেতে নিয়ে আসি
+    const phoneNumbers = ordersToSave.flatMap((o) => o.castomerPhone);
+
     // ৩. ডাটাবেজে একবারে চেক করি কোন নাম্বারে কয়টি অর্ডার আছে কি না
     const historyData = await Order.aggregate([
       { $match: { castomerPhone: { $in: phoneNumbers } } },
       { $group: { _id: "$castomerPhone", count: { $sum: 1 } } },
     ]);
+
     // হিস্ট্রি ডেটাকে একটি সহজ ম্যাপে রূপান্তর করি { "017xxx": 2, "018xxx": 5 }
     const historyMap = {};
     historyData.forEach((item) => {
       historyMap[item._id] = item.count;
     });
 
+
     const ordersToSaveaa = ordersToSave.map((order) => {
+      // যেহেতু অর্ডারে একাধিক নম্বর থাকতে পারে, আমরা সবগুলোর কাউন্ট যোগফল নেব
+      let totalPreviousCount = 0;
+      order.castomerPhone.forEach((num) => {
+        totalPreviousCount += historyMap[num] || 0;
+      });
+
       const previousOrderCount = historyMap[order.castomerPhone] || 0;
       return {
         ...order,
         courierHistory: {
-          our: previousOrderCount.toString(),
+          // our: previousOrderCount.toString(),
+          our: totalPreviousCount.toString(),
         },
       };
     });

@@ -79,13 +79,15 @@ export default function OrderBubble({ order, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     castomerName: order.castomerName,
-    castomerPhone: order.castomerPhone,
+    castomerPhone: Array.isArray(order.castomerPhone)
+      ? order.castomerPhone.join(", ")
+      : order.castomerPhone,
     // castomerAddress: order.castomerAddress,
     totalCOD: order.totalCOD,
     productCode: order.productCode,
     rawInputText: order.rawInputText,
   });
-
+  // console.log("order", order);
   const { socket, isConnected } = useSocket();
 
   useEffect(() => {
@@ -347,16 +349,18 @@ export default function OrderBubble({ order, onUpdate }) {
       return;
     }
     setIsLoading({ ...isLoading, histryBtn: true });
+    console.log('button click');
     socket.emit("allCourierHistory", { orderId: order._id });
     socket.on("distributecourierHistory", (data) => {
       const { result, success } = data;
+      console.log(result);
       if (success) {
         if (onUpdate) {
           onUpdate(result);
         }
         // toast.error(result);
       } else {
-        // toast.error(result);
+        showMessage( "alert", result, null);
       }
       setIsLoading({ ...isLoading, histryBtn: false });
     });
@@ -568,7 +572,7 @@ export default function OrderBubble({ order, onUpdate }) {
                 >
                   {order.castomerPhone}
                 </p> */}
-                {order.castomerPhone.split(", ").map((phone, index) => (
+                {Array.isArray(order.castomerPhone) ? ( order.castomerPhone.map((phone, index) => (
                   <p
                     key={index}
                     className="text-sm font-medium text-blue-600 hover:underline"
@@ -576,7 +580,19 @@ export default function OrderBubble({ order, onUpdate }) {
                   >
                     {index > 0 && " |"} {phone}
                   </p>
-                ))}
+                ))
+                  
+                ) : (
+                  order.castomerPhone.split(", ").map((phone, index) => (
+                    <p
+                      key={index}
+                      className="text-sm font-medium text-blue-600 hover:underline"
+                      onClick={(e) => (e.stopPropagation(), handleCopy(phone))}
+                    >
+                      {index > 0 && " |"} {phone}
+                    </p>
+                  ))
+                )}
               </div>
               <p className="text-xs text-gray-600 mt-1 h-10">
                 {order?.rawInputText || "পাওয়া যায়নি"}
@@ -589,7 +605,7 @@ export default function OrderBubble({ order, onUpdate }) {
               <div className="flex space-x-2">
                 {/* call and number copy */}
                 <a
-                  href={`tel:${order.castomerPhone.split(", ")[0]}`}
+                  href={`tel:${Array.isArray(order.castomerPhone)?order.castomerPhone[0]:order.castomerPhone.split(", ")[0]}`}
                   onClick={() =>
                     navigator.clipboard.writeText(order.castomerPhone)
                   }

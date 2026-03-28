@@ -7,10 +7,8 @@
 function parseOrderDetails(rawText) {
   const data = {
     castomerName: "N/A",
-    castomerPhone: "N/A",
-    // castomerAddress: "N/A",
-    // totalCOD এবং productCode সরাসরি ফ্রন্ট-এন্ড থেকে বা অন্য লজিকে আসবে,
-    // এই ফাংশন কেবল নাম, ফোন, ঠিকানা ফোকাস করছে।
+    // castomerPhone: 'N/A',
+    castomerPhone: ['N/A'],
   };
 
   // --- প্রস্তুতি: ডেটা পরিষ্কার করা ---
@@ -22,16 +20,11 @@ function parseOrderDetails(rawText) {
 
   // --- ১. ফোন নম্বর বের করা (সবচেয়ে নির্ভরযোগ্য) ---
 
-  // const PHONE_REGEX = /(?:\+?88)?\s*(01[0-9]{9}|০১[০-৯]{9})/;
-  // const PHONE_REGEX = /(?:\+?88)?\s*((?:01|০১)(?:[\s.-]*[0-9০-৯]){9})/;
   const PHONE_REGEX = /(?:\+?88)?\s*((?:01|০১)(?:[\s.-]*[0-9০-৯]){9})/g;
-  // const phoneMatch = cleanedText.match(PHONE_REGEX);
-  const matches = [...cleanedText.matchAll(PHONE_REGEX)];
+  const matches = [...cleanedText.matchAll(PHONE_REGEX)];//output as a array-- matches=[]
   let detectedNumbers = [];
 
-  // if (phoneMatch) {
-  //   data.castomerPhone = phoneMatch[1].trim();
-  // }
+
   if (matches.length > 0) {
     detectedNumbers = matches.map((match) => {
       let num = match[1];
@@ -55,11 +48,11 @@ function parseOrderDetails(rawText) {
     });
     // ইউনিক নম্বরগুলো রাখা (ডুপ্লিকেট এড়াতে)
     const uniqueNumbers = [...new Set(detectedNumbers)];
-    data.castomerPhone = uniqueNumbers.join(", ");
+    // data.castomerPhone = uniqueNumbers.join(", ");
+    data.castomerPhone = uniqueNumbers;
   }
 
   // --- ২. নাম বের করা ---
-  // নাম সাধারণত 'নাম:', 'Name:' বা টেক্সট ব্লকের প্রথম লাইনে থাকে।
   const lines = cleanedText
     .split("\n")
     .map((line) => line.trim())

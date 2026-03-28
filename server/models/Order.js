@@ -34,8 +34,8 @@ const ActivitySchema = new mongoose.Schema(
 const OrderSchema = new mongoose.Schema({
   rawInputText: {type: String, required: true},
   castomerName: { type: String, required: true },
-  castomerPhone: { type: String, required: true },
-  // castomerAddress: { type: String, required: true },
+  // castomerPhone: { type: String, required: true },
+  castomerPhone: { type: [String], required: true },
   productCode: { type: String, required: true },
   totalCOD: { type: Number, required: true },
   orderSource: { type: String, default: "Manual Messenger" },

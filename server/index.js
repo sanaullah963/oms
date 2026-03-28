@@ -97,29 +97,44 @@ io.on("connection", (socket) => {
 
     try {
       // get castomerPhone from mongodb by orderId
+
       const phone = await Order.findById(orderId).select("castomerPhone");
-
+      console.log("phone", Array.isArray(phone.castomerPhone));
       if (phone) {
-        const engNum = convertNumber(phone.castomerPhone.split(", ")[0]);
-        const res = await axios.post(
-          "https://bdcourier.com/api/courier-check",
-          { phone: engNum },
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.BDCOURIER_SECRET_KEY}`,
-            },
-          },
-        );
+        let count = {
+          success: 0,
+          cancel: 0,
+        };
+        if  (Array.isArray(phone.castomerPhone))  {
+          // console.log("phone", phone);
+          const orderPromises = phone.castomerPhone.map(async(item)=> {
+            const engNum = convertNumber(item);
 
-        if (res.data) {
-          const success = res.data?.courierData?.summary?.success_parcel;
-          const cancel = res.data?.courierData?.summary?.cancelled_parcel;
+            const res = await axios.post(
+              "https://bdcourier.com/api/courier-check",
+              { phone: engNum },
+              {
+                headers: {
+                  Authorization: `Bearer ${process.env.BDCOURIER_SECRET_KEY}`,
+                },
+              },
+            );
+            // console.log("res", res);
+            if (res.data) {
+              count.success =
+                count.success + res.data?.courierData?.summary?.success_parcel;
+              count.cancel =
+                count.cancel + res.data?.courierData?.summary?.cancelled_parcel;
+            }
+          });
+          const results = await Promise.all(orderPromises);
+          // console.log("results", results);
           const updatedOrder = await Order.findByIdAndUpdate(
             phone._id,
             {
               $set: {
-                "courierHistory.all.success": success,
-                "courierHistory.all.cancel": cancel,
+                "courierHistory.all.success": count.success,
+                "courierHistory.all.cancel": count.cancel,
               },
             },
             { new: true },
@@ -134,11 +149,6 @@ io.on("connection", (socket) => {
             success: false,
           });
         }
-      } else {
-        socket.emit("distributecourierHistory", {
-          result: "phone not found",
-          success: false,
-        });
       }
     } catch (err) {
       console.error("Error getting order history:", err);
@@ -208,4 +218,3 @@ app.get("/", (req, res) => {
 app.get("/ping", (req, res) => {
   res.status(200).send("ping route");
 });
-
