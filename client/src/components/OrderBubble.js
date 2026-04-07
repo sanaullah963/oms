@@ -371,7 +371,7 @@ export default function OrderBubble({ order, onUpdate }) {
     order.orderStatus === "Pending"
       ? "text-yellow-600 bg-yellow-100"
       : order.orderStatus === "Confirmed" || order.orderStatus === "Booked"
-        ? "text-green-600 bg-green-100"
+        ? "text-green-600 bg-green-200"
         : order.orderStatus === "Cancelled"
           ? "text-red-600 bg-red-100"
           : "text-indigo-600 bg-indigo-100";
@@ -477,12 +477,12 @@ export default function OrderBubble({ order, onUpdate }) {
           // --- ডিসপ্লে মোড
           <>
             <div
-              className={`cursor-pointer ${
+              className={`cursor-pointer  ${
                 loading ? "opacity-70 pointer-events-none" : ""
               }`}
               onClick={() => !loading && setIsExpanded(!isExpanded)}
             >
-              <div className="flex justify-between items-start mb-1">
+              <div className="flex justify-between items-start mb-1 ">
                 {/* স্ট্যাটাস */}
                 <div className="">
                   <div className="flex gap-2">
@@ -562,16 +562,8 @@ export default function OrderBubble({ order, onUpdate }) {
                 <span> {order.totalCOD} </span> --
                 <span className="text-purple-600"> {order.productCode} </span>
               </p>
+              {/* phone number */}
               <div className="flex items-center gap-1">
-                {/* <p
-                  className="text-sm font-medium text-blue-600 hover:underline"
-                  onClick={(e) => (
-                    e.stopPropagation(),
-                    handleCopy(order.castomerPhone.split(", ")[0])
-                  )}
-                >
-                  {order.castomerPhone}
-                </p> */}
                 {Array.isArray(order.castomerPhone) ? ( order.castomerPhone.map((phone, index) => (
                   <p
                     key={index}

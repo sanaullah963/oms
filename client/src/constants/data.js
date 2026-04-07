@@ -40,10 +40,10 @@ export const STATUS_SHORTCUTS = [
 export const STATUS_TABS = [
   { key: "Pending", label: "পেন্ডিং" },
   { key: "All", label: "সব" },
+  { key: "Confirmed", label: "কনফার্মড" },
   { key: "Custom", label: "কাস্টম" },
   { key: "Call Not Received", label: "কল ধরেনি" },
   { key: "Phone Off", label: "ফোন বন্ধ" },
-  { key: "Confirmed", label: "কনফার্মড" },
   { key: "Booked", label: "এন্ট্রি" },
   { key: "Cancelled", label: "বাতিল" },
 ];
@@ -161,7 +161,7 @@ export const convertNumber = (input) => {
   const englishDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
   let output = input;
-  console.log("output", output);
+  // console.log("output", output);
   for (let i = 0; i < banglaDigits.length; i++) {
     output = output.replace(new RegExp(banglaDigits[i], "g"), englishDigits[i]);
   }

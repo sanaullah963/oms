@@ -139,10 +139,9 @@ router.post("/manual-single", async (req, res) => {
     }
 
     // ২. বাল্ক চেক: সব ফোন নাম্বারগুলো বের করে আনি
-    // const phoneNumbers = ordersToSave.map((o) => o.castomerPhone);
     // ১. সব অর্ডারের সব ফোন নম্বরগুলোকে একটি ফ্ল্যাট অ্যারেতে নিয়ে আসি
     const phoneNumbers = ordersToSave.flatMap((o) => o.castomerPhone);
-
+  
     // ৩. ডাটাবেজে একবারে চেক করি কোন নাম্বারে কয়টি অর্ডার আছে কি না
     const historyData = await Order.aggregate([
       { $match: { castomerPhone: { $in: phoneNumbers } } },
@@ -158,12 +157,12 @@ router.post("/manual-single", async (req, res) => {
 
     const ordersToSaveaa = ordersToSave.map((order) => {
       // যেহেতু অর্ডারে একাধিক নম্বর থাকতে পারে, আমরা সবগুলোর কাউন্ট যোগফল নেব
-      let totalPreviousCount = 0;
-      order.castomerPhone.forEach((num) => {
-        totalPreviousCount += historyMap[num] || 0;
-      });
+      // let totalPreviousCount = 0;
+      // order.castomerPhone.forEach((num) => {
+      //   totalPreviousCount += historyMap[num] || 0;
+      // });
+      let totalPreviousCount = historyData.length;
 
-      const previousOrderCount = historyMap[order.castomerPhone] || 0;
       return {
         ...order,
         courierHistory: {
