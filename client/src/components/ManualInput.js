@@ -4,12 +4,17 @@ import axios from "axios";
 import { IoIosSend } from "react-icons/io";
 import { RiLoader2Fill } from "react-icons/ri";
 import { useSocket } from "../hooks/useSocket";
+import ShowMessage from "./ShowMessage";
+
+
+
 
 export default function ManualInput({ onUpdate }) {
   // Socket Hook Access
   const { socket, isConnected } = useSocket();
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
+  // const [message, setMessage] = useState("");
   const [message, setMessage] = useState("");
   const [isClient, setIsClient] = useState(false);
 
@@ -39,11 +44,9 @@ export default function ManualInput({ onUpdate }) {
       setLoading(false);
       return;
     }
-
     // Check if input is empty after trim
     if (inputValue.length < 11) {
       setMessage("⚠️ অনুগ্রহ করে অর্ডার বিবরণ লিখুন।");
-
       setTimeout(() => {
         setMessage("");
       }, 3000);
@@ -58,7 +61,6 @@ export default function ManualInput({ onUpdate }) {
     // --------- send data to server (steadfast) ---------
     // 1. HTTP POST Request (ডেটাবেসে সেভ করার জন্য)
     try {
-      // 2. HTTP POST Request (ডেটাবেসে সেভ করার জন্য)
       const httpResponse = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/orders/manual-single`,
         dataToSend,
@@ -111,21 +113,23 @@ export default function ManualInput({ onUpdate }) {
       : "text-red-600"
     : "text-gray-500";
 
+
+
   return (
     <div className=" w-full">
       {/* Message Display Area (Floating above input) */}
       {message && (
-        <div
-          className={`mt-2 mb-2 p-2 rounded-lg text-sm font-medium transition duration-300 shadow-md ${
-            message.startsWith("✅")
-              ? "bg-green-100 border-l-4 border-green-500 text-green-700"
-              : "bg-red-100 border-l-4 border-red-500 text-red-700"
-          }`}
-        >
-          {message}
-        </div>
+        <ShowMessage message={message} type={'success'} />
+        // <div
+        //   className={`mt-2 mb-2 p-2 rounded-lg text-sm font-medium transition duration-300 shadow-md ${
+        //     message.startsWith("✅")
+        //       ? "bg-green-100 border-l-4 border-green-500 text-green-700"
+        //       : "bg-red-100 border-l-4 border-red-500 text-red-700"
+        //   }`}
+        // >
+        //   {message}
+        // </div>
       )}
-
       {/*  ইনপুট ফর্ম */}
       <form onSubmit={handleSubmit} className="flex items-end">
         {/* টেক্সট এরিয়া - হোয়াটসঅ্যাপ মেসেজ বক্সের মতো */}

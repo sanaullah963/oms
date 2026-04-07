@@ -4,6 +4,7 @@ const axios = require("axios");
 const Order = require("../models/Order");
 const { parseOrderDetails } = require("../utils/parser"); // পরবর্তী ধাপে তৈরি করা হবে
 const { bookSteadfast } = require("../controllers/steadfastController");
+const { bookSteadfastBulk } = require("../controllers/bookSteadfastBulk");
 
 router.get("/", async (req, res) => {
   try {
@@ -294,5 +295,8 @@ router.post("/webhook/steadfast", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+// --------steadfast bulk booking
+router.post("/courier/steadfast-bulk", bookSteadfastBulk);
+
 
 module.exports = router;

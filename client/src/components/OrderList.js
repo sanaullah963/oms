@@ -1,16 +1,20 @@
+'use client';
 import React, { useState } from "react";
 import OrderBubble from "./OrderBubble";
 import {
   groupOrdersByDate,
   formatDate,
   groupOrdersByLastUpdatedDate,
+  STATUS_TABS,
 } from "../constants/data";
 import { useSocket } from "@/hooks/useSocket";
 import ToggleSwitch from "./ToggleSwitch";
+import axios from "axios";
 
-export default function OrderList({ orders, onOrderUpdate }) {
+export default function OrderList({ orders, onOrderUpdate,activeStatus }) {
   // const [groupedOrders, setgroupedOrders] = useState({});
   const [sortByLast, setSortByLast] = useState(false);
+  const [lodding, setLoading] = useState(false);
   const groupedOrders = React.useMemo(() => {
     if (!orders) return {};
     return sortByLast
@@ -26,14 +30,23 @@ export default function OrderList({ orders, onOrderUpdate }) {
     );
   }
 
-  // const handleOrderSort = (value) => {
-  //   value
-  //     ? setgroupedOrders(groupOrdersByLastUpdatedDate(orders))
-  //     : setgroupedOrders(groupOrdersByDate(orders)); // true or false
-  // };
   const handleOrderSort = (value) => {
     setSortByLast(value);
   };
+
+  // handel bulk input
+  const handelBulkInput = async() => {
+    setLoading(true);
+    const ordersIds = orders.map((order) => order._id);
+
+    if (!ordersIds) return;
+    const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/courier/steadfast-bulk`,{
+      orders_ids:ordersIds,
+    })
+    console.log(res.data);
+    setLoading(false);
+  }
+
 
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
   const sortedDates = Object.keys(groupedOrders);
@@ -46,6 +59,9 @@ export default function OrderList({ orders, onOrderUpdate }) {
         offText="অ্যাড করার সময় অনুসারে"
         onText="সর্বশেষ অপডেট অনুসারে"
       />
+      {/* bulk input button */}
+      {activeStatus === "Confirmed" && <button className="bg-green-600 text-white px-4 py-2 rounded-md" onClick={handelBulkInput}>{lodding ? "লোডিং..." : "BUlK  INPUT"}</button>}
+      
 
       {sortedDates.map((date) => (
         <div key={date}>

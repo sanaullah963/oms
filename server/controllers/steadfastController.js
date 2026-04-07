@@ -276,7 +276,7 @@ exports.bookSteadfast = async (req, res) => {
         },
       }
     );
-    console.log("response", response.data);
+    // console.log("response", response.data);
     // ৬) রেসপন্স চেক এবং ডাটাবেজ আপডেট
     if (response?.data?.status !== 200) {
       order.courier = {

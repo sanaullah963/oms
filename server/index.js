@@ -119,7 +119,6 @@ io.on("connection", (socket) => {
                 },
               },
             );
-            // console.log("res", res);
             if (res.data) {
               count.success =
                 count.success + res.data?.courierData?.summary?.success_parcel;

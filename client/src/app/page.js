@@ -198,7 +198,7 @@ export default function Dashboard() {
     return orders.filter(
       (order) =>
         order &&
-        order._id && 
+        order._id &&
         order.orderStatus !== "Booked" &&
         order.orderStatus !== "Cancelled" &&
         order.orderStatus !== "Confirmed",
@@ -229,10 +229,10 @@ export default function Dashboard() {
       const combined = [...localResults, ...dbOrders.filter(Boolean)];
       // const combined = [...localResults, ...dbOrders];
       return combined.filter(
-      //   (v, i, a) => a.findIndex((t) => t._id === v._id) === i,
+        //   (v, i, a) => a.findIndex((t) => t._id === v._id) === i,
 
-      (v, i, a) => v && a.findIndex((t) => t?._id === v?._id) === i,
-    );
+        (v, i, a) => v && a.findIndex((t) => t?._id === v?._id) === i,
+      );
     }
     // console.log("activeStatus", activeStatus);
     // console.log("safeOrders", safeOrders);
@@ -254,8 +254,6 @@ export default function Dashboard() {
   // ---------------- UI ----------------
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-1">
-      {/* Header / Status Tabs */}
-
       <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
         {/* search bar */}
         <div className="flex justify-between ">
@@ -288,6 +286,7 @@ export default function Dashboard() {
           </h1>
         </div>
 
+        {/* status bar section */}
         <div className="flex overflow-x-auto w-auto gap-0.5 md:gap-2 whitespace-nowrap">
           {STATUS_TABS.map((tab) => (
             <button
@@ -322,6 +321,7 @@ export default function Dashboard() {
           <OrderList
             orders={filteredOrders}
             onOrderUpdate={handleOrderUpdate}
+            activeStatus={activeStatus}
           />
         )}
       </div>
