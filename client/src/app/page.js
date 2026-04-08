@@ -5,26 +5,20 @@ import OrderList from "../components/OrderList";
 import ManualInput from "../components/ManualInput";
 import { useSocket } from "../hooks/useSocket";
 import { convertNumber, STATUS_TABS } from "../constants/data";
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Dashboard() {
+
   const [orders, setOrders] = useState([]);
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
   const { socket, data: socketData } = useSocket();
   const [isAnimating, setIsAnimating] = useState(false);
-
-  // ---------------- DB search state ----------------
   const [dbOrders, setDbOrders] = useState([]);
   const [dbLoading, setDbLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const query = searchQuery.toLowerCase().trim();
 
-  // ---------------- SWIPE REFS (NEW) ----------------
-  // const touchStartX = useRef(0);
-  // const touchEndX = useRef(0);
-  // const touchStartY = useRef(0);
 
   // ---------------- FETCH ALL ORDERS ----------------
   const fetchOrders = useCallback(async () => {
@@ -42,6 +36,7 @@ export default function Dashboard() {
   }, []);
 
   // ---------------- SOCKET SEARCH LISTENER ----------------
+  console.log('socket', socket)
   useEffect(() => {
     if (!socket) return;
 
@@ -147,42 +142,7 @@ export default function Dashboard() {
     };
   }, [socket]);
 
-  // ---------------- SWIPE HANDLERS (NEW) ----------------
-  // const handleTouchStart = (e) => {
-  //   touchStartX.current = e.touches[0].clientX;
-  //   touchStartY.current = e.touches[0].clientY;
-  // };
 
-  // const handleTouchMove = (e) => {
-  //   touchEndX.current = e.touches[0].clientX;
-  // };
-
-  // const handleTouchEnd = (e) => {
-  //   const diffX = touchStartX.current - touchEndX.current;
-  //   const diffY = Math.abs(
-  //     touchStartY.current - (e.changedTouches?.[0]?.clientY || 0),
-  //   );
-
-  //   // ❌ small movement ignore
-  //   if (Math.abs(diffX) < 150) return;
-
-  //   // ❌ vertical scroll হলে swipe cancel
-  //   if (Math.abs(diffX) < diffY) return;
-
-  //   const currentIndex = STATUS_TABS.findIndex(
-  //     (tab) => tab.key === activeStatus,
-  //   );
-
-  //   // swipe left → next tab
-  //   if (diffX > 0 && currentIndex < STATUS_TABS.length - 1) {
-  //     setActiveStatus(STATUS_TABS[currentIndex + 1].key);
-  //   }
-
-  //   // swipe right → previous tab
-  //   if (diffX < 0 && currentIndex > 0) {
-  //     setActiveStatus(STATUS_TABS[currentIndex - 1].key);
-  //   }
-  // };
 
   // ---------------- PENDING ORDERS ----------------
   let allPendingOrder = useMemo(() => {
