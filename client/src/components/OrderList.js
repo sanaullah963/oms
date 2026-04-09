@@ -43,7 +43,7 @@ export default function OrderList({ orders, onOrderUpdate,activeStatus }) {
     const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/courier/steadfast-bulk`,{
       orders_ids:ordersIds,
     })
-    console.log(res.data);
+    // console.log(res.data);
     setLoading(false);
   }
 

@@ -250,8 +250,8 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
-        <div className="">
-          {searchQuery && <p>search result {filteredOrders.length}</p>}
+        <div className="ms-2 text-purple-500 font-bold">
+          {searchQuery && <p>{filteredOrders.length} Result </p>}
           {/* <p>all search result 0</p> */}
         </div>
       </header>
