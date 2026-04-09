@@ -213,7 +213,7 @@ exports.bookSteadfast = async (req, res) => {
     } else if (typeof order.castomerPhone === "string") {
       primaryPhone = convertNumber(order.castomerPhone);
     }
-    console.log("order.castomerPhone", order.castomerPhone);
+    // console.log("order.castomerPhone", order.castomerPhone);
     // ৩) ভ্যালিডেশন চেক
     // নাম চেক
     if (!order.castomerName || order.castomerName.trim() === "" || order.castomerName === "N/A") {
@@ -253,7 +253,7 @@ exports.bookSteadfast = async (req, res) => {
     // }
 
     // ৪) API Body তৈরি করা
-    console.log("primaryPhone", primaryPhone);
+    // console.log("primaryPhone", primaryPhone);
     const requestData = {
       // recipient_phone: order.castomerPhone,
       invoice: order._id.toString(),

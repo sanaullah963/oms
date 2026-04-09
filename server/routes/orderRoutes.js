@@ -95,7 +95,7 @@ router.post("/manual-single", async (req, res) => {
 
     const ordersToSave = []; //const parsedOrders = [];
 
-    multipleOrders.map((order) => {
+    multipleOrders.map((order, i) => {
       const Splitwords = order.trim().split(/\s+/);
       //for cod and product code
       let lastWord = Splitwords[Splitwords.length - 1];
@@ -110,7 +110,7 @@ router.post("/manual-single", async (req, res) => {
       const parsedData = parseOrderDetails(order); //parce order details
 
       // খ. ডেটা যাচাই
-
+      // console.log("order : ", i, "--", order);
       if (parsedData.castomerName && parsedData.castomerPhone) {
         ordersToSave.push({
           rawInputText: order,
@@ -142,27 +142,38 @@ router.post("/manual-single", async (req, res) => {
     // ২. বাল্ক চেক: সব ফোন নাম্বারগুলো বের করে আনি
     // ১. সব অর্ডারের সব ফোন নম্বরগুলোকে একটি ফ্ল্যাট অ্যারেতে নিয়ে আসি
     const phoneNumbers = ordersToSave.flatMap((o) => o.castomerPhone);
-  
+    // console.log("all number arr fron ordertosave : ", phoneNumbers); //get all numbers from ordersToSave
     // ৩. ডাটাবেজে একবারে চেক করি কোন নাম্বারে কয়টি অর্ডার আছে কি না
+    // const historyData = await Order.aggregate([
+    //   { $match: { castomerPhone: { $in: phoneNumbers } } },
+    //   { $group: { _id: "$castomerPhone", count: { $sum: 1 } } },
+    // ]);
     const historyData = await Order.aggregate([
+      { $unwind: "$castomerPhone" },
       { $match: { castomerPhone: { $in: phoneNumbers } } },
-      { $group: { _id: "$castomerPhone", count: { $sum: 1 } } },
+      {
+        $group: {
+          _id: "$castomerPhone",
+          count: { $sum: 1 },
+        },
+      },
     ]);
-
+    // console.log("historyData form db : ", historyData);
     // হিস্ট্রি ডেটাকে একটি সহজ ম্যাপে রূপান্তর করি { "017xxx": 2, "018xxx": 5 }
     const historyMap = {};
     historyData.forEach((item) => {
       historyMap[item._id] = item.count;
     });
-
+    // console.log("historyMap after foreach : ", historyMap);
 
     const ordersToSaveaa = ordersToSave.map((order) => {
       // যেহেতু অর্ডারে একাধিক নম্বর থাকতে পারে, আমরা সবগুলোর কাউন্ট যোগফল নেব
-      // let totalPreviousCount = 0;
-      // order.castomerPhone.forEach((num) => {
-      //   totalPreviousCount += historyMap[num] || 0;
-      // });
-      let totalPreviousCount = historyData.length;
+      let totalPreviousCount = 0;
+      order.castomerPhone.forEach((num) => {
+        // console.log("totalPreviousCount : ", totalPreviousCount);
+        totalPreviousCount += historyMap[num] || 0;
+      });
+      // let totalPreviousCount = historyData.length;
 
       return {
         ...order,
@@ -276,7 +287,7 @@ router.post("/webhook/steadfast", async (req, res) => {
       updateData,
       { new: true },
     );
-    console.log("updatedOrder=======", updatedOrder);
+    // console.log("updatedOrder=======", updatedOrder);
     if (updatedOrder) {
       // ২. রিয়েল-টাইম ফ্রন্টএন্ড আপডেট (Admin Dashboard এ সরাসরি পরিবর্তন দেখা যাবে)
       if (io) {
@@ -297,6 +308,5 @@ router.post("/webhook/steadfast", async (req, res) => {
 });
 // --------steadfast bulk booking
 router.post("/courier/steadfast-bulk", bookSteadfastBulk);
-
 
 module.exports = router;

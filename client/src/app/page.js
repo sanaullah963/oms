@@ -36,7 +36,8 @@ export default function Dashboard() {
   }, []);
 
   // ---------------- SOCKET SEARCH LISTENER ----------------
-  console.log('socket', socket)
+  // console.log('socket', socket)
+  // console.log('socketData', socketData)
   useEffect(() => {
     if (!socket) return;
 
@@ -147,14 +148,6 @@ export default function Dashboard() {
   // ---------------- PENDING ORDERS ----------------
   let allPendingOrder = useMemo(() => {
     if (!Array.isArray(orders)) return [];
-    //   return Array.isArray(orders) ? orders.filter(
-    //     (order) =>
-    //       order &&
-    //       order.orderStatus !== "Booked" &&
-    //       order.orderStatus !== "Cancelled" &&
-    //       order.orderStatus !== "Confirmed",
-    //   ) : [];
-    // }, [orders]);
     return orders.filter(
       (order) =>
         order &&
@@ -168,7 +161,7 @@ export default function Dashboard() {
   // ---------------- FILTERED ORDERS ----------------
   const filteredOrders = useMemo(() => {
     const safeOrders = Array.isArray(orders) ? orders.filter(Boolean) : [];
-    // const safeOrders = Array.isArray(orders) ? orders : [];
+
     if (query) {
       const localResults = safeOrders.filter((order) => {
         if (!order) return false; //
@@ -187,18 +180,13 @@ export default function Dashboard() {
       });
 
       const combined = [...localResults, ...dbOrders.filter(Boolean)];
-      // const combined = [...localResults, ...dbOrders];
       return combined.filter(
-        //   (v, i, a) => a.findIndex((t) => t._id === v._id) === i,
 
         (v, i, a) => v && a.findIndex((t) => t?._id === v?._id) === i,
       );
     }
-    // console.log("activeStatus", activeStatus);
-    // console.log("safeOrders", safeOrders);
 
     if (activeStatus === "All") return allPendingOrder;
-    // return safeOrders.filter((o) => o?.orderStatus === activeStatus);
     return safeOrders.filter((o) => o && o.orderStatus === activeStatus);
   }, [orders, dbOrders, query, activeStatus]);
 
@@ -262,6 +250,10 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
+        <div className="">
+          {searchQuery && <p>search result {filteredOrders.length}</p>}
+          {/* <p>all search result 0</p> */}
+        </div>
       </header>
 
       {/* Main Content Area */}
@@ -269,9 +261,6 @@ export default function Dashboard() {
         className={`flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 pb-36
     ${isAnimating ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0"}
   `}
-        // onTouchStart={handleTouchStart}
-        // onTouchMove={handleTouchMove}
-        // onTouchEnd={handleTouchEnd}
       >
         {loading ? (
           <div className="text-center py-10 text-gray-10">

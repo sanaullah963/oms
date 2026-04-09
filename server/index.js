@@ -99,7 +99,7 @@ io.on("connection", (socket) => {
       // get castomerPhone from mongodb by orderId
 
       const phone = await Order.findById(orderId).select("castomerPhone");
-      console.log("phone", Array.isArray(phone.castomerPhone));
+      // console.log("phone", Array.isArray(phone.castomerPhone));
       if (phone) {
         let count = {
           success: 0,

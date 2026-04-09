@@ -349,11 +349,11 @@ export default function OrderBubble({ order, onUpdate }) {
       return;
     }
     setIsLoading({ ...isLoading, histryBtn: true });
-    console.log('button click');
+    // console.log('button click');
     socket.emit("allCourierHistory", { orderId: order._id });
     socket.on("distributecourierHistory", (data) => {
       const { result, success } = data;
-      console.log(result);
+      // console.log(result);
       if (success) {
         if (onUpdate) {
           onUpdate(result);
