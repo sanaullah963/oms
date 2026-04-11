@@ -778,7 +778,7 @@ export default function OrderBubble({ order, onUpdate }) {
                 {/* display nots */}
                 <p className="text-xs"> Note :- {order?.note} </p>
                 {/* টাইমলাইন এবং নোট সেকশন */}
-                <div className="space-y-4 max-h-screen overflow-y-auto mt-1 pt-2">
+                <div className="space-y-4 h-[60vh] overflow-y-auto mt-1 pt-2">
                   {sortedActivities.map((activity, index) => (
                     <div key={index} className="flex items-start text-xs">
                       <div className="w-1/4 flex flex-col">
