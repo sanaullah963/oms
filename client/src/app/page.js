@@ -217,7 +217,7 @@ export default function Dashboard() {
               {searchQuery && (
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-10"
+                  className="absolute inset-y-0 right-0.75 my-0.5 flex items-center text-gray-10 bg-red-400 rounded-md px-2"
                   onClick={() => setSearchQuery("")}
                 >
                   X
@@ -275,7 +275,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* input section Fixed Bottom Input */}
+      {/* manual input order  */}
       <div className="fixed bottom-0 left-0 right-0 px-1 py-2 bg-white border-t border-gray-200 shadow-2xl z-20">
         <ManualInput onUpdate={handleOrderUpdate} />
       </div>
