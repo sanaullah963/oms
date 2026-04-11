@@ -15,7 +15,7 @@ import LoadingSpinner from "./LoadingSpinner";
 // API Endpoint Configuration
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
 
-// ------------- ২. কাস্টম Modal UI কম্পোনেন্ট --- 
+// ------------- ২. কাস্টম Modal UI কম্পোনেন্ট ---
 const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {
   if (!isVisible) return null;
 
@@ -77,16 +77,30 @@ export default function OrderBubble({ order, onUpdate }) {
 
   // --- নতুন স্টেট: এডিটিং মোড এবং ফর্ম ডেটা ---
   const [isEditing, setIsEditing] = useState(false);
+  // const [formData, setFormData] = useState({
+  //   castomerName: order.castomerName,
+  //   castomerPhone: Array.isArray(order.castomerPhone)
+  //     ? order.castomerPhone.join(", ")
+  //     : order.castomerPhone,
+  //   // castomerAddress: order.castomerAddress,
+  //   totalCOD: order.totalCOD,
+  //   productCode: order.productCode,
+  //   rawInputText: order.rawInputText,
+  // });
   const [formData, setFormData] = useState({
     castomerName: order.castomerName,
     castomerPhone: Array.isArray(order.castomerPhone)
-      ? order.castomerPhone.join(", ")
-      : order.castomerPhone,
-    // castomerAddress: order.castomerAddress,
+      ? order.castomerPhone
+      : order.castomerPhone
+        ? order.castomerPhone.split(",").map((p) => p.trim())
+        : [""],
     totalCOD: order.totalCOD,
     productCode: order.productCode,
     rawInputText: order.rawInputText,
   });
+  const [touchedPhones, setTouchedPhones] = useState(
+    new Array(formData.castomerPhone.length).fill(false),
+  );
   // console.log("order", order);
   const { socket, isConnected } = useSocket();
 
@@ -139,6 +153,15 @@ export default function OrderBubble({ order, onUpdate }) {
   const handleUpdateOrder = async () => {
     setLoading(true);
     // ইনপুট ভ্যালিডেশন
+    const invalid = formData.castomerPhone.some(
+      (phone, index) => touchedPhones[index] && !/^\d{11}$/.test(phone),
+    );
+
+    if (invalid) {
+      alert("কোন একটা নাম্বার 11 ডিজিট নয়");
+      setLoading(false);
+      return;
+    }
     if (
       !formData.castomerName ||
       !formData.castomerPhone ||
@@ -360,12 +383,55 @@ export default function OrderBubble({ order, onUpdate }) {
         }
         // toast.error(result);
       } else {
-        showMessage( "alert", result, null);
+        showMessage("alert", result, null);
       }
       setIsLoading({ ...isLoading, histryBtn: false });
     });
   };
 
+  const handlePhoneChange = (index, value) => {
+    const updatedPhones = [...formData.castomerPhone];
+    updatedPhones[index] = value;
+    setFormData((prev) => ({
+      ...prev,
+      castomerPhone: updatedPhones,
+    }));
+  };
+
+  const handleAddPhone = () => {
+    setFormData((prev) => ({
+      ...prev,
+      castomerPhone: [...prev.castomerPhone, ""],
+    }));
+    // নতুনটা touched true
+    setTouchedPhones((prev) => [...prev, true]);
+  };
+
+  const handleDeletePhone = (index) => {
+    const updatedPhones = formData.castomerPhone.filter((_, i) => i !== index);
+    setFormData((prev) => ({
+      ...prev,
+      castomerPhone: updatedPhones.length ? updatedPhones : [""],
+    }));
+
+    // number শুধু edit করলে touched true
+    const handlePhoneChange = (index, value) => {
+      const cleaned = value.replace(/\D/g, "");
+      const updatedPhones = [...formData.castomerPhone];
+      updatedPhones[index] = cleaned;
+      setFormData((prev) => ({
+        ...prev,
+        castomerPhone: updatedPhones,
+      }));
+
+      // শুধু edit করলে touched true
+      setTouchedPhones((prev) => {
+        const copy = [...prev];
+        copy[index] = true;
+        return copy;
+      });
+    };
+  };
   // স্ট্যাটাস কালার ডাইনামিকালি সেট করা
   const statusColor =
     order.orderStatus === "Pending"
@@ -434,7 +500,7 @@ export default function OrderBubble({ order, onUpdate }) {
               disabled={loading}
             />
             {/* কাস্টমার ফোন */}
-            <label htmlFor="phone" className="text-sm">
+            {/* <label htmlFor="phone" className="text-sm">
               Phone
             </label>
             <input
@@ -445,7 +511,68 @@ export default function OrderBubble({ order, onUpdate }) {
               placeholder="কাস্টমার ফোন"
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
               disabled={loading}
-            />
+            /> */}
+            {/* phone number edit section */}
+            <label className="text-sm">Phone</label>
+            {formData.castomerPhone.map((phone, index) => {
+              const isTouched = touchedPhones[index];
+              const isValid = /^\d{11}$/.test(phone);
+              return (
+                <div key={index} className="mb-2">
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => handlePhoneChange(index, e.target.value)}
+                      onFocus={() => {
+                        setTouchedPhones((prev) => {
+                          const copy = [...prev];
+                          copy[index] = true;
+                          return copy;
+                        });
+                      }}
+                      placeholder={`Phone ${index + 1}`}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm
+                        ${
+                          isTouched
+                            ? isValid
+                              ? "border-green-500"
+                              : "border-red-500"
+                            : "border-gray-300"
+                        }`}
+                      disabled={loading}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePhone(index)}
+                      className="px-2 py-1 bg-red-500 text-white rounded"
+                      disabled={loading}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                  {isTouched && (
+                    <p
+                      className={`text-xs mt-1 ${
+                        isValid ? "text-green-600" : "text-red-500"
+                      }`}
+                    >
+                      {isValid ? "✓ Valid number" : "Phone must be 11 digits"}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleAddPhone}
+                className="mt-1 p-2 bg-green-600 text-white rounded text-sm"
+              >
+                + Add Number
+              </button>
+            </div>
             {/* COD */}
             <label htmlFor="totalCOD" className="text-sm">
               COD
@@ -564,27 +691,31 @@ export default function OrderBubble({ order, onUpdate }) {
               </p>
               {/* phone number */}
               <div className="flex items-center gap-1">
-                {Array.isArray(order.castomerPhone) ? ( order.castomerPhone.map((phone, index) => (
-                  <p
-                    key={index}
-                    className="text-sm font-medium text-blue-600 hover:underline"
-                    onClick={(e) => (e.stopPropagation(), handleCopy(phone))}
-                  >
-                    {index > 0 && " |"} {phone}
-                  </p>
-                ))
-                  
-                ) : (
-                  order.castomerPhone.split(", ").map((phone, index) => (
-                    <p
-                      key={index}
-                      className="text-sm font-medium text-blue-600 hover:underline"
-                      onClick={(e) => (e.stopPropagation(), handleCopy(phone))}
-                    >
-                      {index > 0 && " |"} {phone}
-                    </p>
-                  ))
-                )}
+                {Array.isArray(order.castomerPhone)
+                  ? order.castomerPhone.map((phone, index) => (
+                      <p
+                        key={index}
+                        className="text-sm font-medium text-blue-600 hover:underline"
+                        onClick={(e) => (
+                          e.stopPropagation(),
+                          handleCopy(phone)
+                        )}
+                      >
+                        {index > 0 && " |"} {phone}
+                      </p>
+                    ))
+                  : order.castomerPhone.split(", ").map((phone, index) => (
+                      <p
+                        key={index}
+                        className="text-sm font-medium text-blue-600 hover:underline"
+                        onClick={(e) => (
+                          e.stopPropagation(),
+                          handleCopy(phone)
+                        )}
+                      >
+                        {index > 0 && " |"} {phone}
+                      </p>
+                    ))}
               </div>
               <p className="text-xs text-gray-600 mt-1 h-10">
                 {order?.rawInputText || "পাওয়া যায়নি"}
@@ -597,7 +728,7 @@ export default function OrderBubble({ order, onUpdate }) {
               <div className="flex space-x-2">
                 {/* call and number copy */}
                 <a
-                  href={`tel:${Array.isArray(order.castomerPhone)?order.castomerPhone[0]:order.castomerPhone.split(", ")[0]}`}
+                  href={`tel:${Array.isArray(order.castomerPhone) ? order.castomerPhone[0] : order.castomerPhone.split(", ")[0]}`}
                   onClick={() =>
                     navigator.clipboard.writeText(order.castomerPhone)
                   }
@@ -782,7 +913,7 @@ export default function OrderBubble({ order, onUpdate }) {
                   {sortedActivities.map((activity, index) => (
                     <div key={index} className="flex items-start text-xs">
                       <div className="w-1/4 flex flex-col">
-                      {/* formate date */}
+                        {/* formate date */}
                         <span className={` font-bold text-gray-500 `}>
                           {formatDate(activity.timestamp)}
                         </span>
@@ -790,12 +921,15 @@ export default function OrderBubble({ order, onUpdate }) {
                         <span className={` font-bold`}>
                           {formatTime(activity.timestamp)}
                         </span>
-                        
                       </div>
                       {/* right section */}
                       <div className="w-3/4 pl-3 border-l-2 border-dashed border-gray-200">
                         <p className="font-semibold text-gray-800">
-                         <span className="text-purple-600"> {activity?.actor || activity?.author}</span> - {activity?.type}
+                          <span className="text-purple-600">
+                            {" "}
+                            {activity?.actor || activity?.author}
+                          </span>{" "}
+                          - {activity?.type}
                         </p>
                         <p className="text-gray-600 mt-0.5">
                           {/* {activity?.actor || activity?.author} */}
