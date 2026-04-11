@@ -15,7 +15,7 @@ import LoadingSpinner from "./LoadingSpinner";
 // API Endpoint Configuration
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
 
-// ------------- ২. কাস্টম Modal UI কম্পোনেন্ট ---
+// ------------- ২. কাস্টম Modal UI কম্পোনেন্ট --- 
 const CustomModal = ({ isVisible, type, message, onConfirm, onCancel }) => {
   if (!isVisible) return null;
 
@@ -740,7 +740,7 @@ export default function OrderBubble({ order, onUpdate }) {
             {/* --- কলাপসিবল ডিটেইলস সেকশন --- */}
             <div
               className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                isExpanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
+                isExpanded ? "opacity-100 overflow-auto" : "max-h-0 opacity-0"
               }`}
             >
               <div className="mt-2 pt-2 border-t border-gray-300">
@@ -778,25 +778,27 @@ export default function OrderBubble({ order, onUpdate }) {
                 {/* display nots */}
                 <p className="text-xs"> Note :- {order?.note} </p>
                 {/* টাইমলাইন এবং নোট সেকশন */}
-                <div className="space-y-4 mt-1 pt-2">
+                <div className="space-y-4 max-h-screen overflow-y-auto mt-1 pt-2">
                   {sortedActivities.map((activity, index) => (
                     <div key={index} className="flex items-start text-xs">
                       <div className="w-1/4 flex flex-col">
+                      {/* formate date */}
+                        <span className={` font-bold text-gray-500 `}>
+                          {formatDate(activity.timestamp)}
+                        </span>
                         {/* formate time */}
                         <span className={` font-bold`}>
                           {formatTime(activity.timestamp)}
                         </span>
-                        {/* formate date */}
-                        <span className={` font-bold text-gray-500 `}>
-                          {formatDate(activity.timestamp)}
-                        </span>
+                        
                       </div>
+                      {/* right section */}
                       <div className="w-3/4 pl-3 border-l-2 border-dashed border-gray-200">
                         <p className="font-semibold text-gray-800">
-                          {activity?.type}
+                         <span className="text-purple-600"> {activity?.actor || activity?.author}</span> - {activity?.type}
                         </p>
                         <p className="text-gray-600 mt-0.5">
-                          {activity?.actor || activity?.author}
+                          {/* {activity?.actor || activity?.author} */}
                         </p>
                         <p className="text-gray-600 mt-0.5">
                           {activity?.details?.description ||
