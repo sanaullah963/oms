@@ -34,12 +34,12 @@ const ActivitySchema = new mongoose.Schema(
 const OrderSchema = new mongoose.Schema({
   rawInputText: {type: String, required: true},
   castomerName: { type: String, required: true },
-  // castomerPhone: { type: String, required: true },
   castomerPhone: { type: [String], required: true },
   productCode: { type: String, required: true },
   totalCOD: { type: Number, required: true },
   orderSource: { type: String, default: "Manual Messenger" },
   note: { type: String, required: false },
+  needsAttention: { type: Boolean, default: false },
   courierHistory: {
     our: {
       type: String,
@@ -85,14 +85,27 @@ const OrderSchema = new mongoose.Schema({
       type: String,
       enum: [
         // "In-review",
-        "Pending",
-        "Failed",
         "Booked",
+        "Failed",
+        "Pending",
         "Shipping",
         "Delivered",
       ],
       default: "Pending",
     },
+    courierStatus: {
+      type: String,
+      enum: [
+        // "In-review",
+        "Delivered",
+        "Cancelled",
+        "Assigned",
+        "Pending",
+        "Unknown",
+      ],
+      default: "Unknown",
+    },
+
   },
 
   // createdAt: { type: Date, default: Date.now },

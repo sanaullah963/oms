@@ -5,9 +5,10 @@ import OrderList from "../components/OrderList";
 import ManualInput from "../components/ManualInput";
 import { useSocket } from "../hooks/useSocket";
 import { convertNumber, STATUS_TABS } from "../constants/data";
+import Link from "next/link";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export default function Dashboard() {
+export default function Page() {
 
   const [orders, setOrders] = useState([]);
   const [activeStatus, setActiveStatus] = useState("Pending");
@@ -226,12 +227,18 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <h1 className="text-lg font-extrabold text-indigo-700 mb-1 md:mb-2">
-            <span> অর্ডার</span>
-            <span className="text-green-700 text-2xl ml-2 font-mono">
-              {allPendingOrder.length}
-            </span>
-          </h1>
+          {/* Dashboard button — attentionCount badge সহ */}
+          <Link
+            href="/dashboard"
+            className="relative bg-green-700 px-2 text-lg text-green-100 mb-1 md:mb-2 rounded-sm flex items-center gap-1"
+          >
+            Dashboard
+            {/* {attentionCount > 0 && ( */}
+              <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center leading-none">
+                {/* {attentionCount > 99 ? "99+" : attentionCount} */} 10
+              </span>
+            {/* )} */}
+          </Link>
         </div>
 
         {/* status bar section */}
@@ -250,6 +257,7 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
+        
         <div className="ms-2 text-purple-500 font-bold">
           {searchQuery && <p>{filteredOrders.length} Result </p>}
           {/* <p>all search result 0</p> */}

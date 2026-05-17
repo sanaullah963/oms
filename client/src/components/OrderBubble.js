@@ -614,7 +614,7 @@ export default function OrderBubble({ order, onUpdate }) {
                 <div className="">
                   <div className="flex gap-2">
                     <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${statusColor}`}
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-sm ${statusColor}`}
                     >
                       {order.orderStatus}
                     </span>
@@ -654,6 +654,12 @@ export default function OrderBubble({ order, onUpdate }) {
 
                       {/* show all history */}
                     </div>
+                    {/* show  courier status label */}
+                    {order.courier.courierStatus && order.courier.courierStatus !== "Unknown" && (
+                      <div className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-amber-300 text-blue-900">
+                        {order?.courier?.courierStatus}
+                      </div>
+                    )}
                   </div>
                   {/* note or comment */}
                   {/* <span className=" text-sm">
@@ -811,7 +817,6 @@ export default function OrderBubble({ order, onUpdate }) {
                   <button
                     className="p-2 cursor-pointer text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
                     onClick={() => handelBooking(order)}
-                    title="সম্পূর্ণ অর্ডার কপি"
                     disabled={loading}
                   >
                     Booking
