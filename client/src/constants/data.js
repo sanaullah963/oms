@@ -102,8 +102,7 @@ export const groupOrdersByDate = (orders) => {
 
 export const groupOrdersByLastUpdatedDate = (orders) => {
   return orders.reduce((acc, order) => {
-    const last =
-      order?.activities?.[order?.activities?.length - 1]?.timestamp;
+    const last = order?.activities?.[order?.activities?.length - 1]?.timestamp;
     if (!last) return acc; // <-- skip
     const dateKey = new Date(last).toISOString().split("T")[0];
     if (!acc[dateKey]) acc[dateKey] = [];
@@ -157,17 +156,37 @@ export const formatTime = (isoString) => {
 export const convertNumber = (input) => {
   try {
     if (!input) return input;
-  const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-  const englishDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+    const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+    const englishDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
-  let output = input;
-  // console.log("output", output);
-  for (let i = 0; i < banglaDigits.length; i++) {
-    output = output.replace(new RegExp(banglaDigits[i], "g"), englishDigits[i]);
-  }
-  return output;
+    let output = input;
+    // console.log("output", output);
+    for (let i = 0; i < banglaDigits.length; i++) {
+      output = output.replace(
+        new RegExp(banglaDigits[i], "g"),
+        englishDigits[i],
+      );
+    }
+    return output;
   } catch (error) {
     console.log("error", error);
   }
-  
 };
+
+export const dahsbOrderActionButton = [
+  {
+    label: "ফোন বন্ধ",
+    value:
+      "আপনাকে ডেলিভারি ম্যান ফোন দিচ্ছে, কিন্তু আপনার নাম্বারটা বন্ধ পাচ্ছে। আমি আপনাকেডেলিভারি ম্যান এর নাম্বার দিচ্ছি্দ‌য়া করে তার সাথে যোগাযোগ করে পার্সেলটা রিসিভ করে নিন।",
+  },
+  {
+    label: "ফোন ধরেনি",
+    value:
+      "আপনাকে ডেলিভারি ম্যান ফোন দিয়েছিল, কিন্তু আপনি ফোনটা রিসিভ করেননি। ডেলিভারি ম্যানের  সাথে যোগাযোগ করে দয়া করে পার্সেলটা রিসিভ করে নিন।",
+  },
+  {
+    label: "Assigned",
+    value:
+      "এটা ডেলিভারি ম্যান এর নাম্বার। খুব শিগগিরই সে আপনাকে ফোন করে পার্সেল দিবে। আপনি চাইলে তার সাথে যোগাযোগ করতে পারেন। তাহলে দ্রুত পার্সেলটা পাবেন। অথবা ফোনটা কাছে রাখবেন যেন সে ফোন দিলে রিসিভ করতে পারেন। ",
+  },
+];
