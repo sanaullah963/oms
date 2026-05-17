@@ -660,6 +660,10 @@ export default function OrderBubble({ order, onUpdate }) {
                         {order?.courier?.courierStatus}
                       </div>
                     )}
+                    
+                    {order?.needsAttention && (
+                      <p>AT</p>
+                    )}
                   </div>
                   {/* note or comment */}
                   {/* <span className=" text-sm">
