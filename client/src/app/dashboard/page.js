@@ -24,6 +24,7 @@ function page() {
   return (
     <div className="p-1.5 md:p-4 bg-gray-100 pb-36">
       <DashboardHeader />
+      <div className="">{inportantNotes.length}</div>
       {
         inportantNotes.map((order) => (
           <NoteBubble key={order?._id} order={order} onUpdate={handleOrderUpdate} />

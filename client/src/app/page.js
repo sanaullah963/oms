@@ -316,7 +316,9 @@ export default function Page() {
     setSearchQuery,
     filteredOrders,
     allPendingOrder,
-    handleOrderUpdate
+    handleOrderUpdate,
+    inportantNotes,
+    
   } = useOrders();
 
   const [isAnimating, setIsAnimating] = useState(false);
@@ -368,8 +370,8 @@ export default function Page() {
             className="relative bg-green-700 px-2 text-lg text-green-100 mb-1 md:mb-2 rounded-sm flex items-center gap-1"
           >
             Dashboard
-            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center leading-none">
-              10
+            <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-xs font-bold rounded-lg w-5 h-5 flex items-center justify-center leading-none">
+              {inportantNotes.length>0 && inportantNotes.length}
             </span>
           </Link>
         </div>

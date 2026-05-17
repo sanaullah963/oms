@@ -51,9 +51,22 @@ function NoteBubble({ order, onUpdate }) {
     }
   };
 
-  const handelSolve = () => {
-    // e.stopPropagation();
-    console.log("handelSolve");
+  const handelSolve = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.patch(
+        `${API_BASE}/update-need-attention/${order._id}`,
+      );
+      console.log(res.data);
+      if (res.data) {
+        onUpdate(res.data);
+        setLoading(false);
+
+      }
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
+    }
   };
 
   return (

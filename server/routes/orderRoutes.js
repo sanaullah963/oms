@@ -309,4 +309,33 @@ router.post("/webhook/steadfast", async (req, res) => {
 // --------steadfast bulk booking
 router.post("/courier/steadfast-bulk", bookSteadfastBulk);
 
+//--- update //api/orders/update-need-attention/:id
+//----- update need attention
+router.patch("/update-need-attention/:id", async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const io = req.app.get("io"); 
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      { needsAttention: false },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    // ২. সকেটের মাধ্যমে ফ্রন্টএন্ডে রিয়েল-টাইম ইভেন্ট পাঠানো হচ্ছে
+    if (io) {
+      io.emit("orderStatusChange", updatedOrder); 
+    }
+    console.log("orderId : ", updatedOrder);
+    res.status(200).json({updatedOrder});
+  } catch (error) {
+    console.error("Error updating order:", error);
+    res.status(500).json({ message: "Server error while updating order." });
+  }
+});
+
 module.exports = router;
