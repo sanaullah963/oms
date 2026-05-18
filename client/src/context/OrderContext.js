@@ -25,6 +25,7 @@ export function OrderProvider({ children }) {
   const [dbOrders, setDbOrders] = useState([]);
   const [dbLoading, setDbLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchWaiting, setSearchWaiting] = useState(false);
   const query = searchQuery.toLowerCase().trim();
 
   // ---------------- FETCH ALL ORDERS ----------------
@@ -79,6 +80,7 @@ export function OrderProvider({ children }) {
     const handleSearchResult = (data) => {
       setDbOrders(data?.orders || []);
       setDbLoading(false);
+      setSearchWaiting(false);
     };
 
     socket.on("searchResult", handleSearchResult);
@@ -106,6 +108,7 @@ export function OrderProvider({ children }) {
     const timer = setTimeout(() => {
       if (query) {
         fetchSearchFromDB(query);
+        setSearchWaiting(true);
       } else {
         setDbOrders([]);
       }
@@ -215,6 +218,7 @@ export function OrderProvider({ children }) {
     allPendingOrder,
     handleOrderUpdate,
     fetchOrders,
+    searchWaiting,
   };
 
   return (

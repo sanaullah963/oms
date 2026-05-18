@@ -4,6 +4,7 @@ import axios from "axios";
 import { useSocket } from "../hooks/useSocket";
 import { ToastContainer, toast } from "react-toastify";
 import ReactDOM from "react-dom";
+import { MdAddIcCall } from "react-icons/md";
 import {
   STATUS_SHORTCUTS,
   ACTIVITY_STATUS_COLORS,
@@ -742,27 +743,14 @@ export default function OrderBubble({ order, onUpdate }) {
                   onClick={() =>
                     navigator.clipboard.writeText(order.castomerPhone)
                   }
-                  className="p-2 text-sm rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition duration-150 shadow-md"
+                  className="p-2 text-sm rounded-md flex items-center bg-blue-300 text-blue-600 hover:bg-blue-200 transition duration-150 shadow-md"
                   title="সরাসরি কল করুন"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="feather feather-phone"
-                  >
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6.7-6.7A19.79 19.79 0 0 1 2 4.18 2 2 0 0 1 3.16 2h3a2 2 0 0 1 2 1.72v3.25a2 2 0 0 1-1.25 1.83 1.5 1.5 0 0 0-.25.13 10.9 10.9 0 0 0 5.43 5.43 1.5 1.5 0 0 0 .13-.25 2 2 0 0 1 1.83-1.25h3.25A2 2 0 0 1 22 16.92z"></path>
-                  </svg>
+                  <MdAddIcCall />
                 </a>
                 {/* rawInput text copy */}
                 <button
-                  className="p-2 cursor-pointer text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
+                  className="p-2 cursor-pointer text-sm rounded-md bg-gray-300 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
                   onClick={() => handleCopy(order?.rawInputText)}
                   title="সম্পূর্ণ অর্ডার কপি"
                   disabled={loading}
@@ -790,10 +778,9 @@ export default function OrderBubble({ order, onUpdate }) {
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                   </svg>
                 </button>
-
                 {/* --- এডিট বাটন (নতুন) --- */}
                 <button
-                  className="p-2 cursor-pointer text-sm rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition duration-150 shadow-md"
+                  className="p-2 cursor-pointer text-sm rounded-md flex items-center bg-green-300 text-green-600 hover:bg-green-200 transition duration-150 shadow-md"
                   onClick={(e) => {
                     e.stopPropagation(); // Bubbling বন্ধ করা
                     setIsEditing(true);
@@ -817,9 +804,9 @@ export default function OrderBubble({ order, onUpdate }) {
                   </svg>
                 </button>
                 {/* booking button */}
-                {order?.orderStatus !== "Booked" && (
+                {order?.orderStatus == "Confirmed" && (
                   <button
-                    className="p-2 cursor-pointer text-sm rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
+                    className="p-2 cursor-pointer text-sm rounded-md bg-yellow-300 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
                     onClick={() => handelBooking(order)}
                     disabled={loading}
                   >
@@ -854,7 +841,7 @@ export default function OrderBubble({ order, onUpdate }) {
                 {/* <span>ডিলিট</span> */}
               </button>
             </div>
-            {/* শর্টকাট স্ট্যাটাস বাটন */}
+            {/* status change button */}
             <div className="flex flex-wrap gap-1  mt-2">
               {STATUS_SHORTCUTS.map((shortcut) => (
                 <button

@@ -71,7 +71,7 @@ function NoteBubble({ order, onUpdate }) {
             }`}
             onClick={() => !loading && setIsExpanded(!isExpanded)}
           >
-            {/* first row id, cod, product code */}
+            {/* first row id, cod, product code ,solve button*/}
             <div className="flex items-center gap-1">
               {/* steadFast id section*/}
               <div className="">
@@ -100,14 +100,12 @@ function NoteBubble({ order, onUpdate }) {
                   </span>
                 )}
               </div>
-              {/* <span> {order.castomerName} </span> -- */}
               <span>-- {order.totalCOD} --</span>
               <span className="text-purple-600 pe-2">{order.productCode}</span>
-              {/* </p> */}
               {/* handel solve button */}
               <button
                 onClick={(e) => (e.stopPropagation(), handelSolve())}
-                className="bg-green-700 text-white px-3 rounded-md flex-1"
+                className="bg-green-700 text-white px-3 rounded-md flex-1 max-w-48"
               >
                 Solve
               </button>
@@ -171,24 +169,12 @@ function NoteBubble({ order, onUpdate }) {
               <button
                 key={index}
                 onClick={() => handleCopy(shortcut.value)}
-                className={`text-gray-700 text-xs font-medium py-1.5 px-2 md:px-3 rounded-lg  md:rounded-sm shadow-md transition duration-200  cursor-pointer bg-gray-300 hover:bg-yellow-800 hover:shadow-lg `}
+                className={`text-gray-700 text-xs font-medium py-1.5 px-2 md:px-3 rounded-lg  md:rounded-sm shadow-md transition duration-200  cursor-pointer bg-yellow-400 hover:bg-gray-300 hover:shadow-lg `}
               >
                 {shortcut.label}
               </button>
             ))}
           </div>
-          {/* শর্টকাট স্ট্যাটাস বাটন */}
-          {/* <div className="flex flex-wrap gap-1  mt-2">
-            {dahsbOrderActionButton.map((shortcut, index) => (
-              <button
-                key={index}
-                onClick={() => handleCopy(shortcut.value)}
-                className={`text-white text-xs font-medium py-1.5 px-2 md:px-3 rounded-lg  md:rounded-sm shadow-md transition duration-200  cursor-pointer bg-yellow-600 hover:bg-yellow-800 hover:shadow-lg `}
-              >
-                {shortcut.label}
-              </button>
-            ))}
-          </div> */}
 
           {/* --- কলাপসিবল ডিটেইলস সেকশন --- */}
           <div
@@ -198,7 +184,7 @@ function NoteBubble({ order, onUpdate }) {
           >
             <div className="mt-2 pt-2 border-t border-gray-300">
               {/* display nots */}
-              <p className="text-xs"> Note :- {order?.note} </p>
+              <p className="text-xs mb-1">{order.rawInputText}</p>
               {/* টাইমলাইন এবং নোট সেকশন */}
               <div className="space-y-4 max-h-[60vh]  overflow-y-auto mt-1 pt-2">
                 {sortedActivities.map((activity, index) => (

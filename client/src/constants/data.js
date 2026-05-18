@@ -58,20 +58,6 @@ export const ACTIVITY_STATUS_COLORS = {
   "Status Updated": "text-gray-500",
 };
 
-// --- 4. অর্ডারগুলোকে তাদের তৈরির তারিখ অনুযায়ী গ্রুপ করে। ---
-// export const groupOrdersByDate = (orders) => {
-//   return orders.reduce((acc, order) => {
-//     // তারিখের শুধুমাত্র YYYY-MM-DD অংশটি নেওয়া হচ্ছে
-//     const dateKey = new Date(order.activities[0].timestamp)
-//       .toISOString()
-//       .split("T")[0];
-//     if (!acc[dateKey]) {
-//       acc[dateKey] = [];
-//     }
-//     acc[dateKey].push(order);
-//     return acc;
-//   }, {});
-// };
 
 export const groupOrdersByDate = (orders) => {
   return orders.reduce((acc, order) => {
