@@ -23,8 +23,7 @@ function page() {
   //inportant Notes sent order array
   return (
     <div className="p-1.5 md:p-4 bg-gray-100 pb-36">
-      <DashboardHeader />
-      <div className="">{inportantNotes.length}</div>
+      <DashboardHeader totalItems={inportantNotes.length} />
       {
         inportantNotes.map((order) => (
           <NoteBubble key={order?._id} order={order} onUpdate={handleOrderUpdate} />
