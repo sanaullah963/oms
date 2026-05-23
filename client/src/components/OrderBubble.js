@@ -344,7 +344,6 @@ export default function OrderBubble({ order, onUpdate }) {
       return;
     }
   };
-  // সম্পূর্ণ অর্ডার টেক্সট (কপি করার জন্য)
 
   // handel comment
   const handelNote = () => {
@@ -445,7 +444,7 @@ export default function OrderBubble({ order, onUpdate }) {
 
   return (
     <>
-      <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 mb-1 border border-gray-300 hover:shadow-xl transition-all duration-300">
+      <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 border border-gray-300 hover:shadow-xl transition-all duration-300 mb-1">
         {/* --- অর্ডার ডিসপ্লে / এডিট মোড --- */}
         {isEditing ? (
           // --- এডিট মোড (ফর্ম) ---
@@ -743,14 +742,14 @@ export default function OrderBubble({ order, onUpdate }) {
                   onClick={() =>
                     navigator.clipboard.writeText(order.castomerPhone)
                   }
-                  className="p-2 text-sm rounded-md flex items-center bg-blue-300 text-blue-600 hover:bg-blue-200 transition duration-150 shadow-md"
+                  className="py-2 px-4 text-sm rounded-md flex items-center bg-blue-300 text-blue-600 hover:bg-blue-200 transition duration-150 shadow-md"
                   title="সরাসরি কল করুন"
                 >
                   <MdAddIcCall />
                 </a>
                 {/* rawInput text copy */}
                 <button
-                  className="p-2 cursor-pointer text-sm rounded-md bg-gray-300 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
+                  className="py-2 px-4 cursor-pointer text-sm rounded-md bg-gray-300 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
                   onClick={() => handleCopy(order?.rawInputText)}
                   title="সম্পূর্ণ অর্ডার কপি"
                   disabled={loading}
