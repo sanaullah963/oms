@@ -442,6 +442,7 @@ export default function OrderBubble({ order, onUpdate }) {
           ? "text-red-600 bg-red-100"
           : "text-indigo-600 bg-indigo-100";
 
+          console.log(order.courier.bookingStatus);
   return (
     <>
       <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 border border-gray-300 hover:shadow-xl transition-all duration-300 mb-1">

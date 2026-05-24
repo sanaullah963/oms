@@ -78,13 +78,13 @@ const OrderSchema = new mongoose.Schema({
   courier: {
     // কুরিয়ার থেকে পাওয়া ট্র্যাকিং আইডি
     trackingId: { type: String, default: null }, // কুরিয়ার বুকিং এর সময় যে JSON ডেটা পাঠানো হয়েছিল
-    // requestPayload: { type: mongoose.Schema.Types.Mixed, default: null }, // কুরিয়ার থেকে পাওয়া রেসপন্স ডেটা
     responseData: { type: mongoose.Schema.Types.Mixed, default: null }, // বুকিং এর সময়
     bookedAt: { type: Date, default: null }, // বুকিং স্ট্যাটাস
-    bookingStatus: {
+    bookingStatus: { //for order status
       type: String,
       enum: [
         // "In-review",
+        "N/A",
         "Booked",
         "Failed",
         "Pending",
@@ -93,15 +93,15 @@ const OrderSchema = new mongoose.Schema({
       ],
       default: "Pending",
     },
-    courierStatus: {
+    courierStatus: { // for order courier status
       type: String,
       enum: [
-        // "In-review",
+        "Unknown",
+        "Review",
+        "Pending",
+        "Assigned",
         "Delivered",
         "Cancelled",
-        "Assigned",
-        "Pending",
-        "Unknown",
       ],
       default: "Unknown",
     },
