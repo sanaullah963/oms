@@ -98,6 +98,7 @@ export default function OrderBubble({ order, onUpdate }) {
     totalCOD: order.totalCOD,
     productCode: order.productCode,
     rawInputText: order.rawInputText,
+    permanentNote: order?.permanentNote || "",
   });
   const [touchedPhones, setTouchedPhones] = useState(
     new Array(formData.castomerPhone.length).fill(false),
@@ -450,11 +451,9 @@ export default function OrderBubble({ order, onUpdate }) {
         {isEditing ? (
           // --- এডিট মোড (ফর্ম) ---
           <div className="space-y-1.5">
-            {/* <h4 className="text-lg font-bold text-indigo-700">
-              অর্ডার এডিট করুন
-            </h4> */}
-            {/* button */}
+            {/* from headder section */}
             <div className="flex justify-end space-x-2 pt-2 border-t border-gray-200">
+              {/* Exit button */}
               <button
                 onClick={() => setIsEditing(false)}
                 className="cursor-pointer px-4 py-2 text-sm rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
@@ -462,6 +461,7 @@ export default function OrderBubble({ order, onUpdate }) {
               >
                 Exit
               </button>
+              {/* Save button */}
               <button
                 onClick={handleUpdateOrder}
                 className={`cursor-pointer px-4 py-2 text-sm rounded-lg text-white font-semibold transition ${
@@ -500,19 +500,19 @@ export default function OrderBubble({ order, onUpdate }) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
               disabled={loading}
             />
-            {/* কাস্টমার ফোন */}
-            {/* <label htmlFor="phone" className="text-sm">
-              Phone
+            {/* permanent note */}
+            <label htmlFor="permanentNote" className="text-sm">
+              Permanent Note
             </label>
             <input
-              type="tel"
-              name="castomerPhone"
-              value={formData.castomerPhone}
+              type="text"
+              name="permanentNote"
+              value={formData.permanentNote}
               onChange={handleFormChange}
-              placeholder="কাস্টমার ফোন"
+              placeholder="permanent Note"
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
               disabled={loading}
-            /> */}
+            />
             {/* phone number edit section */}
             <label className="text-sm">Phone</label>
             {formData.castomerPhone.map((phone, index) => {
@@ -840,6 +840,10 @@ export default function OrderBubble({ order, onUpdate }) {
                 </svg>
                 {/* <span>ডিলিট</span> */}
               </button>
+            </div>
+            {/* permanent note */}
+            <div className="">
+             <p className="text-sm text-red-700">{order?.permanentNote || ""}</p>
             </div>
             {/* status change button */}
             <div className="flex flex-wrap gap-1  mt-2">
