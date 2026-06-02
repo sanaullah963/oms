@@ -5,6 +5,7 @@ import { useSocket } from "../hooks/useSocket";
 import { ToastContainer, toast } from "react-toastify";
 import ReactDOM from "react-dom";
 import { MdAddIcCall } from "react-icons/md";
+import { FaCheckCircle } from "react-icons/fa";
 import {
   STATUS_SHORTCUTS,
   ACTIVITY_STATUS_COLORS,
@@ -74,20 +75,12 @@ export default function OrderBubble({ order, onUpdate }) {
 
   const [isLoading, setIsLoading] = useState({
     histryBtn: false,
+    copyBtnCheck: false,
   });
 
   // --- নতুন স্টেট: এডিটিং মোড এবং ফর্ম ডেটা ---
   const [isEditing, setIsEditing] = useState(false);
-  // const [formData, setFormData] = useState({
-  //   castomerName: order.castomerName,
-  //   castomerPhone: Array.isArray(order.castomerPhone)
-  //     ? order.castomerPhone.join(", ")
-  //     : order.castomerPhone,
-  //   // castomerAddress: order.castomerAddress,
-  //   totalCOD: order.totalCOD,
-  //   productCode: order.productCode,
-  //   rawInputText: order.rawInputText,
-  // });
+
   const [formData, setFormData] = useState({
     castomerName: order.castomerName,
     castomerPhone: Array.isArray(order.castomerPhone)
@@ -287,11 +280,26 @@ export default function OrderBubble({ order, onUpdate }) {
   );
 
   // --- অ্যাকশন বাটন লজিক (নাম্বার ও টেক্সট কপি) ---
-  const handleCopy = (text) => {
-    // Iframe এর মধ্যে document.execCommand('copy') বেশি নির্ভরযোগ্য
+  // const handleCopy = (text) => {
+  //   // Iframe এর মধ্যে document.execCommand('copy') বেশি নির্ভরযোগ্য
+  //   try {
+  //     // click to copy data
+  //     navigator.clipboard.writeText(text);
+  //   } catch (err) {
+  //     console.error("Copy failed:", err);
+  //     showMessage("alert", "ত্রুটি: কপি করতে ব্যর্থ হয়েছে।", null);
+  //   }
+  // };
+  const handleCopy = async (text) => {
     try {
-      // click to copy data
-      navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(text);
+
+      setIsLoading((prev) => ({ ...prev, copyBtnCheck: true }));
+
+      // ২ সেকেন্ড পর আবার ফলস (false) করে দিন
+      setTimeout(() => {
+        setIsLoading((prev) => ({ ...prev, copyBtnCheck: false }));
+      }, 1000);
     } catch (err) {
       console.error("Copy failed:", err);
       showMessage("alert", "ত্রুটি: কপি করতে ব্যর্থ হয়েছে।", null);
@@ -443,7 +451,7 @@ export default function OrderBubble({ order, onUpdate }) {
           ? "text-red-600 bg-red-100"
           : "text-indigo-600 bg-indigo-100";
 
-          console.log(order.courier.bookingStatus);
+  console.log(order.courier.bookingStatus);
   return (
     <>
       <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 border border-gray-300 hover:shadow-xl transition-all duration-300 mb-1">
@@ -612,65 +620,60 @@ export default function OrderBubble({ order, onUpdate }) {
             >
               <div className="flex justify-between items-start mb-1 ">
                 {/* স্ট্যাটাস */}
-                <div className="">
-                  <div className="flex gap-2">
-                    <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-sm ${statusColor}`}
-                    >
-                      {order.orderStatus}
-                    </span>
-                    {/* our history */}
-                    <div>
-                      {/* <span> OUR </span> */}
-                      {order?.courierHistory?.our > 0 && (
-                        <span className="text-xs text-black gap-3 font-medium bg-green-300 px-2 py-0.5 rounded-lg">
-                          <span className="text-green-700">
-                            {order?.courierHistory?.our}
-                          </span>
+                {/* <div className=""> */}
+                <div className="flex gap-2">
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-sm ${statusColor}`}
+                  >
+                    {order.orderStatus}
+                  </span>
+                  {/* our history */}
+                  <div>
+                    {/* <span> OUR </span> */}
+                    {order?.courierHistory?.our > 0 && (
+                      <span className="text-xs text-black gap-3 font-medium bg-green-300 px-2 py-0.5 rounded-lg">
+                        <span className="text-green-700">
+                          {order?.courierHistory?.our}
                         </span>
-                      )}
-                    </div>
-                    {/* oll history */}
-                    <div>
-                      {/* get all history button */}
-                      {order?.courierHistory?.all ? (
-                        <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
-                          <span> All </span>
-                          <span className="text-green-700">
-                            {order?.courierHistory?.all?.success}
-                          </span>
-                          /
-                          <span className="text-red-600">
-                            {order?.courierHistory?.all?.cancel}
-                          </span>
+                      </span>
+                    )}
+                  </div>
+                  {/* oll history */}
+                  <div>
+                    {/* get all history button */}
+                    {order?.courierHistory?.all ? (
+                      <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
+                        <span> All </span>
+                        <span className="text-green-700">
+                          {order?.courierHistory?.all?.success}
                         </span>
-                      ) : (
-                        <button
-                          onClick={handelOrderHistry}
-                          className="bg-green-500 text-white text-sm px-2 py-1 rounded-md cursor-pointer"
-                        >
-                          {isLoading.histryBtn ? <LoadingSpinner /> : "History"}
-                        </button>
-                      )}
+                        /
+                        <span className="text-red-600">
+                          {order?.courierHistory?.all?.cancel}
+                        </span>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={handelOrderHistry}
+                        className="bg-green-500 text-white text-sm px-2 py-1 rounded-md cursor-pointer"
+                      >
+                        {isLoading.histryBtn ? <LoadingSpinner /> : "History"}
+                      </button>
+                    )}
 
-                      {/* show all history */}
-                    </div>
-                    {/* show  courier status label */}
-                    {order.courier.courierStatus && order.courier.courierStatus !== "Unknown" && (
+                    {/* show all history */}
+                  </div>
+                  {/* show  courier status label */}
+                  {order.courier.courierStatus &&
+                    order.courier.courierStatus !== "Unknown" && (
                       <div className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-amber-300 text-blue-900">
                         {order?.courier?.courierStatus}
                       </div>
                     )}
-                    
-                    {order?.needsAttention && (
-                      <p>AT</p>
-                    )}
-                  </div>
-                  {/* note or comment */}
-                  {/* <span className=" text-sm">
-                    {order.activities[order.activities.length - 1].description}
-                  </span> */}
+
+                  {order?.needsAttention && <p>AT</p>}
                 </div>
+                {/* </div> */}
                 {/* টাইমস্ট্যাম্প */}
                 <div className="text-xs  font-medium flex flex-col">
                   {/* create time */}
@@ -749,7 +752,7 @@ export default function OrderBubble({ order, onUpdate }) {
                   <MdAddIcCall />
                 </a>
                 {/* rawInput text copy */}
-                <button
+                {/* <button
                   className="py-2 px-4 cursor-pointer text-sm rounded-md bg-gray-300 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
                   onClick={() => handleCopy(order?.rawInputText)}
                   title="সম্পূর্ণ অর্ডার কপি"
@@ -777,6 +780,47 @@ export default function OrderBubble({ order, onUpdate }) {
                     ></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                   </svg>
+                </button> */}
+                <button
+                  className={`py-2 px-4 cursor-pointer text-sm rounded-md transition duration-150 shadow-md ${
+                    isLoading.copyBtn
+                      ? "bg-green-200 text-green-600 hover:bg-green-300"
+                      : "bg-gray-300 text-gray-600 hover:bg-gray-200"
+                  }`}
+                  onClick={() => handleCopy(order?.rawInputText)}
+                  title={
+                    isLoading.copyBtnCheck ? "কপি হয়েছে!" : "সম্পূর্ণ অর্ডার কপি"
+                  }
+                  disabled={loading || isLoading.copyBtnCheck}
+                >
+                  {isLoading.copyBtnCheck ? (
+                    // কপি হয়ে গেলে টিক মার্ক দেখাবে
+                    <FaCheckCircle className="w-4 h-4 text-green-600" />
+                  ) : (
+                    // স্বাভাবিক অবস্থায় কপি আইকন দেখাবে
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="feather feather-copy"
+                    >
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                      ></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  )}
                 </button>
                 {/* --- এডিট বাটন (নতুন) --- */}
                 <button
@@ -843,7 +887,9 @@ export default function OrderBubble({ order, onUpdate }) {
             </div>
             {/* permanent note */}
             <div className="">
-             <p className="text-sm text-red-700">{order?.permanentNote || ""}</p>
+              <p className="text-sm text-red-700">
+                {order?.permanentNote || ""}
+              </p>
             </div>
             {/* status change button */}
             <div className="flex flex-wrap gap-1  mt-2">
