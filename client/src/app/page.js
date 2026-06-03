@@ -41,6 +41,7 @@ export default function Page() {
   const countAttention = inportantNotes.length;
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-100">
+          <Link href="/comment">----------comment-----</Link>
       <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
         {/* ----------সার্চ বার ও ড্যাশবোর্ড বাটন -----------*/}
         <div className="flex justify-between ">

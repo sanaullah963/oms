@@ -10,6 +10,7 @@ const Order = require("./models/Order");
 const { type } = require("os");
 const axios = require("axios");
 const convertNumber = require("./controllers/convertNumber");
+const facebookRoutes = require("./routes/facebookRoutes");
 
 require("dotenv").config();
 
@@ -205,6 +206,7 @@ connectToMongoDB();
 // ------ 4. Routes Integration ---
 app.use("/api/orders", orderRoutes);
 app.use("/api/webhook", webhookRoutes);
+app.use("/api/facebook", facebookRoutes);
 // --- 5. Server Start ---
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
