@@ -9,6 +9,7 @@ import {
   formatDate,
   dahsbOrderActionButton,
 } from "@/constants/data";
+import DisplayTime from "./DisplayTime";
 
 // API Endpoint Configuration
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
@@ -147,7 +148,8 @@ function NoteBubble({ order, onUpdate }) {
                     ))}
               </div>
               <div className="text-sm font-medium text-purple-500">
-                {`${formatTime(order.activities[order.activities.length - 1].timestamp)}`}
+                {/* {`${formatTime(order.activities[order.activities.length - 1].timestamp)}`} */}
+                <DisplayTime timeStamp={order.activities[order.activities.length - 1].timestamp} />
               </div>
             </div>
           </div>

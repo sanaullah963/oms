@@ -13,6 +13,7 @@ import {
   formatDate,
 } from "../constants/data";
 import LoadingSpinner from "./LoadingSpinner";
+import DisplayTime from "./DisplayTime";
 
 // API Endpoint Configuration
 const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/orders`;
@@ -676,24 +677,25 @@ export default function OrderBubble({ order, onUpdate }) {
                 {/* </div> */}
                 {/* টাইমস্ট্যাম্প */}
                 <div className="text-xs  font-medium flex flex-col">
+                  <DisplayTime timeStamp={order.activities[0]?.timestamp} />
                   {/* create time */}
-                  <span className="text-gray-800">
+                  {/* <span className="text-gray-800">
                     <span className="text-indigo-700 hidden md:inline">
                       Created At{" "}
                     </span>
                     {`${formatDate(order.activities[0]?.timestamp)}.  .${formatTime(
                       order.activities[0]?.timestamp,
                     )}`}
-                  </span>
+                  </span> */}
                   {/* last update */}
-                  <span className="text-green-500">
+                  {/* <span className="text-green-500">
                     <span className="text-indigo-700 hidden md:inline">
                       Last Update{" "}
                     </span>
                     {`${formatDate(order.activities[order.activities.length - 1].timestamp)}.  .${formatTime(
                       order.activities[order.activities.length - 1].timestamp,
                     )}`}
-                  </span>
+                  </span> */}
                 </div>
               </div>
 
@@ -789,7 +791,9 @@ export default function OrderBubble({ order, onUpdate }) {
                   }`}
                   onClick={() => handleCopy(order?.rawInputText)}
                   title={
-                    isLoading.copyBtnCheck ? "কপি হয়েছে!" : "সম্পূর্ণ অর্ডার কপি"
+                    isLoading.copyBtnCheck
+                      ? "কপি হয়েছে!"
+                      : "সম্পূর্ণ অর্ডার কপি"
                   }
                   disabled={loading || isLoading.copyBtnCheck}
                 >
@@ -911,12 +915,16 @@ export default function OrderBubble({ order, onUpdate }) {
               ))}
             </div>
             {/* note or comment */}
-            <span className=" text-sm">
-              {order.activities[order.activities.length - 1].description}
-            </span>
+            <div className="flex justify-between items-start">
+              <span className=" text-sm">
+                {order.activities[order.activities.length - 1].description}
+              </span>
+              <DisplayTime timeStamp={order.activities[order.activities.length - 1].timestamp} />
+            </div>
+
             {/* --- কলাপসিবল ডিটেইলস সেকশন --- */}
             <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              className={`overflow-hidden transition-all  duration-300 ease-in-out  ${
                 isExpanded ? "opacity-100 overflow-auto" : "max-h-0 opacity-0"
               }`}
             >

@@ -58,7 +58,6 @@ export const ACTIVITY_STATUS_COLORS = {
   "Status Updated": "text-gray-500",
 };
 
-
 export const groupOrdersByDate = (orders) => {
   return orders.reduce((acc, order) => {
     const timestamp = order?.activities?.[0]?.timestamp;
@@ -105,22 +104,14 @@ export const groupOrdersByLastUpdatedDate = (orders) => {
 //     return new Date(dateString).toLocaleDateString('bn-BD', options);
 // };
 export const formatDate = (dateString) => {
-  // If dateString is missing, return a default string
   if (!dateString) return "N/A";
-
-  // Create a new Date object from the dateString
   const date = new Date(dateString);
-
-  // Check if the date is valid (e.g., avoids "Invalid Date")
   if (isNaN(date)) return "Invalid Date";
 
-  // Get the day (DD)
   const day = date.getDate().toString().padStart(2, "0");
 
-  // Get the month (MM - months are 0-indexed, so add 1)
   const month = (date.getMonth() + 1).toString().padStart(2, "0");
 
-  // Get the year (YY - last two digits)
   const year = date.getFullYear().toString().slice(-2);
 
   // Combine them in DD-MM-YY format
@@ -129,7 +120,6 @@ export const formatDate = (dateString) => {
 
 // --- 6. টাইমকে HH:MM (AM/PM) ফরম্যাটে দেখানোর জন্য
 export const formatTime = (isoString) => {
-  // যদি isoString না থাকে, তাহলে একটি ডিফল্ট স্ট্রিং ফেরত দেওয়া হবে
   if (!isoString) return "N/A";
   return new Date(isoString).toLocaleTimeString("en-US", {
     hour: "2-digit",
