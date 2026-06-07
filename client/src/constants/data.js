@@ -177,7 +177,6 @@ export const multupleOrderCheck = (orders) =>{
       // if (Array.isArray(order.castomerPhone)) {
         order.castomerPhone.forEach((phone) => {
           if (phone) {
-            console.log("phone", phone);
             phoneCounts[phone] = (phoneCounts[phone] || 0) + 1;
           }
         });

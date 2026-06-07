@@ -7,7 +7,8 @@ const Order = require("../models/Order");
 const IGNORE_PATTERNS = [
   /consignment sent to .+ dispatch id/i,
   /consignment has been received at/i,
-  /Consignment sent to /i,
+  /Consignment sent to .+/i,
+  /^Consignment sent to .+/i,
   /policestation:.+to.+/i,
   /received at fulfillment warehouse/i,
   /sent to fulfillment warehouse/i,

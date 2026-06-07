@@ -19,7 +19,7 @@ function page() {
     handleOrderUpdate,
     inportantNotes,
   } = useOrders();
-  console.log("inportantNotes", inportantNotes);
+  // console.log("inportantNotes", inportantNotes);
   //inportant Notes sent order array
   return (
     <div className="p-1.5 md:p-4 bg-gray-100 pb-36">

@@ -106,12 +106,10 @@ export default function OrderBubble({ order, onUpdate }) {
         onUpdate(data.order);
       }
     });
-
     return () => {
       socket.off("orderUpdated");
     };
   }, []);
-
   // Modal State
   const [modal, setModal] = useState({
     isVisible: false,
@@ -280,17 +278,6 @@ export default function OrderBubble({ order, onUpdate }) {
     (a, b) => new Date(b?.timestamp) - new Date(a?.timestamp),
   );
 
-  // --- অ্যাকশন বাটন লজিক (নাম্বার ও টেক্সট কপি) ---
-  // const handleCopy = (text) => {
-  //   // Iframe এর মধ্যে document.execCommand('copy') বেশি নির্ভরযোগ্য
-  //   try {
-  //     // click to copy data
-  //     navigator.clipboard.writeText(text);
-  //   } catch (err) {
-  //     console.error("Copy failed:", err);
-  //     showMessage("alert", "ত্রুটি: কপি করতে ব্যর্থ হয়েছে।", null);
-  //   }
-  // };
   const handleCopy = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -677,27 +664,8 @@ export default function OrderBubble({ order, onUpdate }) {
                 {/* টাইমস্ট্যাম্প */}
                 <div className="text-xs  font-medium flex flex-col">
                   <DisplayTime timeStamp={order.activities[0]?.timestamp} />
-                  {/* create time */}
-                  {/* <span className="text-gray-800">
-                    <span className="text-indigo-700 hidden md:inline">
-                      Created At{" "}
-                    </span>
-                    {`${formatDate(order.activities[0]?.timestamp)}.  .${formatTime(
-                      order.activities[0]?.timestamp,
-                    )}`}
-                  </span> */}
-                  {/* last update */}
-                  {/* <span className="text-green-500">
-                    <span className="text-indigo-700 hidden md:inline">
-                      Last Update{" "}
-                    </span>
-                    {`${formatDate(order.activities[order.activities.length - 1].timestamp)}.  .${formatTime(
-                      order.activities[order.activities.length - 1].timestamp,
-                    )}`}
-                  </span> */}
                 </div>
               </div>
-
               {/* পার্স করা মূল তথ্য */}
               <p className="text-sm font-bold text-gray-800">
                 <span> {order.castomerName} </span> --
