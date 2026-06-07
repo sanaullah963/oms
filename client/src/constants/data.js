@@ -166,3 +166,31 @@ export const dahsbOrderActionButton = [
       "এটা ডেলিভারি ম্যান এর নাম্বার। খুব শিগগিরই সে আপনাকে ফোন করে পার্সেল দিবে। আপনি চাইলে তার সাথে যোগাযোগ করতে পারেন। তাহলে দ্রুত পার্সেলটা পাবেন। অথবা ফোনটা কাছে রাখবেন যেন সে ফোন দিলে রিসিভ করতে পারেন। ",
   },
 ];
+
+export const multupleOrderCheck = (orders) =>{
+   const targetStatuses = ['Phone Off', 'Call Not Received' , 'Pending','Custom'];
+  const phoneCounts = {};
+// console.log("orders",orders.map((order) => Array.isArray(order.castomerPhone)));
+
+  orders.forEach((order) => {
+    if (targetStatuses.includes(order.orderStatus)) {
+      // if (Array.isArray(order.castomerPhone)) {
+        order.castomerPhone.forEach((phone) => {
+          if (phone) {
+            console.log("phone", phone);
+            phoneCounts[phone] = (phoneCounts[phone] || 0) + 1;
+          }
+        });
+      // }
+    }
+  });
+  // ৩. শুধুমাত্র একাধিক (২ বা তার বেশি) অর্ডার থাকা নাম্বারগুলো ফিল্টার করা
+  const duplicatePhones = {};
+  for (const phone in phoneCounts) {
+    if (phoneCounts[phone] >= 2) {
+      duplicatePhones[phone] = phoneCounts[phone];
+    }
+  }
+
+  return duplicatePhones;
+}

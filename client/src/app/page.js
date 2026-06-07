@@ -30,7 +30,7 @@ export default function Page() {
     return () => clearTimeout(t);
   }, [activeStatus]);
 
-
+ 
   const getButtonClasses = (status) => {
     const base =
       "md:px-4 p-1 md:py-2 font-semibold cursor-pointer text-sm rounded-md transition";
@@ -41,7 +41,7 @@ export default function Page() {
   const countAttention = inportantNotes.length;
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-100">
-          <Link href="/comment">----------comment-----</Link>
+      <Link href="/comment">----------comment-----</Link>
       <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
         {/* ----------সার্চ বার ও ড্যাশবোর্ড বাটন -----------*/}
         <div className="flex justify-between ">
@@ -74,8 +74,8 @@ export default function Page() {
             Dashboard
             {countAttention > 0 && (
               <span className="absolute -top-1.5 -left-1.5 bg-red-500 text-white text-xs font-bold rounded-lg w-5 h-5 flex items-center justify-center leading-none">
-              {countAttention}
-            </span>
+                {countAttention}
+              </span>
             )}
           </Link>
         </div>
@@ -97,13 +97,13 @@ export default function Page() {
           ))}
         </div>
 
-          {/* seatch result counter */}
+        {/* seatch result counter */}
         <div className="ms-2 text-purple-500 font-bold mt-1">
           {searchWaiting && <p>Searching...</p>}
           {searchQuery && <p>{filteredOrders.length} Result </p>}
         </div>
       </header>
-
+          
       {/* মেইন কন্টেন্ট এরিয়া */}
       <div
         className={`flex-1 overflow-y-auto p-1.5 md:p-4 bg-gray-100 pb-36 
@@ -119,6 +119,7 @@ export default function Page() {
             orders={filteredOrders}
             onOrderUpdate={handleOrderUpdate} // OrderBubble-এর জন্য গ্লোবাল আপডেট ফাংশন প্রপ্স হিসেবে পাস হচ্ছে
             activeStatus={activeStatus}
+            setSearchQuery={setSearchQuery}
           />
         )}
       </div>

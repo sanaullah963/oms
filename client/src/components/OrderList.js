@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import React, { useState } from "react";
 import OrderBubble from "./OrderBubble";
 import {
@@ -6,12 +6,13 @@ import {
   formatDate,
   groupOrdersByLastUpdatedDate,
   STATUS_TABS,
+  multupleOrderCheck,
 } from "../constants/data";
 import { useSocket } from "@/hooks/useSocket";
 import ToggleSwitch from "./ToggleSwitch";
 import axios from "axios";
 
-export default function OrderList({ orders, onOrderUpdate,activeStatus }) {
+export default function OrderList({ orders, onOrderUpdate, activeStatus ,setSearchQuery}) {
   // const [groupedOrders, setgroupedOrders] = useState({});
   const [sortByLast, setSortByLast] = useState(false);
   const [lodding, setLoading] = useState(false);
@@ -35,23 +36,46 @@ export default function OrderList({ orders, onOrderUpdate,activeStatus }) {
   };
 
   // handel bulk input
-  const handelBulkInput = async() => {
+  const handelBulkInput = async () => {
     setLoading(true);
     const ordersIds = orders.map((order) => order._id);
 
     if (!ordersIds) return;
-    const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/courier/steadfast-bulk`,{
-      orders_ids:ordersIds,
-    })
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/orders/courier/steadfast-bulk`,
+      {
+        orders_ids: ordersIds,
+      },
+    );
     // console.log(res.data);
     setLoading(false);
-  }
+  };
 
-
+  const duplicatePhones = multupleOrderCheck(orders);
   // তারিখ পুরোনো থেকে নতুন ক্রমানুসারে সাজানো (উপরে পুরনো, নিচে নতুন)
   const sortedDates = Object.keys(groupedOrders);
   return (
     <div className="flex flex-col space-y-4 mb-16">
+      {/* show if multiple order */}
+      <div className="flex flex-wrap gap-2 cursor-pointer">
+        {Object.entries(duplicatePhones).map(([phoneNumber, count]) => (
+          <div
+            key={phoneNumber}
+            className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-gray-900 border border-gray-800 rounded-md"
+            onClick={() => (setSearchQuery(phoneNumber),navigator.clipboard.writeText(phoneNumber))}
+          >
+            {/* অবজেক্টের Key বা ফোন নাম্বার */}
+            <span className="text-sm font-medium text-gray-200 tracking-wide">
+              {phoneNumber}
+            </span>
+
+            {/* অবজেক্টের Value বা নাম্বারের একাধিক অর্ডারের কাউন্ট */}
+            <span className="flex items-center justify-center min-w-[20px] h-5 px-1 bg-amber-500/10 border border-amber-500/30 rounded text-xs font-bold text-amber-400">
+              {count}
+            </span>
+          </div>
+        ))}
+      </div>
       {/* on off toggle button */}
       <ToggleSwitch
         storageKey="sort_order_by_date"
@@ -60,9 +84,14 @@ export default function OrderList({ orders, onOrderUpdate,activeStatus }) {
         onText="সর্বশেষ অপডেট অনুসারে"
       />
       {/* bulk input button */}
-      {activeStatus === "Confirmed" && <button className="bg-green-600 text-white px-4 py-2 rounded-md" onClick={handelBulkInput}>{lodding ? "লোডিং..." : "BUlK  INPUT"}</button>}
-      
-
+      {activeStatus === "Confirmed" && (
+        <button
+          className="bg-green-600 text-white px-4 py-2 rounded-md"
+          onClick={handelBulkInput}
+        >
+          {lodding ? "লোডিং..." : "BUlK  INPUT"}
+        </button>
+      )}
       {sortedDates.map((date) => (
         <div key={date}>
           {/* Date Divider (WhatsApp স্টাইল অনুকরণ) */}
