@@ -290,10 +290,16 @@ if (!PAGE_ID) {
 // ১. Webhook Verification (GET)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 router.get('/webhook', (req, res) => {
+    
     const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN || 'my_secret_oms_token_123';
     const mode      = req.query['hub.mode'];
     const token     = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
+
+    console.log("1--mode", mode);
+    console.log("2--token", token);
+    console.log("3--challenge", challenge);
+    console.log("4--VERIFY_TOKEN ", VERIFY_TOKEN);
 
     if (mode && token && mode === 'subscribe' && token === VERIFY_TOKEN) {
         console.log("✅ Webhook Verified");
@@ -306,71 +312,145 @@ router.get('/webhook', (req, res) => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ২. Webhook — রিয়েল-টাইম ইভেন্ট রিসিভ (POST)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// router.post('/webhook', async (req, res) => {
+//     const body = req.body;
+//     console.log("🔥 Webhook Received:", JSON.stringify(body, null, 2));
+
+//     if (body.object !== 'page') return res.sendStatus(404);
+
+//     for (const entry of body.entry || []) {
+//         for (const changeItem of entry.changes || []) {
+//             const change = changeItem.value;
+
+//             // ✅ FIX: শুধুমাত্র comment item এবং verb === 'add' হলেই প্রসেস করো
+//             // reaction, like, edit ইভেন্টগুলো এখন আর ট্রিগার করবে না
+//             if (!change || change.item !== 'comment' || change.verb !== 'add') {
+//                 console.log(`⏭️ Skipping non-comment event: item=${change?.item}, verb=${change?.verb}`);
+//                 continue;
+//             }
+
+//             // নিজের পেজের কমেন্ট ইগনোর
+//             if (change.from?.id === PAGE_ID) {
+//                 console.log("⏭️ Skipping own page comment");
+//                 continue;
+//             }
+
+//             try {
+//                 const savedComment = await FacebookComment.findOneAndUpdate(
+//                     { commentId: change.comment_id },
+//                     {
+//                         pageId: PAGE_ID,           // ✅ FIX: pageId (আগে paegId ছিল)
+//                         postId: change.post_id,
+//                         commentId: change.comment_id,
+//                         parentId: change.parent_id || null,
+//                         senderName: change.from?.name || "Anonymous",
+//                         senderId: change.from?.id,
+//                         message: change.message || '',
+//                         status: "active"
+//                     },
+//                     { upsert: true, new: true, setDefaultsOnInsert: true }
+//                 );
+
+//                 console.log(`💾 Comment Saved: [${savedComment.senderName}] → ${savedComment.message}`);
+
+//                 const io = req.app.get("io");
+//                 if (io) {
+//                     io.emit('new-facebook-comment', savedComment);
+//                     console.log(`🚀 Socket Emitted: ${change.comment_id}`);
+//                 }
+//             } catch (dbError) {
+//                 console.error("❌ DB Save Error:", dbError.message);
+//                 const io = req.app.get("io");
+//                 if (io) {
+//                     io.emit('new-facebook-comment', {
+//                         commentId: change.comment_id,
+//                         postId: change.post_id,
+//                         senderName: change.from?.name || "Anonymous",
+//                         senderId: change.from?.id,
+//                         message: change.message || '',
+//                         createdAt: new Date()
+//                     });
+//                 }
+//             }
+//         }
+//     }
+
+//     return res.status(200).send('EVENT_RECEIVED');
+// });
+
 router.post('/webhook', async (req, res) => {
     const body = req.body;
-    console.log("🔥 Webhook Received:", JSON.stringify(body, null, 2));
+    console.log("🔥 Meta Webhook Hit Successfully Received!", JSON.stringify(body, null, 2));
+    console.log("🔥 Webhook Received:", body);
 
-    if (body.object !== 'page') return res.sendStatus(404);
+    if (body.object === 'page') {
+        if (body.entry && Array.isArray(body.entry)) {
+            for (const entry of body.entry) {
+                if (entry.changes && Array.isArray(entry.changes)) {
+                    for (const changeItem of entry.changes) {
+                        const change = changeItem.value;
+                        
+                        // নতুন কমেন্ট এসেছে কিনা চেক করা (verb === 'add' এবং আইটেমটি 'comment')
+                        if (change && change.item === 'comment' && change.verb === 'add') {
+                            
+                            // নিজের পেজের করা কমেন্ট বা কাস্টমারকে দেওয়া ওএমএস রিপ্লাই ইগনোর করা
+                            if (change.from?.id === PAGE_ID) continue;
 
-    for (const entry of body.entry || []) {
-        for (const changeItem of entry.changes || []) {
-            const change = changeItem.value;
+                            // প্রতিটি কমেন্ট প্রসেসিং আলাদা ট্রাই-ক্যাচ-এ রাখা হলো যাতে একটি ফেল করলে অন্যটি চলে
+                            try {
+                                // ডাটাবেজে ডেটা ইনসার্ট অথবা আপডেট করা (Upsert)
+                                const savedComment = await FacebookComment.findOneAndUpdate(
+                                    { commentId: change.comment_id },
+                                    {
+                                        pageId: PAGE_ID,
+                                        postId: change.post_id,
+                                        commentId: change.comment_id,
+                                        parentId: change.parent_id || null, // সাব-কমেন্ট ট্র্যাকিং
+                                        senderName: change.from?.name || "Anonymous",
+                                        senderId: change.from?.id,
+                                        message: change.message || '',
+                                        status: "active"
+                                    },
+                                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                                );
 
-            // ✅ FIX: শুধুমাত্র comment item এবং verb === 'add' হলেই প্রসেস করো
-            // reaction, like, edit ইভেন্টগুলো এখন আর ট্রিগার করবে না
-            if (!change || change.item !== 'comment' || change.verb !== 'add') {
-                console.log(`⏭️ Skipping non-comment event: item=${change?.item}, verb=${change?.verb}`);
-                continue;
-            }
+                                console.log(`💾 Comment Saved to DB: [${savedComment.senderName}] -> ${savedComment.message}`);
 
-            // নিজের পেজের কমেন্ট ইগনোর
-            if (change.from?.id === PAGE_ID) {
-                console.log("⏭️ Skipping own page comment");
-                continue;
-            }
+                                // সকেট ডট আইও (Socket.io) দিয়ে ফ্রন্টএন্ডে লাইভ পুশ করা
+                                const io = req.app.get("io");
+                                if (io) {
+                                    io.emit('new-facebook-comment', savedComment);
+                                    console.log(`🚀 Socket Emitted for comment: ${change.comment_id}`);
+                                } else {
+                                    console.log("⚠️ Socket.io instance (io) not found in req.app");
+                                }
 
-            try {
-                const savedComment = await FacebookComment.findOneAndUpdate(
-                    { commentId: change.comment_id },
-                    {
-                        pageId: PAGE_ID,           // ✅ FIX: pageId (আগে paegId ছিল)
-                        postId: change.post_id,
-                        commentId: change.comment_id,
-                        parentId: change.parent_id || null,
-                        senderName: change.from?.name || "Anonymous",
-                        senderId: change.from?.id,
-                        message: change.message || '',
-                        status: "active"
-                    },
-                    { upsert: true, new: true, setDefaultsOnInsert: true }
-                );
-
-                console.log(`💾 Comment Saved: [${savedComment.senderName}] → ${savedComment.message}`);
-
-                const io = req.app.get("io");
-                if (io) {
-                    io.emit('new-facebook-comment', savedComment);
-                    console.log(`🚀 Socket Emitted: ${change.comment_id}`);
-                }
-            } catch (dbError) {
-                console.error("❌ DB Save Error:", dbError.message);
-                const io = req.app.get("io");
-                if (io) {
-                    io.emit('new-facebook-comment', {
-                        commentId: change.comment_id,
-                        postId: change.post_id,
-                        senderName: change.from?.name || "Anonymous",
-                        senderId: change.from?.id,
-                        message: change.message || '',
-                        createdAt: new Date()
-                    });
+                            } catch (dbError) {
+                                console.error("❌ Single Comment Processing/DB Error:", dbError.message);
+                                // ডাটাবেজে সেভ হতে সমস্যা হলেও যেন সটলিস্ট ফ্রন্টএন্ডে অন্তত সকেট দিয়ে ডেটা যায় (ফলব্যাক)
+                                const io = req.app.get("io");
+                                if (io) {
+                                    io.emit('new-facebook-comment', {
+                                        commentId: change.comment_id,
+                                        postId: change.post_id,
+                                        senderName: change.from?.name || "Anonymous",
+                                        senderId: change.from?.id,
+                                        message: change.message || '',
+                                        createdAt: new Date()
+                                    });
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+        // সব লুপ শেষ হওয়ার পর ফেসবুককে রেসপন্স পাঠানো
+        return res.status(200).send('EVENT_RECEIVED');
     }
-
-    return res.status(200).send('EVENT_RECEIVED');
+    return res.sendStatus(404);
 });
+
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -379,17 +459,18 @@ router.post('/webhook', async (req, res) => {
 router.get('/comments', async (req, res) => {
     try {
         const comments = await FacebookComment.find().sort({ createdAt: -1 });
+        console.log('comment---', comments);
         res.status(200).json({ success: true, data: comments });
     } catch (error) {
         console.error("❌ Fetch Comments Error:", error.message);
         res.status(500).json({ success: false, error: 'Failed to fetch comments from DB' });
     }
-});
 
+});
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ৪. নির্দিষ্ট কমেন্টে রিপ্লাই দেওয়া (POST)
-// ✅ FIX: এখন সঠিক Graph API endpoint ব্যবহার করা হচ্ছে
+//  FIX: এখন সঠিক Graph API endpoint ব্যবহার করা হচ্ছে
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 router.post('/reply', async (req, res) => {
     const { commentId, replyMessage } = req.body;
@@ -424,6 +505,7 @@ router.post('/reply', async (req, res) => {
         );
 
         console.log(`✅ Reply sent to comment ${commentId}`);
+        console.log(`comment reply response response:`, response.data);
         res.status(200).json({ success: true, metaData: response.data });
 
     } catch (error) {
@@ -447,45 +529,58 @@ router.post('/reply', async (req, res) => {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ৫. Facebook থেকে কমেন্ট ডিলিট (DELETE)
-// ✅ FIX: Token validation যোগ করা হয়েছে
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 router.delete('/comment/:commentId', async (req, res) => {
     const { commentId } = req.params;
 
-    if (!PAGE_ACCESS_TOKEN) {
-        return res.status(500).json({ success: false, error: 'FB_PAGE_ACCESS_TOKEN missing' });
-    }
-
     try {
-        await axios.delete(`https://graph.facebook.com/v25.0/${commentId}`, {
-            params: { access_token: PAGE_ACCESS_TOKEN }
+        const fbResponse = await axios.delete(
+            `https://graph.facebook.com/v25.0/${commentId}`,
+            {
+                params: {
+                    access_token: PAGE_ACCESS_TOKEN
+                }
+            }
+        );
+
+        console.log(fbResponse.data);
+
+        await FacebookComment.findOneAndUpdate(
+            { commentId },
+            { status: "deleted" }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: 'Comment deleted from Facebook and marked in DB'
         });
-
-        await FacebookComment.findOneAndUpdate({ commentId }, { status: "deleted" });
-
-        console.log(`✅ Comment ${commentId} deleted from Facebook`);
-        res.status(200).json({ success: true, message: 'Comment deleted from Facebook and marked in DB' });
 
     } catch (error) {
         const metaError = error.response?.data?.error;
+
         console.error("❌ Delete Error:", metaError || error.message);
 
         if (metaError?.code === 3 || metaError?.code === 190) {
-            return res.status(401).json({ 
-                success: false, 
+            return res.status(401).json({
+                success: false,
                 error: 'Page Access Token সমস্যা। .env ফাইলে সঠিক Page Access Token দিন।',
                 metaError
             });
         }
 
-        res.status(500).json({ success: false, error: 'Delete করা যায়নি', metaError });
+        return res.status(500).json({
+            success: false,
+            error: 'Delete করা যায়নি',
+            metaError
+        });
     }
 });
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ৬. ইউজার ব্লক করা (POST)
-// ✅ FIX: Token validation + সঠিক API format
+//  FIX: Token validation + সঠিক API format
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 router.post('/block-user', async (req, res) => {
     const { senderId } = req.body;
@@ -540,7 +635,7 @@ router.post('/block-user', async (req, res) => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 router.post('/delete-and-block', async (req, res) => {
     const { senderId, commentId } = req.body;
-
+    console.log('--- Delete & Block Action Started ---', { senderId, commentId });
     if (!senderId) {
         return res.status(400).json({ success: false, error: 'senderId আবশ্যক' });
     }
@@ -556,16 +651,16 @@ router.post('/delete-and-block', async (req, res) => {
 
     try {
         // ১. ইউজার ব্লক
-        await axios.post(
+        const blockres =   await axios.post(
             `https://graph.facebook.com/v25.0/${PAGE_ID}/blocked`,
             {
                 user: senderId,
                 access_token: PAGE_ACCESS_TOKEN
             }
         );
-        results.blocked = true;
-        console.log(`✅ User ${senderId} blocked`);
-
+        results.blocked = false;
+        console.log(`✅  blocked respons`,blockres.data);
+        
     } catch (blockError) {
         console.error("⚠️ Block Warning:", blockError.response?.data || blockError.message);
         // Block fail করলেও delete চেষ্টা করো
@@ -577,10 +672,10 @@ router.post('/delete-and-block', async (req, res) => {
             await axios.delete(`https://graph.facebook.com/v25.0/${commentId}`, {
                 params: { access_token: PAGE_ACCESS_TOKEN }
             });
-            results.commentDeleted = true;
+            results.commentDeleted = false;
             console.log(`✅ Comment ${commentId} deleted`);
 
-            await FacebookComment.findOneAndUpdate({ commentId }, { status: "deleted" });
+            // await FacebookComment.findOneAndUpdate({ commentId }, { status: "deleted" });
         } catch (delError) {
             console.error("⚠️ Delete Warning:", delError.response?.data || delError.message);
         }
@@ -588,8 +683,8 @@ router.post('/delete-and-block', async (req, res) => {
 
     // ৩. DB-তে ইউজারের সব কমেন্ট blocked মার্ক করা
     try {
-        await FacebookComment.updateMany({ senderId }, { isUserBlocked: true });
-        results.dbUpdated = true;
+        // await FacebookComment.updateMany({ senderId }, { isUserBlocked: true });
+        // results.dbUpdated = true;
     } catch (dbErr) {
         console.error("⚠️ DB Update Warning:", dbErr.message);
     }
@@ -603,7 +698,7 @@ router.post('/delete-and-block', async (req, res) => {
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ৮. DB থেকে চিরতরে কমেন্ট মুছে ফেলা (DELETE)
+//✅ ৮. DB  থেকে চিরতরে কমেন্ট মুছে ফেলা (DELETE)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 router.delete('/db-comment-delete/:id', async (req, res) => {
     const { id } = req.params;

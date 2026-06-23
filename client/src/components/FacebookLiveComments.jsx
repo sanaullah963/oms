@@ -334,9 +334,8 @@ const FacebookLiveComments = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState({}); // কোন বাটনে loading চলছে
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Socket + Initial DB Fetch
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Socket + Initial DB Fetch comments
+
   useEffect(() => {
     // ✅ FIX: socket একবারই তৈরি হবে
     socketRef.current = io(process.env.NEXT_PUBLIC_API_URL, {
@@ -380,14 +379,43 @@ const FacebookLiveComments = () => {
   const setLoaderFor = (key, value) =>
     setActionLoading((prev) => ({ ...prev, [key]: value }));
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // রিপ্লাই দেওয়া
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //-------------- DB থেকে Hard Delete
+  const handleHardDeleteFromDB = async (dbId, commentId) => {
+    // if (
+    //   !window.confirm(
+    //     "DB থেকে চিরতরে মুছবেন? এটি পূর্বাবস্থায় ফেরানো যাবে না।",
+    //   )
+    // )
+    //   return;
+
+    const targetId = dbId || commentId;
+    setLoaderFor(`hard_del_${commentId}`, true);
+    try {
+      const res = await axios.delete(
+        `${API_BASE}/db-comment-delete/${targetId}`,
+      );
+      if (res.data.success) {
+        setComments((prev) =>
+          prev.filter((c) => c.commentId !== commentId && c._id !== dbId),
+        );
+        // alert("✅ DB থেকে চিরতরে ডিলিট হয়েছে!");
+      }
+    } catch (err) {
+      const msg = err.response?.data?.error || "DB থেকে ডিলিট করা যায়নি।";
+      alert(`❌ ${msg}`);
+    } finally {
+      setLoaderFor(`hard_del_${commentId}`, false);
+    }
+  };
+
+  //-------------- রিপ্লাই দেওয়া
   const handleReply = async (commentId) => {
     const text = replyTexts[commentId];
     if (!text?.trim()) return alert("রিপ্লাই টেক্সট লিখুন।");
 
     setLoaderFor(`reply_${commentId}`, true);
+    console.log("🚀 Reply text:", text);
+    console.log("commentId", commentId);
     try {
       const res = await axios.post(`${API_BASE}/reply`, {
         commentId,
@@ -411,16 +439,12 @@ const FacebookLiveComments = () => {
     }
   };
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // শুধু Facebook থেকে ডিলিট
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //-------------- শুধু Facebook থেকে ডিলিট
   const handleFacebookDelete = async (commentId) => {
-    if (!window.confirm("Facebook পেজ থেকে কমেন্ট ডিলিট করবেন? (DB-তে থাকবে)"))
-      return;
-
     setLoaderFor(`del_${commentId}`, true);
     try {
       const res = await axios.delete(`${API_BASE}/comment/${commentId}`);
+      console.log(res.data);
       if (res.data.success) {
         setComments((prev) =>
           prev.map((c) =>
@@ -437,17 +461,14 @@ const FacebookLiveComments = () => {
     }
   };
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Facebook ডিলিট + ইউজার ব্লক
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //-------------- Facebook ডিলিট + ইউজার ব্লক
   const handleBlockAndFacebookDelete = async (commentId, senderId) => {
-    if (
-      !window.confirm(
-        "এটি Facebook থেকে কমেন্ট ডিলিট করবে এবং ইউজারকে ব্লক করবে। নিশ্চিত?",
-      )
-    )
-      return;
-
+    // if (
+    //   !window.confirm(
+    //     "এটি Facebook থেকে কমেন্ট ডিলিট করবে এবং ইউজারকে ব্লক করবে। নিশ্চিত?",
+    //   )
+    // )
+    // return;
     setLoaderFor(`block_del_${commentId}`, true);
     try {
       const res = await axios.post(`${API_BASE}/delete-and-block`, {
@@ -477,9 +498,7 @@ const FacebookLiveComments = () => {
     }
   };
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // শুধু ইউজার ব্লক
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //-------------- শুধু ইউজার ব্লক
   const handleOnlyBlockUser = async (senderId) => {
     if (!window.confirm("এই ইউজারকে Facebook পেজ থেকে ব্লক করবেন?")) return;
 
@@ -503,38 +522,7 @@ const FacebookLiveComments = () => {
     }
   };
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // DB থেকে Hard Delete
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  const handleHardDeleteFromDB = async (dbId, commentId) => {
-    // if (
-    //   !window.confirm(
-    //     "DB থেকে চিরতরে মুছবেন? এটি পূর্বাবস্থায় ফেরানো যাবে না।",
-    //   )
-    // )
-    //   return;
-
-    const targetId = dbId || commentId;
-    setLoaderFor(`hard_del_${commentId}`, true);
-    try {
-      const res = await axios.delete(`${API_BASE}/db-comment-delete/${targetId}`);
-      if (res.data.success) {
-        setComments((prev) =>
-          prev.filter((c) => c.commentId !== commentId && c._id !== dbId),
-        );
-        // alert("✅ DB থেকে চিরতরে ডিলিট হয়েছে!");
-      }
-    } catch (err) {
-      const msg = err.response?.data?.error || "DB থেকে ডিলিট করা যায়নি।";
-      alert(`❌ ${msg}`);
-    } finally {
-      setLoaderFor(`hard_del_${commentId}`, false);
-    }
-  };
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // UI
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -681,7 +669,7 @@ const FacebookLiveComments = () => {
                       comment.status === "deleted" ||
                       actionLoading[`del_${comment.commentId}`]
                     }
-                    className="px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-xs font-semibold hover:bg-yellow-600 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="coursor-pointer px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-xs font-semibold hover:bg-yellow-600 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {actionLoading[`del_${comment.commentId}`]
                       ? "ডিলিট হচ্ছে..."
@@ -700,7 +688,7 @@ const FacebookLiveComments = () => {
                       comment.status === "deleted" ||
                       actionLoading[`block_del_${comment.commentId}`]
                     }
-                    className="px-3 py-1.5 bg-gray-800 text-white rounded-lg text-xs font-semibold hover:bg-black transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="coursor-pointer hover:bg-gray-600 px-3 py-1.5 bg-gray-800 text-white rounded-lg text-xs font-semibold  transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {actionLoading[`block_del_${comment.commentId}`]
                       ? "প্রসেস হচ্ছে..."
