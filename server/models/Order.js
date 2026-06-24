@@ -27,12 +27,12 @@ const ActivitySchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 // --- ২. মূল Order স্কিমা ---
 const OrderSchema = new mongoose.Schema({
-  rawInputText: {type: String, required: true},
+  rawInputText: { type: String, required: true },
   castomerName: { type: String, required: true },
   castomerPhone: { type: [String], required: true },
   productCode: { type: String, required: true },
@@ -68,9 +68,13 @@ const OrderSchema = new mongoose.Schema({
       "Delivered",
       "Cancelled",
       "Booked",
+      "Scheduled",
     ],
   },
-
+  scheduledDate: {
+    type: Date,
+    default: null,
+  },
   activities: {
     type: [ActivitySchema],
     default: [],
@@ -81,7 +85,8 @@ const OrderSchema = new mongoose.Schema({
     trackingId: { type: String, default: null }, // কুরিয়ার বুকিং এর সময় যে JSON ডেটা পাঠানো হয়েছিল
     responseData: { type: mongoose.Schema.Types.Mixed, default: null }, // বুকিং এর সময়
     bookedAt: { type: Date, default: null }, // বুকিং স্ট্যাটাস
-    bookingStatus: { //for order status
+    bookingStatus: {
+      //for order status
       type: String,
       enum: [
         // "In-review",
@@ -94,7 +99,8 @@ const OrderSchema = new mongoose.Schema({
       ],
       default: "Pending",
     },
-    courierStatus: { // for order courier status
+    courierStatus: {
+      // for order courier status
       type: String,
       enum: [
         "Unknown",
@@ -106,7 +112,6 @@ const OrderSchema = new mongoose.Schema({
       ],
       default: "Unknown",
     },
-
   },
 
   // createdAt: { type: Date, default: Date.now },

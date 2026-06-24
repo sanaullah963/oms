@@ -6,11 +6,12 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const orderRoutes = require("./routes/orderRoutes");
 const webhookRoutes = require("./routes/webhookRouter");
-const Order = require("./models/Order");
 const { type } = require("os");
 const axios = require("axios");
 const convertNumber = require("./controllers/convertNumber");
 const facebookRoutes = require("./routes/facebookRoutes");
+const Order = require("./models/Order");
+const cron = require('node-cron');
 
 require("dotenv").config();
 
@@ -219,3 +220,60 @@ app.get("/", (req, res) => {
 app.get("/ping", (req, res) => {
   res.status(200).send("ping route");
 });
+
+
+
+
+async function releaseScheduledOrders() {
+    console.log(`[Scheduler - ${new Date().toLocaleString('bn-BD')}] শিডিউলার কাজ শুরু করেছে...`);
+    
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // আজকের দিনের শুরু (00:00:00)
+
+        // ১. যে অর্ডারগুলোর রিলিজ ডেট আজ বা তার আগের এবং স্ট্যাটাস এখনো 'Scheduled'
+        const filter = {
+            orderStatus: 'Scheduled',
+            releaseDate: { $lte: today } // $lte মানে Less Than or Equal
+        };
+
+        const scheduledOrders = await Order.find(filter);
+
+        if (scheduledOrders.length === 0) {
+            console.log('[Scheduler] রিলিজ করার মতো কোনো শিডিউলড অর্ডার পাওয়া যায়নি।');
+            return;
+        }
+
+        console.log(`[Scheduler] মোট ${scheduledOrders.length} টি অর্ডার রিলিজ করা হচ্ছে...`);
+
+        // ২. বাল্ক আপডেট (স্ট্যাটাস 'Pending'-এ পরিবর্তন এবং অ্যাক্টিভিটি টাইমলাইন আপডেট)
+        for (const order of scheduledOrders) {
+            order.orderStatus = 'Pending';
+            order.activities.push({
+                type: 'Status Updated',
+                description: 'অর্ডারটি নির্ধারিত শিডিউল (ভোর ৬:০০ টা) অনুযায়ী স্বয়ংক্রিয়ভাবে রিলিজ করা হয়েছে।',
+                timestamp: new Date()
+            });
+            await order.save();
+            
+            // রিয়েল-টাইম ফ্রন্টএন্ড আপডেটের জন্য Socket.IO এমিট (ঐচ্ছিক)
+            if (io) {
+                io.emit('orderStatusChange', order);
+            }
+        }
+
+        console.log('[Scheduler] সকল নির্ধারিত অর্ডার সফলভাবে রিলিজ করা হয়েছে!');
+
+    } catch (error) {
+        console.error('[Scheduler Error] অর্ডার রিলিজ করার সময় ত্রুটি হয়েছে:', error);
+    }
+}
+
+// ৩. ক্রন জব কনফিগারেশন (বাংলাদেশ সময় প্রতিদিন ভোর ৬:০০ মিনিটে রান হবে)
+cron.schedule('0 0 * * *', () => {
+    releaseScheduledOrders();
+}, {
+    scheduled: true,
+    timezone: "UTC" // রেন্ডার সার্ভার ডিফল্ট UTC ব্যবহার করে
+});
+

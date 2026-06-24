@@ -314,12 +314,12 @@ router.post("/courier/steadfast-bulk", bookSteadfastBulk);
 router.patch("/update-need-attention/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
-    const io = req.app.get("io"); 
+    const io = req.app.get("io");
 
     const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
       { needsAttention: false },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedOrder) {
@@ -328,13 +328,83 @@ router.patch("/update-need-attention/:id", async (req, res) => {
 
     // ২. সকেটের মাধ্যমে ফ্রন্টএন্ডে রিয়েল-টাইম ইভেন্ট পাঠানো হচ্ছে
     if (io) {
-      io.emit("orderStatusChange", updatedOrder); 
+      io.emit("orderStatusChange", updatedOrder);
     }
     console.log("orderId : ", updatedOrder);
-    res.status(200).json({updatedOrder});
+    res.status(200).json({ updatedOrder });
   } catch (error) {
     console.error("Error updating order:", error);
     res.status(500).json({ message: "Server error while updating order." });
+  }
+});
+
+// --- schedule
+router.patch("/order-schedule/:orderId", async (req, res) => {
+  const io = req.app.get("io"); 
+  const { orderId } = req.params;
+  const { scheduledDate, noteText } = req.body;
+
+  // ১. ইনপুট ভ্যালিডেশন
+  if (!scheduledDate) {
+    return res
+      .status(400)
+      .json({status:false, message: "অনুগ্রহ করে একটি সঠিক তারিখ দিন।" });
+  }
+  if(!orderId) {
+    return res
+    .status(400)
+    .json({ status: false, message: "order id missing" });
+  }
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({status: false, message: "অর্ডারটি খুঁজে পাওয়া যায়নি।" });
+    }
+
+    const formattedDate = new Date(scheduledDate);
+    if (isNaN(formattedDate.getTime())) {
+      return res.status(400).json({ status: false, message: "তারিখের ফরম্যাটটি সঠিক নয়।" });
+    }
+
+    const previousStatus = order.orderStatus;
+
+    // ২. অর্ডারের স্ট্যাটাস ও রিলিজ ডেট আপডেট
+    order.orderStatus = "Scheduled";
+    order.scheduledDate = formattedDate; 
+    // ৩. কাস্টমারের দেওয়া নোটটি অ্যাক্টিভিটি টাইমলাইনে পুশ করা
+    const displayDate = formattedDate.toLocaleDateString("bn-BD", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // আপনার চাহিদা অনুযায়ী নোটের টেক্সটটি অ্যাক্টিভিটির ডেসক্রিপশনে যাবে
+    const activityDescription =
+      noteText && noteText.trim() !== ""
+        ? `অর্ডারটি ${displayDate} তারিখের জন্য শিডিউল করা হয়েছে। নোট: ${noteText}`
+        : `অর্ডারটি ${displayDate} তারিখের জন্য শিডিউল করা হয়েছে।`;
+
+    order.activities.push({
+      actor: "User",
+      type: "Status Updated", 
+      description: activityDescription,
+      changedAt: new Date(),
+    });
+
+    const updatedOrder = await order.save();
+
+    if (io) {
+      io.emit("orderStatusChange", updatedOrder);
+    }
+
+    res.status(200).json({
+      status: true,
+      message: "অর্ডারটি সফলভাবে শিডিউল করা হয়েছে!",
+      order: updatedOrder,
+    });
+  } catch (error) {
+    console.error("Error scheduling order:", error);
+    res.status(500).json({ message: "সার্ভার ত্রুটি! আবার চেষ্টা করুন।" });
   }
 });
 
