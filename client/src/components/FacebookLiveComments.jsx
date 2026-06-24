@@ -414,8 +414,8 @@ const FacebookLiveComments = () => {
     if (!text?.trim()) return alert("রিপ্লাই টেক্সট লিখুন।");
 
     setLoaderFor(`reply_${commentId}`, true);
-    console.log("🚀 Reply text:", text);
-    console.log("commentId", commentId);
+    // console.log("🚀 Reply text:", text);
+    // console.log("commentId", commentId);
     try {
       const res = await axios.post(`${API_BASE}/reply`, {
         commentId,
@@ -432,7 +432,7 @@ const FacebookLiveComments = () => {
         );
       }
     } catch (err) {
-      const msg = err.response?.data?.error || "রিপ্লাই পাঠাতে সমস্যা।";
+      const msg = err.response?.data?.message || "রিপ্লাই পাঠাতে সমস্যা।";
       alert(`❌ ${msg}`);
     } finally {
       setLoaderFor(`reply_${commentId}`, false);
@@ -454,7 +454,7 @@ const FacebookLiveComments = () => {
         alert("✅ Facebook থেকে কমেন্ট ডিলিট হয়েছে!");
       }
     } catch (err) {
-      const msg = err.response?.data?.error || "ডিলিট করা যায়নি।";
+      const msg = err.response?.data?.message || "ডিলিট করা যায়নি।";
       alert(`❌ ${msg}`);
     } finally {
       setLoaderFor(`del_${commentId}`, false);
@@ -463,12 +463,6 @@ const FacebookLiveComments = () => {
 
   //-------------- Facebook ডিলিট + ইউজার ব্লক
   const handleBlockAndFacebookDelete = async (commentId, senderId) => {
-    // if (
-    //   !window.confirm(
-    //     "এটি Facebook থেকে কমেন্ট ডিলিট করবে এবং ইউজারকে ব্লক করবে। নিশ্চিত?",
-    //   )
-    // )
-    // return;
     setLoaderFor(`block_del_${commentId}`, true);
     try {
       const res = await axios.post(`${API_BASE}/delete-and-block`, {
@@ -500,7 +494,7 @@ const FacebookLiveComments = () => {
 
   //-------------- শুধু ইউজার ব্লক
   const handleOnlyBlockUser = async (senderId) => {
-    if (!window.confirm("এই ইউজারকে Facebook পেজ থেকে ব্লক করবেন?")) return;
+    // if (!window.confirm("এই ইউজারকে Facebook পেজ থেকে ব্লক করবেন?")) return;
 
     setLoaderFor(`block_${senderId}`, true);
     try {
@@ -515,7 +509,7 @@ const FacebookLiveComments = () => {
         alert("✅ ইউজারকে সফলভাবে ব্লক করা হয়েছে!");
       }
     } catch (err) {
-      const msg = err.response?.data?.error || "ব্লক করা সম্ভব হয়নি।";
+      const msg = err.response?.data?.message || "ব্লক করা সম্ভব হয়নি।";
       alert(`❌ ${msg}`);
     } finally {
       setLoaderFor(`block_${senderId}`, false);
