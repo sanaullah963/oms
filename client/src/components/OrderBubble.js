@@ -78,10 +78,10 @@ export default function OrderBubble({ order, onUpdate }) {
     histryBtn: false,
     copyBtnCheck: false,
   });
-
-  // --- নতুন স্টেট: এডিটিং মোড এবং ফর্ম ডেটা ---
   const [isEditing, setIsEditing] = useState(false);
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [date, setDate] = useState("");
+  const [note, setNote] = useState("");
   const [formData, setFormData] = useState({
     castomerName: order.castomerName,
     castomerPhone: Array.isArray(order.castomerPhone)
@@ -429,6 +429,22 @@ export default function OrderBubble({ order, onUpdate }) {
       });
     };
   };
+
+  // handel schedule
+  const handleSchedule = () => {
+    setIsModalOpen(true);
+    isModalOpen ? setIsModalOpen(false) : setIsModalOpen(true);
+  };
+  const handleSubmit = async () => {
+    console.log("তারিখ:", date, "নোট:", note);
+    if(!date) return alart("seclect date first");
+    const res = await axios.patch(`${API_BASE}/order-schedule/${order._id}`, {
+      scheduledDate: date, noteText: note,
+    })
+    console.log(res.data);
+    
+    setIsModalOpen(false); // মোডাল বন্ধ করে দিন
+  };
   // স্ট্যাটাস কালার ডাইনামিকালি সেট করা
   const statusColor =
     order.orderStatus === "Pending"
@@ -720,36 +736,8 @@ export default function OrderBubble({ order, onUpdate }) {
                 >
                   <MdAddIcCall />
                 </a>
-                {/* rawInput text copy */}
-                {/* <button
-                  className="py-2 px-4 cursor-pointer text-sm rounded-md bg-gray-300 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
-                  onClick={() => handleCopy(order?.rawInputText)}
-                  title="সম্পূর্ণ অর্ডার কপি"
-                  disabled={loading}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="feather feather-copy"
-                  >
-                    <rect
-                      x="9"
-                      y="9"
-                      width="13"
-                      height="13"
-                      rx="2"
-                      ry="2"
-                    ></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                </button> */}
+
+                {/* copy button */}
                 <button
                   className={`py-2 px-4 cursor-pointer text-sm rounded-md transition duration-150 shadow-md ${
                     isLoading.copyBtn
@@ -828,6 +816,19 @@ export default function OrderBubble({ order, onUpdate }) {
                     Booking
                   </button>
                 )}
+
+                {/* schedule button */}
+                <button
+                  className="p-2 cursor-pointer text-sm rounded-md flex items-center bg-green-300 text-gray-900 hover:bg-green-400 transition duration-150 shadow-md"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Bubbling বন্ধ করা
+                    handleSchedule(order);
+                  }}
+                  title="অর্ডার Schedule করুন"
+                  disabled={loading}
+                >
+                  Schedule
+                </button>
               </div>
               {/* ডান দিকের বাটন*/}
               <button
@@ -855,6 +856,46 @@ export default function OrderBubble({ order, onUpdate }) {
                 </svg>
                 {/* <span>ডিলিট</span> */}
               </button>
+
+              {/* শিডিউল Modal */}
+              {isModalOpen && (
+                <div className="  absolute left-1/2  transform -translate-x-1/2 -translate-y-1/2 bg-green-200 p-6 rounded-lg shadow-2xl w-full max-w-sm">
+                  
+                  {/* ডেট ইনপুট */}
+                  
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full border p-2 mb-4 rounded"
+                  />
+
+                  {/* নোট ইনপুট */}
+                  <input
+                    type="text"
+                    placeholder="note (optional)"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="w-full border p-2 mb-4 rounded"
+                  />
+                  
+
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => setIsModalOpen(false)}
+                      className="px-4 py-2 courser-pointer bg-gray-300 rounded hover:bg-gray-400"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      onClick={handleSubmit}
+                      className="courser-pointer px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-800"
+                    >
+                      সেভ করুন
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             {/* permanent note */}
             <div className="">
@@ -886,7 +927,11 @@ export default function OrderBubble({ order, onUpdate }) {
               <span className=" text-sm">
                 {order.activities[order.activities.length - 1].description}
               </span>
-              <DisplayTime timeStamp={order.activities[order.activities.length - 1].timestamp} />
+              <DisplayTime
+                timeStamp={
+                  order.activities[order.activities.length - 1].timestamp
+                }
+              />
             </div>
 
             {/* --- কলাপসিবল ডিটেইলস সেকশন --- */}
