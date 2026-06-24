@@ -534,10 +534,10 @@ const FacebookLiveComments = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-gray-50 min-h-screen">
+    <div className="max-w-4xl mx-auto px-2 py-4 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold text-blue-600 mb-6 border-b pb-3 flex items-center gap-2">
         <span className="animate-ping inline-block w-3 h-3 bg-green-500 rounded-full"></span>
-        ফেসবুক লাইভ কমেন্ট ড্যাশবোর্ড (OMS)
+        Ms beauty
         <span className="ml-auto text-sm text-gray-400 font-normal">
           মোট: {comments.length}টি
         </span>
@@ -552,7 +552,7 @@ const FacebookLiveComments = () => {
           {comments.map((comment) => (
             <div
               key={comment._id || comment.commentId}
-              className={`p-5 bg-white rounded-xl shadow-sm border transition hover:shadow-md ${
+              className={`p-2 bg-gray-200 rounded-md shadow-sm border transition hover:shadow-md ${
                 comment.status === "deleted"
                   ? "border-red-200 bg-red-50/30"
                   : comment.isUserBlocked
@@ -624,13 +624,13 @@ const FacebookLiveComments = () => {
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     {actionLoading[`reply_${comment.commentId}`]
-                      ? "পাঠাচ্ছে..."
-                      : "রিপ্লাই দিন"}
+                      ? "sending..."
+                      : "Reply"}
                   </button>
                 </div>
               )}
 
-              {/* অ্যাকশন বাটন */}
+              {/* acction button */}
               <div className="flex flex-wrap justify-between items-center gap-2 border-t pt-3">
                 {/* DB Hard Delete */}
                 <button

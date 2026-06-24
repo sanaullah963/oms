@@ -3,6 +3,7 @@ import NoteBubble from "@/components/NoteBubble";
 import React from "react";
 import { useOrders } from "@/context/OrderContext";
 import DashboardHeader from "@/components/DashboardHeader";
+import SearchAndMenue from "@/components/SearchAndMenue";
 
   // const sortedDates = Object.keys(groupedOrders);
 
@@ -22,7 +23,8 @@ function page() {
   // console.log("inportantNotes", inportantNotes);
   //inportant Notes sent order array
   return (
-    <div className="p-1.5 md:p-4 bg-gray-100 pb-36">
+    <div className="p-1 md:p-4 bg-gray-100 pb-36">
+      <SearchAndMenue />
       <DashboardHeader totalItems={inportantNotes.length} />
       {
         inportantNotes.map((order) => (
