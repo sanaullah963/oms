@@ -241,7 +241,7 @@ router.post("/block-user", async (req, res) => {
   try {
     // ✅ Meta-র সঠিক Block API format
     // POST /{page-id}/blocked — body-তে data পাঠাতে হবে
-    await axios.post(
+  const blockres =  await axios.post(
       `https://graph.facebook.com/v25.0/${PAGE_ID}/blocked`,
       {
         user: senderId,
@@ -249,7 +249,7 @@ router.post("/block-user", async (req, res) => {
       },
     );
 
-    // console.log(`✅ User ${senderId} blocked. Response:`, blockResponse.data);
+    console.log(`✅ User ${senderId} blocked. Response:`, blockres.data);
 
     await FacebookComment.updateMany({ senderId }, { isUserBlocked: true });
 
@@ -295,12 +295,12 @@ router.post("/delete-and-block", async (req, res) => {
 
   try {
     // ১. ইউজার ব্লক
-    await axios.post(`https://graph.facebook.com/v25.0/${PAGE_ID}/blocked`, {
+   const blockres = await axios.post(`https://graph.facebook.com/v25.0/${PAGE_ID}/blocked`, {
       user: senderId,
       access_token: PAGE_ACCESS_TOKEN,
     });
     results.blocked = true;
-    // console.log(`✅  blocked respons`,blockres.data);
+    console.log(`✅  blocked respons`,blockres.data);
   } catch (blockError) {
     console.error(
       "⚠️ Block Warning:",
