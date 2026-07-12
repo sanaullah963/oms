@@ -104,19 +104,9 @@ router.post("/steadfast", async (req, res) => {
     const updatedOrder = await Order.findOneAndUpdate(
       { "courier.trackingId": data.consignment_id },
       updateObj,
-      // {
-      //   // $set: { orderStatus: data.status },
-      //   $push: {
-      //     activities: {
-      //       author: "Steadfast",
-      //       description: data.tracking_message,
-      //       type: data.notification_type,
-      //     },
-      //   },
-      // },
       { new: true },
     );
-    // ৩. রিয়েল-টাইম আপডেট (Socket.IO)
+
     if (updatedOrder && io) {
       io.emit("orderStatusChange", updatedOrder);
     }

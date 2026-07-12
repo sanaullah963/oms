@@ -641,7 +641,7 @@ export default function OrderBubble({ order, onUpdate }) {
                       </span>
                     )}
                   </div>
-                  {/* oll history */}
+                  {/* all history */}
                   <div>
                     {/* get all history button */}
                     {order?.courierHistory?.all ? (
@@ -674,7 +674,6 @@ export default function OrderBubble({ order, onUpdate }) {
                       </div>
                     )}
 
-                  {order?.needsAttention && <p>AT</p>}
                 </div>
                 {/* </div> */}
                 {/* টাইমস্ট্যাম্প */}
