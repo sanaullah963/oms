@@ -330,7 +330,7 @@ router.patch("/update-need-attention/:id", async (req, res) => {
     if (io) {
       io.emit("orderStatusChange", updatedOrder);
     }
-    console.log("orderId : ", updatedOrder);
+    // console.log("orderId : ", updatedOrder);
     res.status(200).json({ updatedOrder });
   } catch (error) {
     console.error("Error updating order:", error);

@@ -206,7 +206,7 @@ router.post("/steadfast", async (req, res) => {
       message: "Unauthorized: Invalid Token",
     });
   }
-
+  console.log('steadfast webhook response',data);
   const noteText = data.tracking_message || "null set by our server";
   const isImportant = classifyNote(noteText); // true/false — কখনো null না
   const courierLabel = getCourierStatus(data);

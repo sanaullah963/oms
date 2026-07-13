@@ -84,11 +84,11 @@ function SearchAndMenue() {
                   
                 </Link>
                 <Link
-                  href="/dashboard"
+                  href="/note"
                   className="px-4 py-2 border border-green-300 bg-green-300 rounded-md hover:bg-green-200 m-2 flex items-center justify-start gap-2"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <span>Dashboard</span>
+                  <span>Note</span>
 
                   <span className="bg-red-500 text-white text-xs font-bold rounded-sm w-6 h-6 flex items-center justify-center leading-none">
                     {countAttention}

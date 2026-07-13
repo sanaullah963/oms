@@ -32,8 +32,7 @@ router.get("/webhook", (req, res) => {
 // ২. comment recive form FB
 router.post("/webhook", async (req, res) => {
   const body = req.body;
-  // console.log("🔥 Meta Webhook Hit Successfully Received!", JSON.stringify(body, null, 2));
-  // console.log("🔥 Webhook Received:", body);
+
 
   if (body.object === "page") {
     if (body.entry && Array.isArray(body.entry)) {
@@ -65,7 +64,7 @@ router.post("/webhook", async (req, res) => {
                   { upsert: true, new: true, setDefaultsOnInsert: true },
                 );
 
-                // console.log(`💾 Comment Saved to DB: [${savedComment.senderName}] -> ${savedComment.message}`);
+                
 
                 // সকেট ডট আইও (Socket.io) দিয়ে ফ্রন্টএন্ডে লাইভ পুশ করা
                 const io = req.app.get("io");
@@ -110,7 +109,7 @@ router.post("/webhook", async (req, res) => {
 router.get("/comments", async (req, res) => {
   try {
     const comments = await FacebookComment.find().sort({ createdAt: -1 });
-    // console.log('comment---', comments);
+
     res.status(200).json({ success: true, data: comments });
   } catch (error) {
     // console.error("❌ Fetch Comments Error:", error.message);
@@ -249,7 +248,7 @@ router.post("/block-user", async (req, res) => {
       },
     );
 
-    console.log(`✅ User ${senderId} blocked. Response:`, blockres.data);
+    // console.log(`✅ User ${senderId} blocked. Response:`, blockres.data);
 
     await FacebookComment.updateMany({ senderId }, { isUserBlocked: true });
 
@@ -300,7 +299,7 @@ router.post("/delete-and-block", async (req, res) => {
       access_token: PAGE_ACCESS_TOKEN,
     });
     results.blocked = true;
-    console.log(`✅  blocked respons`,blockres.data);
+    // console.log(`✅  blocked respons`,blockres.data);
   } catch (blockError) {
     console.error(
       "⚠️ Block Warning:",
@@ -362,12 +361,12 @@ router.delete("/db-comment-delete/:id", async (req, res) => {
         .json({ success: false, error: "Comment DB-তে পাওয়া যায়নি" });
     }
 
-    console.log(`✅ Comment permanently deleted from DB: ${id}`);
+    // console.log(`✅ Comment permanently deleted from DB: ${id}`);
     res
       .status(200)
       .json({ success: true, message: "DB থেকে চিরতরে ডিলিট হয়েছে" });
   } catch (error) {
-    console.error("❌ Hard Delete Error:", error.message);
+    // console.error("❌ Hard Delete Error:", error.message);
     res
       .status(500)
       .json({ success: false, error: "DB থেকে delete করা যায়নি" });

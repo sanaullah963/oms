@@ -25,7 +25,6 @@ export default function Page() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // অ্যানিমেশন ইফেক্ট (এটি লোকাল UI এর জন্য, তাই এখানেই থাকবে)
   useEffect(() => {
     setIsAnimating(true);
     const t = setTimeout(() => setIsAnimating(false), 180);

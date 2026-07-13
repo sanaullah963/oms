@@ -437,12 +437,13 @@ export default function OrderBubble({ order, onUpdate }) {
   };
   const handleSubmit = async () => {
     console.log("তারিখ:", date, "নোট:", note);
-    if(!date) return alart("seclect date first");
+    if (!date) return alart("seclect date first");
     const res = await axios.patch(`${API_BASE}/order-schedule/${order._id}`, {
-      scheduledDate: date, noteText: note,
-    })
+      scheduledDate: date,
+      noteText: note,
+    });
     console.log(res.data);
-    
+
     setIsModalOpen(false); // মোডাল বন্ধ করে দিন
   };
   // স্ট্যাটাস কালার ডাইনামিকালি সেট করা
@@ -621,9 +622,8 @@ export default function OrderBubble({ order, onUpdate }) {
               }`}
               onClick={() => !loading && setIsExpanded(!isExpanded)}
             >
+              {/* স্ট্যাটাস */}
               <div className="flex justify-between items-start mb-1 ">
-                {/* স্ট্যাটাস */}
-                {/* <div className=""> */}
                 <div className="flex gap-2">
                   <span
                     className={`text-xs font-semibold px-2 py-0.5 rounded-sm ${statusColor}`}
@@ -672,8 +672,8 @@ export default function OrderBubble({ order, onUpdate }) {
                       <div className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-amber-300 text-blue-900">
                         {order?.courier?.courierStatus}
                       </div>
-                    )}
-
+                    )
+                  }
                 </div>
                 {/* </div> */}
                 {/* টাইমস্ট্যাম্প */}
@@ -859,9 +859,8 @@ export default function OrderBubble({ order, onUpdate }) {
               {/* শিডিউল Modal */}
               {isModalOpen && (
                 <div className="  absolute left-1/2  transform -translate-x-1/2 -translate-y-1/2 bg-green-200 p-6 rounded-lg shadow-2xl w-full max-w-sm">
-                  
                   {/* ডেট ইনপুট */}
-                  
+
                   <input
                     type="date"
                     value={date}
@@ -877,7 +876,6 @@ export default function OrderBubble({ order, onUpdate }) {
                     onChange={(e) => setNote(e.target.value)}
                     className="w-full border p-2 mb-4 rounded"
                   />
-                  
 
                   <div className="flex justify-end gap-2">
                     <button
