@@ -15,6 +15,6 @@ router.patch("/order-schedule/:orderId", orderController.scheduleOrder);
 // courier booking
 router.post("/courier/steadfast/:orderId", bookSteadfast);
 router.post("/courier/steadfast-bulk", bookSteadfastBulk);
-router.post("/webhook/steadfast", ordercontroller.steadfastBookingWebhook);
+router.post("/webhook/steadfast", orderController.steadfastBookingWebhook);
 
 module.exports = router;
