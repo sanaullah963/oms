@@ -7,7 +7,7 @@ import SearchAndMenu from "@/components/layout/SearchAndMenu";
 import AuthGuard from "@/components/auth/AuthGuard";
 import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 // import ModeratorSelector from "@/components/dashboard/ModeratorSelector";
-import ModeratorSelector from "@/components/dashboard/Moderatorselector";
+import ModeratorSelector from "@/components/dashboard/ModeratorSelector";
 import StatsCards from "@/components/dashboard/StatsCards";
 import FinancialSummary from "@/components/dashboard/FinancialSummary";
 import TrendChart from "@/components/dashboard/TrendChart";
