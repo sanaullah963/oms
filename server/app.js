@@ -26,7 +26,7 @@ app.use("/api/push", pushRoutes); // ভিতরে subscribe/unsubscribe ন�
 
 // ------ লগইন বাধ্যতামূলক রুট (এডমিন + মডারেটর) ---
 app.use("/api/orders", protect, orderRoutes);
-app.use("/api/facebook", protect, facebookRoutes);
+app.use("/api/facebook", facebookRoutes);
 // dashboard: মডারেটর নিজের অর্ডারের এনালাইসিস দেখবে, এডমিন সব/নির্দিষ্ট মডারেটরের দেখবে (কন্ট্রোলারে স্কোপ করা হয়)
 app.use("/api/dashboard", protect, dashboardRoutes);
 
