@@ -25,7 +25,7 @@ if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
 }
 
 module.exports = {
-  PORT: process.env.PORT || 5000,
+  PORT: process.env.PORT || 9000,
   MONGO_URI: process.env.MONGODB_URI,
   CLIENT_URL: process.env.CLIENT_URL,
   JWT_SECRET: process.env.JWT_SECRET,
