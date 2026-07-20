@@ -3,7 +3,7 @@ const router = express.Router();
 const facebookController = require("../controllers/facebookController");
 
 router.get("/webhook", facebookController.verifyWebhook);
-router.post("/webhook", facebookController.receiveWebhookEvent);
+router.post("/webhook", facebookController.receiveWebhookEvent);//get webhook
 router.get("/comments", facebookController.getComments);
 router.post("/reply", facebookController.replyToComment);
 router.delete("/comment/:commentId", facebookController.deleteFacebookComment);

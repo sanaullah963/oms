@@ -333,7 +333,7 @@ exports.verifyWebhook = (req, res) => {
 // --- POST /api/facebook/webhook - Facebook থেকে কমেন্ট রিসিভ করা (একাধিক পেজ সাপোর্ট করে) ---
 exports.receiveWebhookEvent = async (req, res) => {
   const body = req.body;
-
+  console.log("🎉 Webhook Event Received",body);
   if (body.object !== "page") {
     return res.sendStatus(404);
   }
