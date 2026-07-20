@@ -5,7 +5,7 @@ const orderController = require("../controllers/orderController");
 const { bookSteadfast } = require("../controllers/steadfastController");
 const { bookSteadfastBulk } = require("../controllers/steadfastBulkController");
 
-router.get("/", ordercontroller.getOrders);
+router.get("/", orderController.getOrders);
 router.post("/manual-single", orderController.createManualOrder);
 router.delete("/delete/:id", orderController.deleteOrder);
 router.put("/update-order/:id", orderController.updateOrder);
