@@ -1,0 +1,18 @@
+const BANGLA_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+const ENGLISH_DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+
+/**
+ * বাংলা সংখ্যাকে ইংরেজি সংখ্যায় রূপান্তর করে (ফোন নম্বর normalize করার জন্য ব্যবহৃত হয়)।
+ * @param {string|number} input
+ * @returns {string}
+ */
+function convertNumber(input) {
+  if (!input) return "";
+  let output = input.toString();
+  for (let i = 0; i < BANGLA_DIGITS.length; i++) {
+    output = output.replace(new RegExp(BANGLA_DIGITS[i], "g"), ENGLISH_DIGITS[i]);
+  }
+  return output;
+}
+
+module.exports = convertNumber;

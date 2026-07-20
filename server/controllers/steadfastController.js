@@ -1,22 +1,11 @@
 const axios = require("axios");
 const Order = require("../models/Order");
-const qs = require("qs"); // <-- অত্যন্ত গুরুত্বপূর্ণ
-const { json } = require("body-parser");
-
-
-
-// বাংলা নম্বর থেকে ইংরেজিতে রূপান্তর করার ফাংশন
-function convertNumber(input) {
-  if (!input) return "";
-  const banglaDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-  const englishDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-
-  let output = input.toString();
-  for (let i = 0; i < banglaDigits.length; i++) {
-    output = output.replace(new RegExp(banglaDigits[i], "g"), englishDigits[i]);
-  }
-  return output;
-}
+const convertNumber = require("../utils/convertNumber");
+const {
+  STEADFAST_API_URL,
+  STEADFAST_API_KEY,
+  STEADFAST_SECRET_KEY,
+} = require("../config/env");
 
 exports.bookSteadfast = async (req, res) => {
   const { orderId } = req.params;
@@ -31,52 +20,45 @@ exports.bookSteadfast = async (req, res) => {
       });
     }
 
-    // ২) ফোন নম্বর হ্যান্ডেল করা (যেহেতু এটি এখন Array)
-    // আমরা অ্যারের প্রথম নম্বরটি নিব এবং সেটি ইংরেজিতে কনভার্ট করব
+    // ২) ফোন নম্বর হ্যান্ডেল করা (Array বা string উভয় ফরম্যাট সাপোর্ট)
     let primaryPhone = "";
     if (Array.isArray(order.castomerPhone) && order.castomerPhone.length > 0) {
       primaryPhone = convertNumber(order.castomerPhone[0]);
     } else if (typeof order.castomerPhone === "string") {
       primaryPhone = convertNumber(order.castomerPhone);
     }
-    // console.log("order.castomerPhone", order.castomerPhone);
+
     // ৩) ভ্যালিডেশন চেক
-    // নাম চেক
-    if (!order.castomerName || order.castomerName.trim() === "" || order.castomerName === "N/A") {
+    if (
+      !order.castomerName ||
+      order.castomerName.trim() === "" ||
+      order.castomerName === "N/A"
+    ) {
       return res.json({
         message: `Invalid Customer Name: ${order.castomerName}`,
         status: "error",
       });
     }
 
-   
-    
-
     // ৪) API Body তৈরি করা
-    // console.log("primaryPhone", primaryPhone);
     const requestData = {
-      // recipient_phone: order.castomerPhone,
       invoice: order._id.toString(),
       recipient_name: order.castomerName,
       recipient_phone: primaryPhone,
       recipient_address: order.rawInputText,
       cod_amount: Number(order.totalCOD),
-      note: order.note || "" 
+      note: order.note || "",
     };
 
     // ৫) Steadfast API কল
-    const response = await axios.post(
-      `${process.env.STEADFAST_API_URL}/create_order`,
-      requestData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Api-Key": process.env.STEADFAST_API_KEY,
-          "Secret-Key": process.env.STEADFAST_SECRET_KEY,
-        },
-      }
-    );
-    // console.log("response", response.data);
+    const response = await axios.post(`${STEADFAST_API_URL}/create_order`, requestData, {
+      headers: {
+        "Content-Type": "application/json",
+        "Api-Key": STEADFAST_API_KEY,
+        "Secret-Key": STEADFAST_SECRET_KEY,
+      },
+    });
+
     // ৬) রেসপন্স চেক এবং ডাটাবেজ আপডেট
     if (response?.data?.status !== 200) {
       order.courier = {
@@ -102,7 +84,7 @@ exports.bookSteadfast = async (req, res) => {
     order.activities.push({
       author: "Steadfast",
       type: "Order Booked",
-      description: `অর্ডার বুকিং হয়েছে (Tracking ID: ${response?.data?.consignment?.consignment_id})`,
+      description: `অর্ডার বুকিং হয়েছে (Tracking ID: ${response?.data?.consignment?.consignment_id})`,
       changedAt: new Date(),
     });
     order.orderStatus = "Booked";
@@ -116,7 +98,6 @@ exports.bookSteadfast = async (req, res) => {
       data: response.data,
       newUpdatedOrder,
     });
-
   } catch (error) {
     console.error("Steadfast API Error:", error.response?.data || error.message);
 

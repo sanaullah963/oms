@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import Link from "next/link";
 
 export default function NotFound() {
@@ -7,9 +7,7 @@ export default function NotFound() {
       <div className="max-w-lg text-center">
         <h1 className="text-8xl font-extrabold text-indigo-600">404</h1>
 
-        <h2 className="mt-4 text-3xl font-bold text-gray-800">
-          Page Not Found
-        </h2>
+        <h2 className="mt-4 text-3xl font-bold text-gray-800">Page Not Found</h2>
 
         <p className="mt-3 text-gray-600">
           Sorry, the page you are looking for doesn't exist or has been moved.
@@ -40,4 +38,3 @@ export default function NotFound() {
     </div>
   );
 }
-

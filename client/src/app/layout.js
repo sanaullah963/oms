@@ -1,5 +1,7 @@
+
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 import { OrderProvider } from "@/context/OrderContext";
 
 const geistSans = Geist({
@@ -15,6 +17,15 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Order Management System",
   description: "creating for ms beaute",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/icon-192.png",
+  },
+};
+
+export const viewport = {
+  themeColor: "#4f46e5",
 };
 
 export default function RootLayout({ children }) {
@@ -24,9 +35,9 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         cz-shortcut-listen="true"
       >
-        <OrderProvider>
-          {children}
-        </OrderProvider>
+        <AuthProvider>
+          <OrderProvider>{children}</OrderProvider>
+        </AuthProvider>
       </body>
     </html>
   );

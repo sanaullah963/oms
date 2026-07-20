@@ -1,15 +1,21 @@
-import FacebookLiveComments from '@/components/FacebookLiveComments'
-import SearchAndMenue from '@/components/SearchAndMenue'
-import Link from 'next/link'
-import React from 'react'
+import FacebookLiveComments from "@/components/facebook/FacebookLiveComments";
+import SearchAndMenu from "@/components/layout/SearchAndMenu";
+import AuthGuard from "@/components/auth/AuthGuard";
+import React from "react";
 
-function page() {
+function CommentPageContent() {
   return (
-    <div className='p-1 md:p-3 bg-white border-b border-gray-200 shadow-md'>
-      <SearchAndMenue />
+    <div className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md">
+      <SearchAndMenu />
       <FacebookLiveComments />
     </div>
-  )
+  );
 }
 
-export default page
+export default function CommentPage() {
+  return (
+    <AuthGuard>
+      <CommentPageContent />
+    </AuthGuard>
+  );
+}
