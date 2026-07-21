@@ -100,7 +100,7 @@ function UpdateTokenRow({ page, onUpdated }) {
         onClick={() => setEditing(true)}
         className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-medium hover:bg-indigo-200"
       >
-        🔑 টোকেন আপডেট
+        🔑 Update token
       </button>
     );
   }
@@ -119,7 +119,7 @@ function UpdateTokenRow({ page, onUpdated }) {
         disabled={loading}
         className="text-xs bg-green-600 text-white px-2 py-1 rounded-md font-medium hover:bg-green-700 disabled:opacity-60"
       >
-        {loading ? "..." : "সেভ"}
+        {loading ? "..." : "Save"}
       </button>
       <button
         onClick={() => {
@@ -128,7 +128,7 @@ function UpdateTokenRow({ page, onUpdated }) {
         }}
         className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-md font-medium hover:bg-gray-300"
       >
-        বাতিল
+        Cancel
       </button>
     </div>
   );
@@ -287,11 +287,11 @@ export default function FacebookPageManager({ pages, onRefresh }) {
                   <td className="py-2 px-3">
                     {page.isActive ? (
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                        ✅ সক্রিয়
+                        ✅ Active
                       </span>
                     ) : (
                       <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-medium">
-                        নিষ্ক্রিয়
+                        🚫 Inactive
                       </span>
                     )}
                   </td>
@@ -303,14 +303,14 @@ export default function FacebookPageManager({ pages, onRefresh }) {
                         disabled={busyId === page._id}
                         className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md font-medium hover:bg-yellow-200 disabled:opacity-50"
                       >
-                        {page.isActive ? "নিষ্ক্রিয় করুন" : "সক্রিয় করুন"}
+                        {page.isActive ? "Deactivate" : "Activate"}
                       </button>
                       <button
                         onClick={() => handleDelete(page)}
                         disabled={busyId === page._id}
                         className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-md font-medium hover:bg-red-200 disabled:opacity-50"
                       >
-                        মুছুন
+                        Delete
                       </button>
                     </div>
                   </td>

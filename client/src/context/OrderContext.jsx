@@ -143,6 +143,7 @@ export function OrderProvider({ children }) {
         order._id &&
         order.orderStatus !== "Booked" &&
         order.orderStatus !== "Cancelled" &&
+        order.orderStatus !== "Delivered" &&
         order.orderStatus !== "Confirmed",
     );
   }, [orders]);
