@@ -1,26 +1,30 @@
+
 const Order = require("../models/Order");
 const { parseOrderDetails } = require("../utils/parser");
+const { sendNotificationToApprovedUsers } = require("../utils/webPush");
+const { emitOrderUpdate } = require("../utils/socketBroadcast");
 
 // প্যাটার্ন: একাধিক অর্ডার আলাদা করার জন্য (WhatsApp/Messenger টাইমস্ট্যাম্প ট্যাগ)
 const MULTIPLE_ORDERS_PATTERN =
   /\[\d{1,2}\/\d{1,2},\s\d{1,2}:\d{2}\s(?:AM|PM|am|pm)\]\s[^:]+:\s?/g;
 
-// --- GET /api/orders - সব অর্ডার লিস্ট করা ---
+// --- GET /api/orders - সব অর্ডার লিস্ট করা (মডারেটর শুধু নিজের তৈরি অর্ডার দেখবে) ---
 exports.getOrders = async (req, res) => {
   try {
-    // সঠিক টাইমজোন মেইনটেইন করে ২ দিন আগের সময় বের করা
     const today = new Date();
     const twoDaysAgo = new Date(today);
     twoDaysAgo.setDate(today.getDate() - 2);
 
+    const ownershipFilter =
+      req.user.role === "moderator" ? { createdBy: req.user._id } : {};
+
     const orders = await Order.aggregate([
-      // ১. last activity বের করা
+      { $match: ownershipFilter },
       {
         $addFields: {
           lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
         },
       },
-      // ২. filter: Cancelled/Booked শুধু সাম্প্রতিক ২ দিনের, বাকি সব status-এর সবগুলো
       {
         $match: {
           $or: [
@@ -32,7 +36,6 @@ exports.getOrders = async (req, res) => {
           ],
         },
       },
-      // ৩. সর্বশেষ activity অনুযায়ী সর্ট
       { $sort: { lastActivityTime: -1 } },
     ]);
 
@@ -43,7 +46,6 @@ exports.getOrders = async (req, res) => {
   }
 };
 
-// ইনপুট টেক্সট থেকে একাধিক অর্ডার আলাদা করে প্রতিটির জন্য বেসিক ফিল্ড বের করা
 function extractOrdersFromRawText(rawInputText) {
   let rawOrders = rawInputText
     .split(MULTIPLE_ORDERS_PATTERN)
@@ -84,7 +86,6 @@ function extractOrdersFromRawText(rawInputText) {
   return ordersToSave;
 }
 
-// একই ফোন নম্বরে আগে কতগুলো অর্ডার হয়েছে তা বের করে প্রতিটি অর্ডারে courierHistory.our সেট করা
 async function attachCourierHistory(ordersToSave) {
   const phoneNumbers = ordersToSave.flatMap((o) => o.castomerPhone);
 
@@ -135,10 +136,26 @@ exports.createManualOrder = async (req, res) => {
 
     const ordersWithHistory = await attachCourierHistory(ordersToSave);
 
-    const savedOrders = await Order.insertMany(ordersWithHistory);
+    const ordersWithOwner = ordersWithHistory.map((order) => ({
+      ...order,
+      createdBy: req.user._id,
+      createdByName: req.user.name,
+    }));
+
+    const savedOrders = await Order.insertMany(ordersWithOwner);
     if (io) {
-      savedOrders.forEach((order) => io.emit("orderStatusChange", order));
+      savedOrders.forEach((order) => emitOrderUpdate(io, order));
     }
+
+    // --- Push Notification: নতুন অর্ডার এলে সব approved ইউজারকে জানানো ---
+    sendNotificationToApprovedUsers({
+      title: "🛒 নতুন অর্ডার এসেছে",
+      body:
+        savedOrders.length > 1
+          ? `${savedOrders.length}টি নতুন অর্ডার তৈরি হয়েছে।`
+          : `${savedOrders[0]?.castomerName || "নতুন অর্ডার"} - ৳${savedOrders[0]?.totalCOD}`,
+      url: "/",
+    }).catch((err) => console.error("Order notification error:", err));
 
     return res.status(201).json({
       message: `${savedOrders.length} orders created`,
@@ -216,7 +233,7 @@ exports.updateNeedAttention = async (req, res) => {
       return res.status(404).json({ message: "Order not found." });
     }
 
-    if (io) io.emit("orderStatusChange", updatedOrder);
+    if (io) emitOrderUpdate(io, updatedOrder);
     return res.status(200).json({ updatedOrder });
   } catch (error) {
     console.error("Error updating order:", error);
@@ -279,7 +296,7 @@ exports.scheduleOrder = async (req, res) => {
 
     const updatedOrder = await order.save();
 
-    if (io) io.emit("orderStatusChange", updatedOrder);
+    if (io) emitOrderUpdate(io, updatedOrder);
 
     return res.status(200).json({
       status: true,
@@ -294,7 +311,7 @@ exports.scheduleOrder = async (req, res) => {
   }
 };
 
-// --- POST /api/orders/webhook/steadfast (booking-time webhook, orderRoutes-এ ছিল) ---
+// --- POST /api/orders/webhook/steadfast ---
 exports.steadfastBookingWebhook = async (req, res) => {
   const io = req.app.get("io");
   const { consignment_id, invoice, status, notification_type, tracking_message } =
@@ -322,7 +339,7 @@ exports.steadfastBookingWebhook = async (req, res) => {
     );
 
     if (updatedOrder) {
-      if (io) io.emit("orderStatusChange", updatedOrder);
+      if (io) emitOrderUpdate(io, updatedOrder);
       return res
         .status(200)
         .json({ success: true, message: "Webhook processed" });
@@ -334,3 +351,15 @@ exports.steadfastBookingWebhook = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
