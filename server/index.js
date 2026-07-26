@@ -49,6 +49,8 @@ io.on("connection", (socket) => {
     socket.join(`user:${socket.user._id}`);
     if (socket.user.role === "admin") {
       socket.join("role:admin");
+    } else if (socket.user.role === "moderator") {
+      socket.join("role:moderator");
     }
   }
 
@@ -67,8 +69,3 @@ startScheduledOrderReleaserJob(io);
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-// httpServer.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
-//   // 🔍 ভার্সন মার্কার — এটা দেখলে বোঝা যাবে সার্ভার সর্বশেষ (post_id-based + debug fields) কোড চালাচ্ছে কিনা
-//   console.log("🏷️  facebookController version: fb-page-debug-v2 (post_id-based + debug fields)");
-// });

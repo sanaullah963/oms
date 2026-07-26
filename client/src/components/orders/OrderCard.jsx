@@ -23,7 +23,7 @@ function getStatusColor(status) {
   return STATUS_COLOR_MAP[status] || "text-indigo-600 bg-indigo-100";
 }
 
-export default function OrderCard({ order, onUpdate }) {
+export default function OrderCard({ order, onUpdate, setSearchQuery }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [isCopied, setIsCopied] = useState(false);
@@ -46,7 +46,12 @@ export default function OrderCard({ order, onUpdate }) {
   const [touchedPhones, setTouchedPhones] = useState(
     new Array(formData.castomerPhone.length).fill(false),
   );
-  const [modal, setModal] = useState({ isVisible: false, type: "", message: "", action: null });
+  const [modal, setModal] = useState({
+    isVisible: false,
+    type: "",
+    message: "",
+    action: null,
+  });
 
   const {
     loading,
@@ -63,11 +68,15 @@ export default function OrderCard({ order, onUpdate }) {
   const showMessage = (type, message, action = null) => {
     setModal({ isVisible: true, type, message, action });
   };
-  const closeModal = () => setModal({ isVisible: false, type: "", message: "", action: null });
+  const closeModal = () =>
+    setModal({ isVisible: false, type: "", message: "", action: null });
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: name === "totalCOD" ? Number(value) : value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "totalCOD" ? Number(value) : value,
+    }));
   };
 
   const handlePhoneChange = (index, value) => {
@@ -93,7 +102,10 @@ export default function OrderCard({ order, onUpdate }) {
   };
 
   const handleAddPhone = () => {
-    setFormData((prev) => ({ ...prev, castomerPhone: [...prev.castomerPhone, ""] }));
+    setFormData((prev) => ({
+      ...prev,
+      castomerPhone: [...prev.castomerPhone, ""],
+    }));
     setTouchedPhones((prev) => [...prev, true]);
   };
 
@@ -112,7 +124,12 @@ export default function OrderCard({ order, onUpdate }) {
       alert("কোন একটা নাম্বার 11 ডিজিট নয়");
       return;
     }
-    if (!formData.castomerName || !formData.castomerPhone || !formData.totalCOD || !formData.productCode) {
+    if (
+      !formData.castomerName ||
+      !formData.castomerPhone ||
+      !formData.totalCOD ||
+      !formData.productCode
+    ) {
       toast.error("সবগুলি ফিল্ড পূরণ করুন");
       return;
     }
@@ -191,6 +208,10 @@ export default function OrderCard({ order, onUpdate }) {
     setIsModalOpen(false);
   };
 
+  // const handelOurHidtrySearchDetails = ()=>{
+  //   setSearchQuery(order.castomerPhone[0])
+  // }
+
   const lastActivity = order.activities?.[order.activities.length - 1];
   const statusColor = getStatusColor(order.orderStatus);
 
@@ -219,13 +240,23 @@ export default function OrderCard({ order, onUpdate }) {
               {/* স্ট্যাটাস রো */}
               <div className="flex justify-between items-start mb-1 ">
                 <div className="flex gap-2">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-sm ${statusColor}`}>
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-sm ${statusColor}`}
+                  >
                     {order.orderStatus}
                   </span>
 
                   {order?.courierHistory?.our > 0 && (
                     <span className="text-xs text-black gap-3 font-medium bg-green-300 px-2 py-0.5 rounded-lg">
-                      <span className="text-green-700">{order?.courierHistory?.our}</span>
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSearchQuery(order.castomerPhone[0]);
+                        }}
+                        className="text-green-700"
+                      >
+                        {order?.courierHistory?.our}
+                      </span>
                     </span>
                   )}
 
@@ -233,8 +264,13 @@ export default function OrderCard({ order, onUpdate }) {
                     {order?.courierHistory?.all ? (
                       <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
                         <span> All </span>
-                        <span className="text-green-700">{order?.courierHistory?.all?.success}</span>/
-                        <span className="text-red-600">{order?.courierHistory?.all?.cancel}</span>
+                        <span className="text-green-700">
+                          {order?.courierHistory?.all?.success}
+                        </span>
+                        /
+                        <span className="text-red-600">
+                          {order?.courierHistory?.all?.cancel}
+                        </span>
                       </span>
                     ) : (
                       <button
@@ -249,11 +285,12 @@ export default function OrderCard({ order, onUpdate }) {
                     )}
                   </div>
 
-                  {order?.courier?.courierStatus && order.courier.courierStatus !== "Unknown" && (
-                    <div className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-amber-300 text-blue-900">
-                      {order.courier.courierStatus}
-                    </div>
-                  )}
+                  {order?.courier?.courierStatus &&
+                    order.courier.courierStatus !== "Unknown" && (
+                      <div className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-amber-300 text-blue-900">
+                        {order.courier.courierStatus}
+                      </div>
+                    )}
                 </div>
                 <div className="text-xs font-medium flex flex-col">
                   <DisplayTime timeStamp={order.activities[0]?.timestamp} />
@@ -266,7 +303,10 @@ export default function OrderCard({ order, onUpdate }) {
                 <span className="text-purple-600"> {order.productCode} </span>
               </p>
 
-              <OrderPhoneList castomerPhone={order.castomerPhone} onCopy={handleCopy} />
+              <OrderPhoneList
+                castomerPhone={order.castomerPhone}
+                onCopy={handleCopy}
+              />
 
               <p className="text-xs text-gray-600 mt-1 h-10">
                 {order?.rawInputText || "পাওয়া যায়নি"}
@@ -336,7 +376,9 @@ export default function OrderCard({ order, onUpdate }) {
                     <p>SteadFast id : </p>
                     <p
                       className="text-blue-600 hover:underline"
-                      onClick={() => navigator.clipboard.writeText(order.courier.trackingId)}
+                      onClick={() =>
+                        navigator.clipboard.writeText(order.courier.trackingId)
+                      }
                     >
                       {order.courier.trackingId}
                     </p>

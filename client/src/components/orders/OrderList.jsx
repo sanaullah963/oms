@@ -95,7 +95,7 @@ export default function OrderList({ orders, onOrderUpdate, activeStatus, setSear
 
           <div className="flex flex-col space-y-3">
             {groupedOrders[date].map((order) => (
-              <OrderCard key={order?._id} order={order} onUpdate={onOrderUpdate} />
+              <OrderCard key={order?._id} order={order} onUpdate={onOrderUpdate} setSearchQuery={setSearchQuery} />
             ))}
           </div>
         </div>

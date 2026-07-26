@@ -98,15 +98,21 @@ async function handleSearchQuery(socket, q) {
     const regex = new RegExp(safeQuery, "i");
 
     const ownershipFilter =
-      socket.user?.role === "moderator" ? { createdBy: socket.user._id } : {};
+      socket.user?.role === "moderator"
+        ? { $or: [{ createdBy: socket.user._id }, { createdBy: null }] }
+        : {};
 
     const orders = await Order.find({
-      ...ownershipFilter,
-      $or: [
-        { castomerPhone: { $regex: regex } },
-        { castomerName: { $regex: regex } },
-        { rawInputText: { $regex: regex } },
-        { "courier.trackingId": { $regex: regex } },
+      $and: [
+        ownershipFilter,
+        {
+          $or: [
+            { castomerPhone: { $regex: regex } },
+            { castomerName: { $regex: regex } },
+            { rawInputText: { $regex: regex } },
+            { "courier.trackingId": { $regex: regex } },
+          ],
+        },
       ],
     }).limit(5);
 

@@ -1,4 +1,3 @@
-
 const Order = require("../models/Order");
 const { parseOrderDetails } = require("../utils/parser");
 const { sendNotificationToApprovedUsers } = require("../utils/webPush");
@@ -11,20 +10,28 @@ const MULTIPLE_ORDERS_PATTERN =
 // --- GET /api/orders - সব অর্ডার লিস্ট করা (মডারেটর শুধু নিজের তৈরি অর্ডার দেখবে) ---
 exports.getOrders = async (req, res) => {
   try {
+    // সঠিক টাইমজোন মেইনটেইন করে ২ দিন আগের সময় বের করা
     const today = new Date();
     const twoDaysAgo = new Date(today);
     twoDaysAgo.setDate(today.getDate() - 2);
 
+    // ✅ মডারেটর হলে শুধু নিজের তৈরি অর্ডার দেখতে পাবে, এডমিন সব দেখবে
+    // মডারেটর নিজের তৈরি অর্ডার + "মালিকহীন" অর্ডার (যেমন ল্যান্ডিং পেজ থেকে আসা, যেটা
+    // কোনো নির্দিষ্ট মডারেটরের না, শেয়ার্ড পেন্ডিং কিউ হিসেবে সবাই দেখবে) — দুটোই দেখবে
     const ownershipFilter =
-      req.user.role === "moderator" ? { createdBy: req.user._id } : {};
+      req.user.role === "moderator"
+        ? { $or: [{ createdBy: req.user._id }, { createdBy: null }] }
+        : {};
 
     const orders = await Order.aggregate([
       { $match: ownershipFilter },
+      // ১. last activity বের করা
       {
         $addFields: {
           lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
         },
       },
+      // ২. filter: Cancelled/Booked শুধু সাম্প্রতিক ২ দিনের, বাকি সব status-এর সবগুলো
       {
         $match: {
           $or: [
@@ -36,6 +43,7 @@ exports.getOrders = async (req, res) => {
           ],
         },
       },
+      // ৩. সর্বশেষ activity অনুযায়ী সর্ট
       { $sort: { lastActivityTime: -1 } },
     ]);
 
@@ -46,6 +54,7 @@ exports.getOrders = async (req, res) => {
   }
 };
 
+// ইনপুট টেক্সট থেকে একাধিক অর্ডার আলাদা করে প্রতিটির জন্য বেসিক ফিল্ড বের করা
 function extractOrdersFromRawText(rawInputText) {
   let rawOrders = rawInputText
     .split(MULTIPLE_ORDERS_PATTERN)
@@ -86,6 +95,7 @@ function extractOrdersFromRawText(rawInputText) {
   return ordersToSave;
 }
 
+// একই ফোন নম্বরে আগে কতগুলো অর্ডার হয়েছে তা বের করে প্রতিটি অর্ডারে courierHistory.our সেট করা
 async function attachCourierHistory(ordersToSave) {
   const phoneNumbers = ordersToSave.flatMap((o) => o.castomerPhone);
 
@@ -136,6 +146,7 @@ exports.createManualOrder = async (req, res) => {
 
     const ordersWithHistory = await attachCourierHistory(ordersToSave);
 
+    // ✅ কে অর্ডারটা তৈরি করেছে তা সেভ করা (মডারেটরের visibility filter করার জন্য দরকার)
     const ordersWithOwner = ordersWithHistory.map((order) => ({
       ...order,
       createdBy: req.user._id,
@@ -311,7 +322,7 @@ exports.scheduleOrder = async (req, res) => {
   }
 };
 
-// --- POST /api/orders/webhook/steadfast ---
+// --- POST /api/orders/webhook/steadfast (booking-time webhook, orderRoutes-এ ছিল) ---
 exports.steadfastBookingWebhook = async (req, res) => {
   const io = req.app.get("io");
   const { consignment_id, invoice, status, notification_type, tracking_message } =
@@ -351,15 +362,3 @@ exports.steadfastBookingWebhook = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-

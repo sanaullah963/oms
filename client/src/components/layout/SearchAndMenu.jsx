@@ -3,13 +3,20 @@ import { useOrders } from "@/context/OrderContext";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import React, { useState } from "react";
+import { usePathname } from 'next/navigation'
 
 function SearchAndMenu() {
   const { searchQuery, setSearchQuery, inportantNotes } = useOrders();
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const countAttention = inportantNotes.length;
-
+  const pathname = usePathname()
+  const menueItems = [
+    { title: "Home", link: "/" },
+    { title: "📊 Dashboard", link: "/dashboard" },
+    { title: "Note", link: "/note" },
+    { title: "Comment", link: "/comment" },
+  ];
   return (
     <div>
       <div className="flex justify-between ">
@@ -69,45 +76,32 @@ function SearchAndMenu() {
           </button>
 
           {isMenuOpen && (
-            <div className="absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-md shadow-lg z-50 animate-in fade-in zoom-in duration-200">
+            <div className="fled flex-col absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-md shadow-lg z-50 animate-in fade-in zoom-in duration-200">
               {user && (
                 <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 m-2 mb-0">
-                  👤 {user.name} <span className="text-gray-400">({user.role})</span>
+                  👤 {user.name}{" "}
+                  <span className="text-gray-400">({user.role})</span>
                 </div>
               )}
-              <Link
-                href="/"
-                className="px-4 py-2 border border-green-300 bg-green-300 rounded-md hover:bg-green-200 m-2 flex items-center justify-start gap-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <span>Home</span>
-              </Link>
-              <Link
-                href="/dashboard"
-                className="px-4 py-2 border border-indigo-300 bg-indigo-300 rounded-md hover:bg-indigo-200 m-2 flex items-center justify-start gap-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <span>📊 Dashboard</span>
-              </Link>
-              <Link
-                href="/note"
-                className="px-4 py-2 border border-green-300 bg-green-300 rounded-md hover:bg-green-200 m-2 flex items-center justify-start gap-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <span>Note</span>
-                <span className="bg-red-500 text-white text-xs font-bold rounded-sm w-6 h-6 flex items-center justify-center leading-none">
-                  {countAttention}
-                </span>
-              </Link>
-              <Link
-                href="/comment"
-                className="block px-4 py-2 border border-green-300 bg-green-300 rounded-md hover:bg-green-200 m-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Comments
-              </Link>
+
+              {menueItems.map((item, index) => (
+                <Link
+                  key={index}
+                  href={item.link}
+                  className={`px-4 py-2 border border-green-500 bg-green-300 rounded-md hover:bg-green-200 m-2 flex items-center justify-start gap-2 ${pathname === item.link && "bg-indigo-400"} `}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.title}
+                  {item.title === "Note" && countAttention > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-sm w-6 h-6 flex items-center justify-center leading-none">
+                      {countAttention}
+                    </span>
+                  )}
+                </Link>
+              ))}
+              
               <button
-                className="w-full text-left px-4 py-2 hover:bg-red-100 text-red-600 cursor-pointer"
+                className="w-full text-left px-4 py-2  hover:bg-red-100 text-red-600 cursor-pointer"
                 onClick={() => {
                   setIsMenuOpen(false);
                   logout();
