@@ -10,4 +10,6 @@ import api from "./api";
 export const dashboardService = {
   getSummary: (from, to, moderatorId) =>
     api.get("/api/dashboard/summary", { params: { from, to, moderatorId } }),
+  getOrders: (status, from, to, moderatorId) =>
+    api.get("/api/dashboard/orders", { params: { status, from, to, moderatorId } }),
 };

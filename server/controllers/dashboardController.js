@@ -1,3 +1,5 @@
+
+
 const mongoose = require("mongoose");
 const Order = require("../models/Order");
 
@@ -161,6 +163,7 @@ exports.getDashboardSummary = async (req, res) => {
         totalCodCharge: delivered.codCharge || 0,
         netDeduction,
         mismatchCount: mismatches.length,
+        mainBalanceAfterCosting: (delivered.deliveredAmount || 0) - netDeduction,
       },
       dailyTrend: Object.values(trendMap).sort((a, b) => a.date.localeCompare(b.date)),
       mismatches,
@@ -168,5 +171,40 @@ exports.getDashboardSummary = async (req, res) => {
   } catch (error) {
     console.error("Dashboard summary error:", error);
     return res.status(500).json({ message: "ড্যাশবোর্ড ডেটা আনতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- GET /api/dashboard/orders?status=sent|delivered|cancelled&from=&to=&moderatorId= ---
+// কার্ডে ক্লিক করলে সংশ্লিষ্ট পার্সেলগুলোর লিস্ট দেখানোর জন্য
+exports.getDashboardOrders = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const { fromDate, toDate } = getDateRange(req);
+    const ownershipFilter = getOwnershipFilter(req);
+
+    const filter = { ...ownershipFilter };
+    if (status === "sent") {
+      filter["courier.bookedAt"] = { $gte: fromDate, $lte: toDate };
+    } else if (status === "delivered") {
+      filter.orderStatus = "Delivered";
+      filter["courier.statusUpdatedAt"] = { $gte: fromDate, $lte: toDate };
+    } else if (status === "cancelled") {
+      filter.orderStatus = "Cancelled";
+      filter["courier.statusUpdatedAt"] = { $gte: fromDate, $lte: toDate };
+    } else {
+      return res
+        .status(400)
+        .json({ message: "status প্যারামিটার সঠিক নয় (sent/delivered/cancelled)।" });
+    }
+
+    const orders = await Order.find(filter)
+      .select("castomerName castomerPhone totalCOD orderStatus courier createdByName createdAt")
+      .sort({ "courier.statusUpdatedAt": -1, "courier.bookedAt": -1 })
+      .limit(500);
+
+    return res.status(200).json({ orders });
+  } catch (error) {
+    console.error("Dashboard orders list error:", error);
+    return res.status(500).json({ message: "লিস্ট আনতে ব্যর্থ হয়েছে।" });
   }
 };
