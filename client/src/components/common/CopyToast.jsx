@@ -27,7 +27,7 @@ export default function CopyToast() {
       //     ? "opacity-100 translate-y-0"
       //     : "opacity-0 translate-y-3 pointer-events-none"
       // }`}
-      className={`fixed bottom-8 left-1/2 z-[99999]
+      className={`fixed bottom-24 left-1/2 z-[99999]
   -translate-x-1/2 transition-opacity duration-300
   ${show ? "opacity-100" : "opacity-0 pointer-events-none"}`}
     >
