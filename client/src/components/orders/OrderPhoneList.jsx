@@ -1,6 +1,7 @@
+import { copyToClipboard } from "@/utils/copyToClipboard";
 import React from "react";
 
-function OrderPhoneList({ castomerPhone, onCopy }) {
+function OrderPhoneList({ castomerPhone }) {
   const phones = Array.isArray(castomerPhone)
     ? castomerPhone
     : (castomerPhone || "").split(", ");
@@ -13,7 +14,7 @@ function OrderPhoneList({ castomerPhone, onCopy }) {
           className="text-sm font-medium text-blue-600 hover:underline"
           onClick={(e) => {
             e.stopPropagation();
-            onCopy(phone);
+            copyToClipboard(phone);
           }}
         >
           {index > 0 && " |"} {phone}

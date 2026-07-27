@@ -11,6 +11,7 @@ import OrderActions from "./OrderActions";
 import ScheduleModal from "./ScheduleModal";
 import OrderActivityTimeline from "./OrderActivityTimeline";
 import OrderPhoneList from "./OrderPhoneList";
+import { copyToClipboard } from "@/utils/copyToClipboard";
 
 const STATUS_COLOR_MAP = {
   Pending: "text-yellow-600 bg-yellow-100",
@@ -151,17 +152,6 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
     setNoteText("");
   };
 
-  const handleCopy = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 1000);
-    } catch (err) {
-      console.error("Copy failed:", err);
-      showMessage("alert", "ত্রুটি: কপি করতে ব্যর্থ হয়েছে।", null);
-    }
-  };
-
   const handleBooking = async () => {
     if (order.orderStatus === "Booked") {
       showMessage("alert", "অর্ডারটি আগে বুকিং করা", null);
@@ -207,11 +197,6 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
     await scheduleOrder(scheduleDate, scheduleNote);
     setIsModalOpen(false);
   };
-
-  // const handelOurHidtrySearchDetails = ()=>{
-  //   setSearchQuery(order.castomerPhone[0])
-  // }
-
   const lastActivity = order.activities?.[order.activities.length - 1];
   const statusColor = getStatusColor(order.orderStatus);
 
@@ -302,27 +287,25 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
                 <span> {order.totalCOD} </span> --
                 <span className="text-purple-600"> {order.productCode} </span>
               </p>
-
-              <OrderPhoneList
-                castomerPhone={order.castomerPhone}
-                onCopy={handleCopy}
-              />
+              {/* phone number list*/}
+              <OrderPhoneList castomerPhone={order.castomerPhone} />
 
               <p className="text-xs text-gray-600 mt-1 h-10">
                 {order?.rawInputText || "পাওয়া যায়নি"}
               </p>
             </div>
 
+            {/* actions : call, edit, booking, schedule, delete */}
             <div className="relative">
               <OrderActions
                 order={order}
                 loading={loading}
                 isCopied={isCopied}
-                onCopyRaw={() => handleCopy(order?.rawInputText)}
                 onEdit={() => setIsEditing(true)}
                 onBooking={handleBooking}
                 onSchedule={() => setIsModalOpen(true)}
                 onDelete={handleDeleteOrder}
+                setIsCopied={setIsCopied}
               />
 
               {isModalOpen && (
@@ -342,7 +325,7 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
                 <p className="text-sm text-red-700">{order.permanentNote}</p>
               </div>
             )}
-
+            {/* order status change buttons */}
             <div className="flex flex-wrap gap-1 mt-2">
               {STATUS_SHORTCUTS.map((shortcut) => (
                 <button
@@ -375,10 +358,8 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
                   <div className="text-sm font-medium flex items-center gap-1">
                     <p>SteadFast id : </p>
                     <p
-                      className="text-blue-600 hover:underline"
-                      onClick={() =>
-                        navigator.clipboard.writeText(order.courier.trackingId)
-                      }
+                      className="text-blue-600 cursor-pointer"
+                      onClick={() => copyToClipboard(order.courier.trackingId)}
                     >
                       {order.courier.trackingId}
                     </p>

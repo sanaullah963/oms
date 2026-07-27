@@ -55,7 +55,7 @@ exports.getOrders = async (req, res) => {
 };
 
 // ইনপুট টেক্সট থেকে একাধিক অর্ডার আলাদা করে প্রতিটির জন্য বেসিক ফিল্ড বের করা
-function extractOrdersFromRawText(rawInputText) {
+function extractOrdersFromRawText(rawInputText,user) {
   let rawOrders = rawInputText
     .split(MULTIPLE_ORDERS_PATTERN)
     .filter((content) => content.trim().length >= 11);
@@ -70,7 +70,11 @@ function extractOrdersFromRawText(rawInputText) {
     const words = order.trim().split(/\s+/);
     const lastWord = words[words.length - 1];
     const isLastWordNumber = /^\d+$/.test(lastWord);
-    const totalCOD = isLastWordNumber ? (lastWord.length < 6 ? lastWord : "0") : "0";
+    const totalCOD = isLastWordNumber
+      ? lastWord.length < 6
+        ? lastWord
+        : "0"
+      : "0";
     const productCode = words.length >= 2 ? words[words.length - 2] : "empty";
     const parsedData = parseOrderDetails(order);
 
@@ -83,9 +87,12 @@ function extractOrdersFromRawText(rawInputText) {
         totalCOD,
         activities: [
           {
+            author: user.name,
             type: "Order Created",
             description:
-              rawOrders.length > 1 ? "Bulk created" : "Manual single created",
+              rawOrders.length > 1
+                ? `Bulk created by ${user.name}`
+                : `Manual single created by ${user.name}`,
           },
         ],
       });
@@ -134,8 +141,8 @@ exports.createManualOrder = async (req, res) => {
         status: "error",
       });
     }
-
-    const ordersToSave = extractOrdersFromRawText(rawInputText);
+    // activities
+    const ordersToSave = extractOrdersFromRawText(rawInputText, req.user);
 
     if (ordersToSave.length === 0) {
       return res.status(400).json({
@@ -299,7 +306,7 @@ exports.scheduleOrder = async (req, res) => {
         : `অর্ডারটি ${displayDate} তারিখের জন্য শিডিউল করা হয়েছে।`;
 
     order.activities.push({
-      actor: "User",
+      actor: req.user.name,
       type: "Status Updated",
       description: activityDescription,
       changedAt: new Date(),
@@ -325,8 +332,13 @@ exports.scheduleOrder = async (req, res) => {
 // --- POST /api/orders/webhook/steadfast (booking-time webhook, orderRoutes-এ ছিল) ---
 exports.steadfastBookingWebhook = async (req, res) => {
   const io = req.app.get("io");
-  const { consignment_id, invoice, status, notification_type, tracking_message } =
-    req.body;
+  const {
+    consignment_id,
+    invoice,
+    status,
+    notification_type,
+    tracking_message,
+  } = req.body;
 
   try {
     const updateData = {

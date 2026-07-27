@@ -1,12 +1,13 @@
 import React from "react";
 import { MdAddIcCall } from "react-icons/md";
 import { FaCheckCircle } from "react-icons/fa";
+import { copyToClipboard } from "@/utils/copyToClipboard";
 
 function OrderActions({
   order,
   loading,
   isCopied,
-  onCopyRaw,
+  setIsCopied,
   onEdit,
   onBooking,
   onSchedule,
@@ -20,23 +21,27 @@ function OrderActions({
     <div className="flex justify-between mt-1 pt-1 border-t border-gray-100">
       {/* বাম দিকের বাটন: কপি, কল, এডিট */}
       <div className="flex space-x-2">
+        {/* call action button */}
         <a
           href={`tel:${firstPhone}`}
-          onClick={() => navigator.clipboard.writeText(order.castomerPhone)}
+          onClick={() => copyToClipboard(order.castomerPhone)}
           className="py-2 px-4 text-sm rounded-md flex items-center bg-blue-300 text-blue-600 hover:bg-blue-200 transition duration-150 shadow-md"
           title="সরাসরি কল করুন"
         >
           <MdAddIcCall />
         </a>
-
+        {/* row text copy button */}
         <button
           className={`py-2 px-4 cursor-pointer text-sm rounded-md transition duration-150 shadow-md ${
             isCopied
               ? "bg-green-200 text-green-600 hover:bg-green-300"
               : "bg-gray-300 text-gray-600 hover:bg-gray-200"
           }`}
-          onClick={onCopyRaw}
-          title={isCopied ? "কপি হয়েছে!" : "সম্পূর্ণ অর্ডার কপি"}
+          onClick={() => {
+            copyToClipboard(order?.rawInputText);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+          }}
           disabled={loading || isCopied}
         >
           {isCopied ? (
@@ -58,7 +63,7 @@ function OrderActions({
             </svg>
           )}
         </button>
-
+        {/* edit button */}
         <button
           className="p-2 cursor-pointer text-sm rounded-md flex items-center bg-green-300 text-green-600 hover:bg-green-200 transition duration-150 shadow-md"
           onClick={(e) => {
@@ -82,7 +87,7 @@ function OrderActions({
             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
           </svg>
         </button>
-
+        {/* booking button if order is confirmed */}
         {order?.orderStatus === "Confirmed" && (
           <button
             className="p-2 cursor-pointer text-sm rounded-md bg-yellow-300 text-gray-600 hover:bg-gray-200 transition duration-150 shadow-md"
@@ -92,7 +97,7 @@ function OrderActions({
             Booking
           </button>
         )}
-
+        {/* order schedule button */}
         <button
           className="p-2 cursor-pointer text-sm rounded-md flex items-center bg-green-300 text-gray-900 hover:bg-green-400 transition duration-150 shadow-md"
           onClick={(e) => {

@@ -31,7 +31,7 @@ export default function CopyToast() {
   -translate-x-1/2 transition-opacity duration-300
   ${show ? "opacity-100" : "opacity-0 pointer-events-none"}`}
     >
-      <div className="rounded-md bg-black/85 px-2 py-2 text-sm text-white shadow-xl">
+      <div className="rounded-md bg-black/85 px-5 py-2 text-sm text-white shadow-xl">
         {message}
       </div>
     </div>

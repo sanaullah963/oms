@@ -1,6 +1,8 @@
 // export default function MismatchTable({ mismatches }) {
 //   if (!mismatches || mismatches.length === 0) return null;
 
+import { copyToClipboard } from "@/utils/copyToClipboard";
+
 //   return (
 //     <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
 //       <h3 className="text-sm font-semibold text-gray-600 mb-3">⚠️ COD গরমিল পার্সেল</h3>
@@ -47,7 +49,7 @@
 
 export default function MismatchTable({ mismatches }) {
   if (!mismatches || mismatches.length === 0) return null;
-
+  console.log(mismatches);
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
       <h3 className="text-sm font-semibold text-gray-600 mb-3">⚠️ COD গরমিল পার্সেল</h3>
@@ -71,11 +73,11 @@ export default function MismatchTable({ mismatches }) {
               return (
                 <tr key={m._id} className="border-b last:border-0">
                   <td className="py-2 pr-3 font-medium">{m.castomerName}</td>
-                  <td className="py-2 pr-3 text-blue-600">
+                  <td className="py-2 pr-3 text-blue-600 cursor-pointer" onClick={()=>copyToClipboard(m.castomerPhone[0])}>
                     {Array.isArray(m.castomerPhone) ? m.castomerPhone[0] : m.castomerPhone}
                   </td>
                   <td className="py-2 pr-3 text-gray-500">{m.createdByName || "-"}</td>
-                  <td className="py-2 pr-3">{m.courier?.trackingId || "-"}</td>
+                  <td className="py-2 pr-3 text-blue-600 cursor-pointer" onClick={()=>copyToClipboard(m.courier?.trackingId)}>{m.courier?.trackingId || "-"}</td>
                   <td className="py-2 pr-3">৳{m.totalCOD}</td>
                   <td className="py-2 pr-3">৳{m.courier?.deliveredCodAmount ?? "-"}</td>
                   <td className={`py-2 pr-3 font-semibold ${diff < 0 ? "text-red-600" : "text-green-600"}`}>

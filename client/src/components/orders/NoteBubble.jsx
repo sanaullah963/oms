@@ -7,6 +7,7 @@ import { dahsbOrderActionButton } from "@/constants/orderConstants";
 import DisplayTime from "@/components/common/DisplayTime";
 import OrderActivityTimeline from "@/components/orders/OrderActivityTimeline";
 import OrderPhoneList from "@/components/orders/OrderPhoneList";
+import { copyToClipboard } from "@/utils/copyToClipboard";
 
 function NoteBubble({ order, onUpdate }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -60,18 +61,24 @@ function NoteBubble({ order, onUpdate }) {
         <div className="flex items-center gap-1">
           <div>
             {order?.courier?.trackingId && (
+
+
+
               <div className="text-sm font-medium flex items-center">
                 <p>ID : </p>
                 <p
                   className="text-blue-600"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleCopy(order.courier.trackingId);
+                    copyToClipboard(order.courier.trackingId);
                   }}
                 >
                   {order?.courier?.trackingId}
                 </p>
               </div>
+
+
+
             )}
           </div>
           <div>

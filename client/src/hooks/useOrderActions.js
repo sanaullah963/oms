@@ -2,6 +2,7 @@
 import { useEffect, useCallback, useState } from "react";
 import { useSocket } from "./useSocket";
 import { orderService } from "@/services/orderService";
+import { copyToClipboard } from "@/utils/copyToClipboard";
 
 export function useOrderActions(order, onUpdate) {
   const { socket } = useSocket();
@@ -48,12 +49,13 @@ export function useOrderActions(order, onUpdate) {
       if (!socket) return;
       const note = noteText || shortcut?.note;
       if (shortcut.copyText) {
-        navigator.clipboard.writeText(shortcut.copyText);
+        copyToClipboard(shortcut.copyText);
       }
       socket.emit("updateStatus", { orderId: order._id, newStatus: shortcut.key, note });
     },
     [socket, order._id],
   );
+
 
   // --- কমেন্ট/নোট যোগ করা ---
   const addNote = useCallback(
