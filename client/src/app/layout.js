@@ -1,8 +1,8 @@
-
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { OrderProvider } from "@/context/OrderContext";
+import CopyToast from "@/components/common/CopyToast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +36,10 @@ export default function RootLayout({ children }) {
         cz-shortcut-listen="true"
       >
         <AuthProvider>
-          <OrderProvider>{children}</OrderProvider>
+          <OrderProvider>
+            {children}
+            <CopyToast />
+          </OrderProvider>
         </AuthProvider>
       </body>
     </html>

@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import SearchAndMenu from "@/components/layout/SearchAndMenu";
 import AuthGuard from "@/components/auth/AuthGuard";
 import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
-// import ModeratorSelector from "@/components/dashboard/ModeratorSelector";
 import ModeratorSelector from "@/components/dashboard/ModeratorSelector";
 import StatsCards from "@/components/dashboard/StatsCards";
 import DashboardOrderListModal from "@/components/dashboard/DashboardOrderListModal";
@@ -19,7 +18,7 @@ function toISODate(date) {
   return date.toISOString().split("T")[0];
 }
 
-// --- প্রিসেট (আজ/৭দিন/৩০দিন/১বছর) থেকে from-to ডেট বের করা ---
+// --- প্রিসেট (আজ/গতকাল/৭দিন/৩০দিন/১বছর) থেকে from-to ডেট বের করা ---
 function getPresetRange(preset) {
   const to = new Date();
   const from = new Date();
@@ -148,7 +147,7 @@ function DashboardPageContent() {
         ) : (
           data && (
             <>
-              <StatsCards totals={data.totals} />
+              <StatsCards totals={data.totals} onCardClick={setDrillDownStatus} />
               <FinancialSummary totals={data.totals} />
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -161,6 +160,16 @@ function DashboardPageContent() {
           )
         )}
       </div>
+
+      {drillDownStatus && (
+        <DashboardOrderListModal
+          status={drillDownStatus}
+          from={activeRange.from}
+          to={activeRange.to}
+          moderatorId={isAdmin ? moderatorId : undefined}
+          onClose={() => setDrillDownStatus(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { dashboardService } from "@/services/dashboardService";
+import { copyToClipboard } from "@/utils/copyToClipboard";
 
 const TITLE_MAP = {
   sent: "📦 পাঠানো পার্সেল",
@@ -8,7 +9,13 @@ const TITLE_MAP = {
   cancelled: "❌ ক্যান্সেলড পার্সেল",
 };
 
-export default function DashboardOrderListModal({ status, from, to, moderatorId, onClose }) {
+export default function DashboardOrderListModal({
+  status,
+  from,
+  to,
+  moderatorId,
+  onClose,
+}) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,7 +42,10 @@ export default function DashboardOrderListModal({ status, from, to, moderatorId,
   }, [status, from, to, moderatorId]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3"
+      onClick={onClose}
+    >
       <div
         className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -58,7 +68,9 @@ export default function DashboardOrderListModal({ status, from, to, moderatorId,
           ) : error ? (
             <div className="text-center py-16 text-red-500">{error}</div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">এই তালিকায় কোনো পার্সেল নেই।</div>
+            <div className="text-center py-16 text-gray-400">
+              এই তালিকায় কোনো পার্সেল নেই।
+            </div>
           ) : (
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-gray-50">
@@ -74,12 +86,21 @@ export default function DashboardOrderListModal({ status, from, to, moderatorId,
                 {orders.map((o) => (
                   <tr key={o._id} className="border-b last:border-0">
                     <td className="py-2 px-4 font-medium">{o.castomerName}</td>
-                    <td className="py-2 px-4 text-blue-600">
-                      {Array.isArray(o.castomerPhone) ? o.castomerPhone[0] : o.castomerPhone}
+                    <td
+                      className="py-2 px-4 text-blue-600 cursor-pointer"
+                      onClick={() => copyToClipboard(o.castomerPhone[0])}
+                    >
+                      {Array.isArray(o.castomerPhone)
+                        ? o.castomerPhone[0]
+                        : o.castomerPhone}
                     </td>
                     <td className="py-2 px-4">৳{o.totalCOD}</td>
-                    <td className="py-2 px-4">{o.courier?.trackingId || "-"}</td>
-                    <td className="py-2 px-4 text-gray-500">{o.createdByName || "-"}</td>
+                    <td className="py-2 px-4 text-blue-600 cursor-pointer" onClick={() => copyToClipboard(o.courier?.trackingId)}>
+                      {o.courier?.trackingId || "-"}
+                    </td>
+                    <td className="py-2 px-4 text-gray-500">
+                      {o.createdByName || "-"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
