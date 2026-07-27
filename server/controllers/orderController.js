@@ -170,8 +170,8 @@ exports.createManualOrder = async (req, res) => {
       title: "🛒 নতুন অর্ডার এসেছে",
       body:
         savedOrders.length > 1
-          ? `${savedOrders.length}টি নতুন অর্ডার তৈরি হয়েছে।`
-          : `${savedOrders[0]?.castomerName || "নতুন অর্ডার"} - ৳${savedOrders[0]?.totalCOD}`,
+          ? `${savedOrders.length} orders added by ${req.user.name}`
+          : `${savedOrders[0]?.castomerName || "নতুন অর্ডার"} - ৳${savedOrders[0]?.totalCOD} -- added by ${req.user.name}`,
       url: "/",
     }).catch((err) => console.error("Order notification error:", err));
 

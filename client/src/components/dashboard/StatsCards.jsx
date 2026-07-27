@@ -31,8 +31,6 @@ export default function StatsCards({ totals, onCardClick }) {
   const netAfterDeliveryCharge =
     (totals.deliveredAmount || 0) - (totals.deliveredDeliveryCharge || 0);
 
-
-    console.log("totals", totals);
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
       {/* --- মোট পাঠানো পার্সেল --- */}

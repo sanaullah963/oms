@@ -6,6 +6,7 @@ import { STATUS_TABS } from "@/constants/orderConstants";
 import { useOrders } from "@/context/OrderContext";
 import SearchAndMenu from "@/components/layout/SearchAndMenu";
 import AuthGuard from "@/components/auth/AuthGuard";
+import { formatDate } from "@/utils/dateUtils";
 const date = new Date();
 
 function HomePageContent() {
@@ -41,17 +42,13 @@ function HomePageContent() {
   const day = new Intl.DateTimeFormat("bn-BD", {
     weekday: "long",
   }).format(date);
-  const formattedDate = new Intl.DateTimeFormat({
-    day: "numeric",
-    month: "numeric",
-    year: "2-digit",
-  }).format(date);
+  console.log(formatDate(date));
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-100">
       <header className="px-1 py-0 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
         <div className=" flex gap-3">
           <span className="text-purple-700 text-xs md:text-sm">{day}</span>
-          <span className=" text-xs md:text-sm">{formattedDate}</span>
+          <span className=" text-xs md:text-sm">{formatDate(date)}</span>
         </div>
         <SearchAndMenu />
 

@@ -49,7 +49,6 @@ import { copyToClipboard } from "@/utils/copyToClipboard";
 
 export default function MismatchTable({ mismatches }) {
   if (!mismatches || mismatches.length === 0) return null;
-  console.log(mismatches);
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
       <h3 className="text-sm font-semibold text-gray-600 mb-3">⚠️ COD গরমিল পার্সেল</h3>

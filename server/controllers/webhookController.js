@@ -122,7 +122,7 @@ exports.handleSteadfastWebhook = async (req, res) => {
       updateObj,
       { new: true },
     );
-
+    
     if (updatedOrder && io) {
       emitOrderUpdate(io, updatedOrder);
     }
