@@ -6,6 +6,7 @@ import { STATUS_TABS } from "@/constants/orderConstants";
 import { useOrders } from "@/context/OrderContext";
 import SearchAndMenu from "@/components/layout/SearchAndMenu";
 import AuthGuard from "@/components/auth/AuthGuard";
+const date = new Date();
 
 function HomePageContent() {
   const {
@@ -36,10 +37,22 @@ function HomePageContent() {
       ? `${base} bg-green-600 text-white`
       : `${base} bg-gray-200 text-gray-700`;
   };
-
+  // time and date
+  const day = new Intl.DateTimeFormat("bn-BD", {
+    weekday: "long",
+  }).format(date);
+  const formattedDate = new Intl.DateTimeFormat({
+    day: "numeric",
+    month: "numeric",
+    year: "2-digit",
+  }).format(date);
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-100">
-      <header className="p-1 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
+      <header className="px-1 py-0 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
+        <div className=" flex gap-3">
+          <span className="text-purple-700 text-xs md:text-sm">{day}</span>
+          <span className=" text-xs md:text-sm">{formattedDate}</span>
+        </div>
         <SearchAndMenu />
 
         <div className="flex overflow-x-auto w-auto gap-0.5 md:gap-2 whitespace-nowrap mt-2">
@@ -70,7 +83,9 @@ function HomePageContent() {
         `}
       >
         {loading ? (
-          <div className="text-center py-10 text-gray-500">অর্ডার লোড হচ্ছে...</div>
+          <div className="text-center py-10 text-gray-500">
+            অর্ডার লোড হচ্ছে...
+          </div>
         ) : (
           <OrderList
             orders={filteredOrders}
