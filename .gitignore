@@ -3,6 +3,7 @@
 node_modules
 client/node_modules
 server/node_modules
+landingPage/node_modules
 
 ----------------------------------------------------------------------
 
@@ -12,16 +13,22 @@ server/node_modules
 
 Next.js build output directory
 client/.next/
+landingPage/.next/
 Next.js cache directory
 client/.turbo/
+landingPage/.turbo/
 Log files (for debugging, etc.)
 client/.log
 client/npm-debug.log
+clilandingPageent/.log
+landingPage/npm-debug.log
 
 Yarn and npm lock files (unless you want consistent dependency versions)
 
 client/package-lock.json
 client/yarn.lock
+landingPage/package-lock.json
+landingPage/yarn.lock
 
 ----------------------------------------------------------------------
 
@@ -57,6 +64,9 @@ client/.env
 client/.env.local
 server/.env
 server/.env.local
+landingPage/.env
+landingPage/.env.local
+
 
 ----------------------------------------------------------------------
 
