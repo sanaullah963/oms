@@ -10,8 +10,6 @@ if (missing.length > 0) {
   );
 }
 
-// ✅ FB_VERIFY_TOKEN-এর আগে একটি hardcoded fallback secret ছিল (my_secret_oms_token_123),
-// যা production-এ security risk। এখন .env-এ না থাকলে warning দেখাবে, কিন্তু hardcoded value ব্যবহার হবে না।
 if (!process.env.FB_VERIFY_TOKEN) {
   console.warn(
     "⚠️ FB_VERIFY_TOKEN .env-এ সেট করা নেই। Facebook webhook verification কাজ করবে না।",
@@ -21,6 +19,12 @@ if (!process.env.FB_VERIFY_TOKEN) {
 if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
   console.warn(
     "⚠️ VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY .env-এ সেট করা নেই। Push notification পাঠানো যাবে না।",
+  );
+}
+
+if (!process.env.META_PIXEL_ID || !process.env.META_CAPI_ACCESS_TOKEN) {
+  console.warn(
+    "⚠️ META_PIXEL_ID/META_CAPI_ACCESS_TOKEN .env-এ সেট করা নেই। Meta Conversion API ইভেন্ট পাঠানো যাবে না।",
   );
 }
 
@@ -41,4 +45,8 @@ module.exports = {
   VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
   VAPID_SUBJECT: process.env.VAPID_SUBJECT || "mailto:admin@example.com",
+  META_PIXEL_ID: process.env.META_PIXEL_ID,
+  META_CAPI_ACCESS_TOKEN: process.env.META_CAPI_ACCESS_TOKEN,
+  META_GRAPH_API_VERSION: process.env.META_GRAPH_API_VERSION || "v21.0",
+  META_TEST_EVENT_CODE: process.env.META_TEST_EVENT_CODE || null, // Test Events
 };

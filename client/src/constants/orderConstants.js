@@ -36,6 +36,7 @@ export const STATUS_SHORTCUTS = [
 
 // --- ২. স্ট্যাটাস ট্যাব কনফিগারেশন ---
 export const STATUS_TABS = [
+  { key: "Incomplete", label: "ইনকমপ্লিট" },
   { key: "Pending", label: "পেন্ডিং" },
   { key: "All", label: "সব" },
   { key: "Confirmed", label: "কনফার্মড" },

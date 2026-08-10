@@ -11,6 +11,7 @@ import OrderActions from "./OrderActions";
 import ScheduleModal from "./ScheduleModal";
 import OrderActivityTimeline from "./OrderActivityTimeline";
 import OrderPhoneList from "./OrderPhoneList";
+import FraudDetectionModal from "./FraudDetectionModal";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 
 const STATUS_COLOR_MAP = {
@@ -30,6 +31,7 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
   const [isCopied, setIsCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFraudModalOpen, setIsFraudModalOpen] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleNote, setScheduleNote] = useState("");
   const [formData, setFormData] = useState({
@@ -276,6 +278,26 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
                         {order.courier.courierStatus}
                       </div>
                     )}
+
+                  {order?.fraudCheck?.isSuspicious &&
+                    order.fraudCheck.reviewStatus !== "approved" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsFraudModalOpen(true);
+                        }}
+                        className={`text-xs font-semibold px-2 py-0.5 rounded-sm cursor-pointer ${
+                          order.fraudCheck.reviewStatus === "blocked"
+                            ? "bg-red-600 text-white"
+                            : order.fraudCheck.reviewStatus === "ignored"
+                              ? "bg-gray-300 text-gray-700"
+                              : "bg-red-100 text-red-700 animate-pulse"
+                        }`}
+                        title="Multiple Orders Detected — বিস্তারিত দেখতে ক্লিক করুন"
+                      >
+                        ⚠️ Multiple Orders
+                      </button>
+                    )}
                 </div>
                 <div className="text-xs font-medium flex flex-col">
                   <DisplayTime timeStamp={order.activities[0]?.timestamp} />
@@ -398,6 +420,15 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
         onConfirm={modal.type === "confirm" ? modal.action : closeModal}
         onCancel={closeModal}
       />
+
+      {isFraudModalOpen && (
+        <FraudDetectionModal
+          order={order}
+          onClose={() => setIsFraudModalOpen(false)}
+          onUpdate={onUpdate}
+        />
+      )}
+
       <ToastContainer autoClose={800} />
     </>
   );

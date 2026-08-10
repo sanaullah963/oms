@@ -121,6 +121,12 @@ function DashboardPageContent() {
                 >
                   🖥️ ল্যান্ডিং পেজ
                 </Link>
+                <Link
+                  href="/dashboard/event-logs"
+                  className="px-3 py-1.5 text-sm rounded-md font-medium bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                >
+                  event log view
+                </Link>
                 <ModeratorSelector selectedModeratorId={moderatorId} onChange={setModeratorId} />
               </>
             )}

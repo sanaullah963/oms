@@ -21,4 +21,9 @@ export const orderService = {
 
   bookSteadfastBulk: (orderIds) =>
     api.post(`${BASE}/courier/steadfast-bulk`, { orders_ids: orderIds }),
+
+  // ফ্রড/ডুপ্লিকেট ডিটেকশন — action: 'approve' | 'ignore' | 'block'
+  reviewFraud: (orderId, action, reason) =>
+    api.patch(`${BASE}/${orderId}/fraud-review`, { action, reason }),
+  getFraudMatches: (orderId) => api.get(`${BASE}/${orderId}/fraud-matches`),
 };

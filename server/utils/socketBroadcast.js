@@ -38,4 +38,22 @@ function emitOrderUpdate(io, order) {
   }
 }
 
-module.exports = { emitOrderUpdate };
+/**
+ * DraftOrder (ইনকমপ্লিট অর্ডার) তৈরি/আপডেট হলে — orderUpdate-এর মতোই কোনো নির্দিষ্ট
+ * মডারেটরের না (কেউ এখনো "নিজের" করে নেয়নি), তাই admin + সব moderator-কে পাঠানো হয়,
+ * যাতে ড্যাশবোর্ডের "ইনকমপ্লিট" সেকশনে সবাই রিয়েল-টাইমে দেখতে পায়।
+ */
+function emitDraftUpdate(io, draft) {
+  if (!io || !draft) return;
+  io.to("role:admin").emit("draftOrderUpdate", draft);
+  io.to("role:moderator").emit("draftOrderUpdate", draft);
+}
+
+// --- draft সম্পন্ন (সাবমিট) বা বাতিল হলে "ইনকমপ্লিট" লিস্ট থেকে সরিয়ে দেওয়ার জন্য ---
+function emitDraftRemove(io, draftId) {
+  if (!io || !draftId) return;
+  io.to("role:admin").emit("draftOrderRemove", draftId);
+  io.to("role:moderator").emit("draftOrderRemove", draftId);
+}
+
+module.exports = { emitOrderUpdate, emitDraftUpdate, emitDraftRemove };

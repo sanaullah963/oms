@@ -16,6 +16,9 @@ function SearchAndMenu() {
     { title: "📊 Dashboard", link: "/dashboard" },
     { title: "Note", link: "/note" },
     { title: "Comment", link: "/comment" },
+    ...(user?.role === "admin"
+      ? [{ title: "🚫 ব্লক কাস্টমার", link: "/dashboard/blocked-customers" }]
+      : []),
   ];
   return (
     <div>

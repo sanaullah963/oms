@@ -12,6 +12,10 @@ const pushRoutes = require("./routes/pushRoutes");
 const facebookPageRoutes = require("./routes/facebookPageRoutes");
 const landingPageRoutes = require("./routes/landingPageRoutes");
 const publicLandingRoutes = require("./routes/publicLandingRoutes");
+const publicTrackingRoutes = require("./routes/publicTrackingRoutes");
+const eventLogRoutes = require("./routes/eventLogRoutes");
+const customerRoutes = require("./routes/customerRoutes");
+const blockRoutes = require("./routes/blockRoutes");
 const { protect } = require("./middleware/auth");
 
 const app = express();
@@ -26,6 +30,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/webhook", webhookRoutes); // কুরিয়ার/Facebook সার্ভার থেকে আসে, নিজস্ব token verification আছে
 app.use("/api/push", pushRoutes); // ভিতরে subscribe/unsubscribe নিজেই protect করা
 app.use("/api/public/landing-pages", publicLandingRoutes); // কাস্টমার-facing, সম্পূর্ণ পাবলিক
+app.use("/api/public/tracking", publicTrackingRoutes); // সেশন/ড্রাফট — সম্পূর্ণ পাবলিক
 
 // ------ লগইন বাধ্যতামূলক রুট (এডমিন + মডারেটর) ---
 app.use("/api/orders", protect, orderRoutes);
@@ -37,6 +42,9 @@ app.use("/api/dashboard", protect, dashboardRoutes);
 app.use("/api/users", userRoutes); // ভিতরেই protect+adminOnly প্রয়োগ করা আছে
 app.use("/api/facebook-pages", facebookPageRoutes); // ভিতরেই protect+adminOnly প্রয়োগ করা আছে
 app.use("/api/landing-pages", landingPageRoutes); // ভিতরেই protect+adminOnly প্রয়োগ করা আছে
+app.use("/api/event-logs", eventLogRoutes); // ভিতরেই protect+adminOnly প্রয়োগ করা আছে
+app.use("/api/customers", customerRoutes); // ভিতরেই protect+adminOnly প্রয়োগ করা আছে
+app.use("/api/blocked-customers", blockRoutes); // ফ্রড ডিটেকশন — ম্যানুয়াল ব্লক সিস্টেম, ভিতরেই protect+adminOnly
 
 // ------ Health check routes ---
 app.get("/", (req, res) => {

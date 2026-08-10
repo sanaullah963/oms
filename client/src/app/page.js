@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import OrderList from "@/components/orders/OrderList";
+import DraftOrderList from "@/components/orders/DraftOrderList";
 import ManualOrderInput from "@/components/orders/ManualOrderInput";
 import { STATUS_TABS } from "@/constants/orderConstants";
 import { useOrders } from "@/context/OrderContext";
@@ -21,6 +22,8 @@ function HomePageContent() {
     handleOrderUpdate,
     setSearchQuery,
     searchWaiting,
+    draftOrders,
+    draftLoading,
   } = useOrders();
 
   const [isAnimating, setIsAnimating] = useState(false);
@@ -60,9 +63,11 @@ function HomePageContent() {
               className={getButtonClasses(tab.key)}
             >
               {`${tab.label} ${
-                tab.key === "All"
-                  ? allPendingOrder.length
-                  : orders.filter((o) => o?.orderStatus === tab.key).length
+                tab.key === "Incomplete"
+                  ? draftOrders.length
+                  : tab.key === "All"
+                    ? allPendingOrder.length
+                    : orders.filter((o) => o?.orderStatus === tab.key).length
               }`}
             </button>
           ))}
@@ -79,7 +84,9 @@ function HomePageContent() {
           ${isAnimating ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0"}
         `}
       >
-        {loading ? (
+        {activeStatus === "Incomplete" ? (
+          <DraftOrderList drafts={draftOrders} loading={draftLoading} />
+        ) : loading ? (
           <div className="text-center py-10 text-gray-500">
             অর্ডার লোড হচ্ছে...
           </div>

@@ -1,8 +1,40 @@
 const axios = require("axios");
 const Order = require("../models/Order");
+const EventLog = require("../models/EventLog");
 const convertNumber = require("../utils/convertNumber");
 const { emitOrderUpdate } = require("../utils/socketBroadcast");
+const { sendCapiEvent } = require("../utils/metaCapi");
 const { BDCOURIER_SECRET_KEY } = require("../config/env");
+
+// --- "Confirmed" হলে Meta CAPI-তে Purchase ইভেন্ট পাঠানো (একটা অর্ডারে সর্বোচ্চ একবারই) ---
+async function triggerPurchaseEvent(order) {
+  const alreadySent = await EventLog.findOne({
+    order: order._id,
+    eventName: "Purchase",
+    status: "sent",
+  });
+  if (alreadySent) return; // দ্বিতীয়বার Confirm হলেও (বা ভুলে দুইবার ক্লিক হলেও) আবার পাঠানো হবে না
+
+  await sendCapiEvent({
+    eventName: "Purchase",
+    eventId: `purchase_${order._id}`,
+    orderId: order._id,
+    sessionId: order.tracking?.sessionId,
+    userData: {
+      phone: order.castomerPhone?.[0],
+      ip: order.tracking?.ip,
+      userAgent: order.tracking?.userAgent,
+      fbc: order.tracking?.fbc,
+      fbp: order.tracking?.fbp,
+    },
+    customData: {
+      value: order.totalCOD,
+      contentName: order.productCode,
+      contentIds: order.productCode ? [order.productCode] : undefined,
+      numItems: 1,
+    },
+  });
+}
 
 // --- অর্ডার স্ট্যাটাস আপডেট ---
 async function handleUpdateStatus(io, socket, { orderId, newStatus, note }) {
@@ -22,6 +54,13 @@ async function handleUpdateStatus(io, socket, { orderId, newStatus, note }) {
 
     socket.emit("statusUpdated", { success: true, order: updatedOrder });
     emitOrderUpdate(io, updatedOrder);
+
+    // --- এখানেই আসল কাজ: Purchase ইভেন্ট শুধু এখন পাঠানো হয়, ফর্ম সাবমিটের সময় না ---
+    if (newStatus === "Confirmed") {
+      triggerPurchaseEvent(updatedOrder).catch((err) =>
+        console.error("Purchase CAPI trigger error:", err),
+      );
+    }
   } catch (err) {
     console.error("Error updating status:", err);
     socket.emit("statusUpdated", { success: false, message: "Database update failed" });

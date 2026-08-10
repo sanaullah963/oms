@@ -63,7 +63,7 @@ export default function LandingPageManager({ pages, onRefresh }) {
   };
 
   const siteBase =
-    typeof window !== "undefined" ? process.env.NEXT_PUBLIC_LANDING_URL || "https://yoursite.com" : "";
+    typeof window !== "undefined" ? process.env.NEXT_PUBLIC_LANDING_URL || "https://deshibazarbd.vercel.app" : "";
 
   return (
     <div className="space-y-4">

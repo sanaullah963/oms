@@ -10,6 +10,7 @@ import React, {
 import { useSocket } from "@/hooks/useSocket";
 import { useAuth } from "@/context/AuthContext";
 import { orderService } from "@/services/orderService";
+import { draftOrderService } from "@/services/draftOrderService";
 import { convertNumber } from "@/utils/numberUtils";
 
 const OrderContext = createContext();
@@ -24,6 +25,8 @@ export function OrderProvider({ children }) {
   const [dbLoading, setDbLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchWaiting, setSearchWaiting] = useState(false);
+  const [draftOrders, setDraftOrders] = useState([]);
+  const [draftLoading, setDraftLoading] = useState(true);
   const query = searchQuery.toLowerCase().trim();
 
   // ---------------- FETCH ALL ORDERS ----------------
@@ -41,13 +44,72 @@ export function OrderProvider({ children }) {
     }
   }, []);
 
+  // ---------------- FETCH ইনকমপ্লিট/ড্রাফট অর্ডার ----------------
+  const fetchDraftOrders = useCallback(async () => {
+    setDraftLoading(true);
+    try {
+      const res = await draftOrderService.getAll();
+      if (Array.isArray(res.data)) {
+        setDraftOrders(res.data);
+      }
+    } catch (err) {
+      console.error("Fetch draft orders error:", err);
+    } finally {
+      setDraftLoading(false);
+    }
+  }, []);
+
   // ---------------- INITIAL LOAD ----------------
   // ✅ লগইন কনফার্ম হওয়ার আগে fetch করা হয় না — নাহলে প্রতিবার অ্যাপ লোড হওয়ার সময়
   // লগইন করার আগেই একটা নিশ্চিত 401 এরর হতো।
   useEffect(() => {
     if (authLoading || !isAuthenticated) return;
     fetchOrders();
-  }, [authLoading, isAuthenticated, fetchOrders]);
+    fetchDraftOrders();
+  }, [authLoading, isAuthenticated, fetchOrders, fetchDraftOrders]);
+
+  // ---------------- ইনকমপ্লিট অর্ডার রিয়েল-টাইম আপডেট (নতুন ড্রাফট/আপডেট হলে) ----------------
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleDraftUpdate = (draft) => {
+      setDraftOrders((prev) => {
+        const index = prev.findIndex((d) => d?._id === draft?._id);
+        if (index !== -1) {
+          const copy = [...prev];
+          copy[index] = draft;
+          return copy;
+        }
+        return [draft, ...prev];
+      });
+    };
+
+    // কাস্টমার সাবমিট করলে (draft "completed" হয়ে গেলে) অথবা ম্যানুয়ালি বাতিল করলে
+    // "ইনকমপ্লিট" লিস্ট থেকে সরিয়ে দেওয়া হয় — আসল অর্ডারটা এতক্ষণে orderStatusChange
+    // ইভেন্ট দিয়ে আলাদাভাবে চলে এসেছে, তাই এখানে কোনো ডুপ্লিকেট থাকে না।
+    const handleDraftRemove = (draftId) => {
+      setDraftOrders((prev) => prev.filter((d) => d?._id !== draftId));
+    };
+
+    socket.on("draftOrderUpdate", handleDraftUpdate);
+    socket.on("draftOrderRemove", handleDraftRemove);
+
+    return () => {
+      socket.off("draftOrderUpdate", handleDraftUpdate);
+      socket.off("draftOrderRemove", handleDraftRemove);
+    };
+  }, [socket]);
+
+  // --- একটা ড্রাফট ম্যানুয়ালি ডিলিট করা (optimistic UI আপডেট) ---
+  const deleteDraftOrder = useCallback(async (draftId) => {
+    setDraftOrders((prev) => prev.filter((d) => d?._id !== draftId));
+    try {
+      await draftOrderService.remove(draftId);
+    } catch (err) {
+      console.error("Delete draft order error:", err);
+      fetchDraftOrders();
+    }
+  }, [fetchDraftOrders]);
 
   // ---------------- HANDLE ORDER UPDATE (গ্লোবাল মিউটেশন) ----------------
   const handleOrderUpdate = useCallback((data, actionType = "UPDATE") => {
@@ -199,6 +261,9 @@ export function OrderProvider({ children }) {
     handleOrderUpdate,
     fetchOrders,
     searchWaiting,
+    draftOrders,
+    draftLoading,
+    deleteDraftOrder,
   };
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;
