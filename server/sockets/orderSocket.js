@@ -55,8 +55,11 @@ async function handleUpdateStatus(io, socket, { orderId, newStatus, note }) {
     socket.emit("statusUpdated", { success: true, order: updatedOrder });
     emitOrderUpdate(io, updatedOrder);
 
-    // --- এখানেই আসল কাজ: Purchase ইভেন্ট শুধু এখন পাঠানো হয়, ফর্ম সাবমিটের সময় না ---
-    if (newStatus === "Confirmed") {
+    // --- এখানেই আসল কাজ: Purchase ইভেন্ট শুধু এখন পাঠানো হয়, ফর্ম সাবমিটের সময় না —
+    // এবং শুধুমাত্র ল্যান্ডিং পেজ থেকে আসা অর্ডারের জন্যই (origin === "landing_page")।
+    // ম্যানুয়ালি/পেস্ট করে বানানো অর্ডারে কোনো fbp/fbc/সেশন ডেটা থাকে না, তাই সেগুলোর
+    // জন্য Purchase ইভেন্ট কখনো পাঠানো হবে না। ---
+    if (newStatus === "Confirmed" && updatedOrder.origin === "landing_page") {
       triggerPurchaseEvent(updatedOrder).catch((err) =>
         console.error("Purchase CAPI trigger error:", err),
       );

@@ -1,6 +1,3 @@
-
-
-
 const mongoose = require("mongoose");
 
 const ActivitySchema = new mongoose.Schema(
@@ -40,6 +37,10 @@ const OrderSchema = new mongoose.Schema({
   productCode: { type: String, required: true },
   totalCOD: { type: Number, required: true },
   orderSource: { type: String, default: "Manual Messenger" },
+  // --- অর্ডারটা কোথা থেকে এসেছে — শুধু "landing_page" অর্ডারেই Purchase CAPI ইভেন্ট
+  // পাঠানো হয় (Confirm করার সময়), "manual" (হাতে পেস্ট করা) অর্ডারে কখনো পাঠানো হয় না,
+  // কারণ সেগুলোর সাথে কোনো fbp/fbc/সেশন/অ্যাট্রিবিউশন ডেটা থাকে না — দেখুন orderSocket.js ---
+  origin: { type: String, enum: ["landing_page", "manual"], default: "manual" },
   // --- কোন ইউজার (এডমিন/মডারেটর) অর্ডারটা তৈরি করেছে (visibility filter করার জন্য) ---
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   createdByName: { type: String, default: null }, // দ্রুত দেখানোর জন্য নাম ডিনরমালাইজড করে রাখা

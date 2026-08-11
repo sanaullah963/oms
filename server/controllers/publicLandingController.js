@@ -82,6 +82,7 @@ exports.submitPublicOrder = async (req, res) => {
       productCode: page.productCode,
       totalCOD,
       orderSource: page.productCode,
+      origin: "landing_page", // ✅ শুধু এই ফ্ল্যাগ থাকলেই Confirm করার সময় Purchase CAPI ইভেন্ট যাবে
       createdBy: null, // ল্যান্ডিং পেজের অর্ডার কোনো নির্দিষ্ট মডারেটরের না — সবার শেয়ার্ড পেন্ডিং কিউতে যাবে
       activities: [
         {
