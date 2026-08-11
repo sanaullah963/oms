@@ -16,6 +16,7 @@ const publicTrackingRoutes = require("./routes/publicTrackingRoutes");
 const eventLogRoutes = require("./routes/eventLogRoutes");
 const customerRoutes = require("./routes/customerRoutes");
 const blockRoutes = require("./routes/blockRoutes");
+const sessionRoutes = require("./routes/sessionRoutes");
 const { protect } = require("./middleware/auth");
 
 const app = express();
@@ -45,6 +46,7 @@ app.use("/api/landing-pages", landingPageRoutes); // ভিতরেই protect+
 app.use("/api/event-logs", eventLogRoutes); // ভিতরেই protect+adminOnly প্রয়োগ করা আছে
 app.use("/api/customers", customerRoutes); // ভিতরেই protect+adminOnly প্রয়োগ করা আছে
 app.use("/api/blocked-customers", blockRoutes); // ফ্রড ডিটেকশন — ম্যানুয়াল ব্লক সিস্টেম, ভিতরেই protect+adminOnly
+app.use("/api/sessions", sessionRoutes); // ল্যান্ডিং পেজ এনগেজমেন্ট অ্যানালিটিক্স, ভিতরেই protect+adminOnly
 
 // ------ Health check routes ---
 app.get("/", (req, res) => {

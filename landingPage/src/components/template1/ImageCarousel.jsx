@@ -15,7 +15,7 @@ export default function ImageCarousel({
 
 
   if (typeof window !== "undefined") {
-    console.log(`[ImageCarousel:${alt}] received ${images.length} image(s):`, images);
+    // console.log(`[ImageCarousel:${alt}] received ${images.length} image(s):`, images);
   }
 
   const activeSrc = images[index];

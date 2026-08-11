@@ -1,6 +1,5 @@
 import { API_URL } from "@/services/api";
 import { getFingerprintHash } from "@/utils/fingerprint";
-
 const VISITOR_KEY = "oms_visitor_id";
 const SESSION_KEY = "oms_session_id";
 const ATTRIBUTION_KEY = "oms_attribution";
@@ -77,9 +76,7 @@ function getStoredAttribution() {
   }
 }
 
-/**
- * অর্ডার/ড্রাফট সাবমিট করার সময় সব ট্র্যাকিং তথ্য একত্র করে রিটার্ন করে।
- */
+
 export function getTrackingPayload(slug) {
   if (typeof window === "undefined") return {};
   return {
@@ -92,11 +89,7 @@ export function getTrackingPayload(slug) {
   };
 }
 
-/**
- * getTrackingPayload-এর মতোই, কিন্তু browser fingerprintHash-ও যোগ করে (fraud/duplicate
- * ডিটেকশনের জন্য দরকার — SHA-256 হ্যাশিং async হওয়ায় এই ফাংশনটাও async)। চূড়ান্ত অর্ডার
- * সাবমিট করার সময় এটা ব্যবহার করা উচিত।
- */
+
 export async function getTrackingPayloadWithFingerprint(slug) {
   const base = getTrackingPayload(slug);
   const fingerprintHash = await getFingerprintHash();
@@ -141,7 +134,8 @@ export function initEngagementTracking(slug) {
     });
 
     const url = `${API_URL}/api/public/tracking/session`;
-
+    console.log("sendUpdate", url, payload);
+    console.log("sendUpdate---------------",API_URL);
     // পেজ বন্ধ/hidden হওয়ার সময় sendBeacon বেশি নির্ভরযোগ্য (fetch অনেক সময় বাতিল হয়ে যায়)
     if (isExiting && navigator.sendBeacon) {
       const blob = new Blob([payload], { type: "application/json" });

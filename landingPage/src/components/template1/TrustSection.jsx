@@ -69,7 +69,7 @@ const trustImages = [
 
 export default function TrustSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-green-900 py-16 text-white">
+    <section id="reviews-image" className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-green-900 py-16 text-white">
       {/* Background Blur */}
       <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-green-500/20 blur-3xl"></div>
       <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-red-500/20 blur-3xl"></div>
@@ -89,7 +89,7 @@ export default function TrustSection() {
 
           <p className="mt-5 text-base leading-7 text-gray-300">
             প্রাকৃতিক উপাদান, সহজ ব্যবহার এবং গ্রাহকদের ইতিবাচক অভিজ্ঞতার
-            কারণে আনার দানা অনেকের দৈনন্দিন খাদ্যাভ্যাসের একটি অংশ হয়ে উঠেছে।
+            কারণে আনার দানা সবাই ব্যাবহার করছে।
           </p>
         </div>
 

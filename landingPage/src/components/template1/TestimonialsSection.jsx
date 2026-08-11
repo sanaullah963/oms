@@ -21,6 +21,7 @@ const reviews = [
 export default function TestimonialsSection() {
   const [formData, setFormData] = useState({
     name: "",
+    number: "",
     rating: "",
     comment: "",
   });
@@ -111,6 +112,15 @@ const handleChange = (e) => {
                 type="text"
                 placeholder="Your Name"
                 name="name"
+                onChange={handleChange}
+                className="rounded-lg border border-gray-300 px-3 py-2 outline-none w-full focus:border-blue-500 md:w-52"
+                required
+              />
+              {/* number */}
+              <input
+                type="tel"
+                placeholder="Number"
+                name="number"
                 onChange={handleChange}
                 className="rounded-lg border border-gray-300 px-3 py-2 outline-none w-full focus:border-blue-500 md:w-52"
                 required

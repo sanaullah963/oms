@@ -2,25 +2,30 @@
 
 export default function UsageGuideSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-white via-green-50/40 to-white py-16">
-      {/* Background */}
-      {/* <div className="absolute -left-32 top-20 h-80 w-80 rounded-full bg-green-200/20 blur-[120px]" /> */}
-      {/* <div className="absolute -right-32 bottom-20 h-80 w-80 rounded-full bg-red-200/20 blur-[120px]" /> */}
-
+    <section id="use-process" className="relative overflow-hidden bg-gradient-to-b from-white via-green-400 to-white py-16">
       <div className="relative mx-auto max-w-7xl px-4">
         <div className="mx-auto max-w-3xl text-center">
           <span className="rounded-full bg-green-100 px-4 py-1.5 text-sm font-semibold text-green-700">
             🌿 ব্যবহার নির্দেশিকা
           </span>
 
-          <h2 className="mt-5 text-3xl font-extrabold text-gray-900 md:text-5xl">
-            কীভাবে ব্যবহার করবেন?
-          </h2>
+          <div className="rounded-xl border border-green-100 bg-gradient-to-br from-green-600 to-red-500 px-5 py-3 text-white shadow-2xl">
+            <p className="my-2 leading-7 text-white/90">
+              প্রতিদিন ২ বার - সকালে ও রাতে খাওয়ার পরে পানি দিয়ে গিলে খাবেন।
+            </p>
 
-          <p className="mt-5 text-base leading-7 text-gray-600">
-            সঠিক নিয়মে ব্যবহার করলে এটি আপনার দৈনন্দিন খাদ্যাভ্যাসের একটি অংশ
-            হতে পারে।
-          </p>
+            <div className=" flex bg-gray-300 items-center justify-between text-gray-900 rounded-md p-2">
+              <p>
+                যে কোন সমস্যায় যোগাযোগ করুন {"01886362484 "}
+                <a
+                  href="#order"
+                  className="animate-soft-ripple inline-flex rounded-md bg-white p-1  text-sm font-bold text-green-700 transition hover:scale-105"
+                >
+                  WhatsApp
+                </a>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

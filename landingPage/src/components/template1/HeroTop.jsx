@@ -178,18 +178,20 @@ export default function HeroTop() {
       <div className="relative mx-auto max-w-7xl px-3 py-2 sm:px-4">
         {/* Rating */}
         <div className="flex justify-center">
-          <div className="rounded-xl bg-yellow-200 px-4 py-1.5 shadow">
-            <div className="flex items-center gap-1.5">
-              <FaStar className="text-yellow-500" />
-              <FaStar className="text-yellow-500" />
-              <FaStar className="text-yellow-500" />
-              <FaStar className="text-yellow-500" />
-              <FaStar className="text-yellow-500" />
-              <span className="ml-1.5 text-sm font-bold sm:text-base">
-                4.9 (১০,০০০+ Reviews)
-              </span>
+          <a href="#reviews-image">
+            <div className="rounded-xl bg-yellow-200 px-4 py-1.5 shadow">
+              <div className="flex items-center gap-1.5">
+                <FaStar className="text-yellow-500" />
+                <FaStar className="text-yellow-500" />
+                <FaStar className="text-yellow-500" />
+                <FaStar className="text-yellow-500" />
+                <FaStar className="text-yellow-500" />
+                <span className="ml-1.5 text-sm font-bold sm:text-base">
+                  4.9 (১০,০০০+ Reviews)
+                </span>
+              </div>
             </div>
-          </div>
+          </a>
         </div>
 
         <div className="relative mx-auto max-w-7xl px-1 py-8 sm:px-2">
@@ -230,8 +232,6 @@ export default function HeroTop() {
                 </a>
               </div>
 
-              
-
               {/* Bottom */}
               <div className="mt-8 flex items-center gap-3 rounded-xl bg-green-100 p-3.5">
                 <div>
@@ -243,10 +243,11 @@ export default function HeroTop() {
                     <span className="mx-2  text-3xl font-extrabold text-red-600">
                       ৫৯০ টাকা
                     </span>
-                     এক মাসের ঔষধ
+                    এক মাসের ঔষধ ।
                   </p>
                 </div>
               </div>
+                <a href="#use-process" className="bg-yellow-400 py-2 px-3 rounded-md font-semibold text-gray-800">খাওয়ার নিয়াম</a>
 
               <div className="mt-8 flex items-center gap-3 rounded-xl bg-green-100 p-3.5">
                 <div>
@@ -254,7 +255,7 @@ export default function HeroTop() {
                     সারা বাংলাদেশে হোম ডেলিভারি
                   </h4>
                   <p className="text-sm text-gray-600">
-                    ক্যাশ অন ডেলিভারি সুবিধা
+                    ক্যাশ অন ডেলিভারি সুবিধা ।
                   </p>
                 </div>
               </div>

@@ -23,8 +23,8 @@ export default function BenefitsSection() {
   return (
     <section className="relative overflow-hidden bg-white py-8" id="benefits">
       {/* Background */}
-      <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-green-200/30 blur-3xl"></div>
-      <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-red-200/30 blur-3xl"></div>
+      {/* <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-green-200/30 blur-3xl"></div> */}
+      {/* <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-red-200/30 blur-3xl"></div> */}
 
       <div className="relative mx-auto max-w-7xl px-4">
         {/* Heading */}
@@ -42,9 +42,9 @@ export default function BenefitsSection() {
         </div>
 
         {/* Layout */}
-        <div className="mt-12 grid items-center gap-6 lg:grid-cols-3">
+        <div className="mt-12 grid items-center gap-2 lg:gap-6 lg:grid-cols-3">
           {/* Left */}
-          <div className="space-y-4">
+          {/* <div className="space-y-4"> */}
             {leftFeatures.map((f) => (
               <div
                 key={f.title}
@@ -57,31 +57,7 @@ export default function BenefitsSection() {
                 <p className="text-sm leading-5 text-gray-600">{f.text}</p>
               </div>
             ))}
-          </div>
 
-          {/* Center Image */}
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-300 to-red-300 opacity-30 blur-3xl"></div>
-
-            <Image
-              src="/images/anardana.jpg"
-              width={500}
-              height={500}
-              alt="Anar Dana"
-              className="relative mx-auto rounded-[40px] shadow-2xl"
-            />
-
-            <div className="absolute -left-3 -top-3 rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-xl">
-              🔥 BEST SELLER
-            </div>
-
-            <div className="absolute -bottom-3 -right-3 rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-xl">
-              🌿 100% Herbal
-            </div>
-          </div>
-
-          {/* Right */}
-          <div className="space-y-4">
             <div className="rounded-md border border-green-300 bg-green-100 p-2 ps-4 shadow-xl">
               <div className="mb-3 flex items-center justify-start gap-2 text-2xl">
                 <span>🍽️</span>
@@ -109,7 +85,7 @@ export default function BenefitsSection() {
                 {/* <span className="text-lg font-semibold text-white">
                   দাম মাত্র
                 </span> */}
-                <span className="ml-2 text-3xl font-extrabold text-yellow-300">
+                <span className="ml-2 text-xl font-extrabold text-yellow-300">
                   ৫৯০ টাকা
                 </span>
               </div>
@@ -128,7 +104,31 @@ export default function BenefitsSection() {
               </a>
             </div>
           </div>
-        </div>
+
+          {/* Center Image */}
+          {/* <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-green-300 to-red-300 opacity-30 blur-3xl"></div>
+
+            <Image
+              src="/images/anardana.jpg"
+              width={500}
+              height={500}
+              alt="Anar Dana"
+              className="relative mx-auto rounded-[40px] shadow-2xl"
+            />
+
+            <div className="absolute -left-3 -top-3 rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-xl">
+              🔥 BEST SELLER
+            </div>
+
+            <div className="absolute -bottom-3 -right-3 rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-xl">
+              🌿 100% Herbal
+            </div>
+          </div> */}
+
+          {/* Right */}
+          
+        {/* </div> */}
       </div>
     </section>
   );

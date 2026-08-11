@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import FloatingContactButton from "@/components/template1/FloatingContactButton";
 import HeroTop from "@/components/template1/HeroTop";
 import BenefitsSection from "@/components/template1/BenefitsSection";
@@ -15,6 +15,8 @@ import { captureAttributionOnLoad, initEngagementTracking} from "@/utils/trackin
 
 
 export default function TemplateOneBody({ slug }) {
+
+  const [isOrderVisible, setIsOrderVisible] = useState(false);
   // পেজ লোড হওয়ার সাথে সাথে UTM/fbclid/gclid/referrer ধরে রাখা
   useEffect(() => {
     captureAttributionOnLoad();
@@ -32,7 +34,7 @@ export default function TemplateOneBody({ slug }) {
       <TestimonialsSection />
       <UsageGuideSection />
       <OfferSection />
-      <OrderSection slug={slug} />
+      <OrderSection slug={slug} setIsOrderVisible={setIsOrderVisible}/>
 
       <FloatingContactButton
         whatsappNumber={"+8801886362484"}
@@ -40,7 +42,7 @@ export default function TemplateOneBody({ slug }) {
         imoNumber={"+8801886362484"}
       />
 
-      <StickyMobileBar />
+      <StickyMobileBar  isVisible={!isOrderVisible}/>
       <Footer />
     </>
   );

@@ -17,7 +17,7 @@ const PRODUCT_PRICE = 890;
 const PRODUCT_NAME = "আনার দানা";
 const PRODUCT_IMAGE = "/images/anardana.jpg";
 
-export default function OrderSection({ slug }) {
+export default function OrderSection({ slug, setIsOrderVisible }) {
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -28,6 +28,22 @@ export default function OrderSection({ slug }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [quantity, setQuantity] = useState(1);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsOrderVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 } // সেকশনের ১০% দৃশ্যমান হলেই ট্রিগার করবে
+    );
+    const section = document.getElementById("order");
+    if (section) observer.observe(section);
+    return () => {
+      if (section) observer.unobserve(section);
+    };
+  }, [setIsOrderVisible]);
+
+
 
   useEffect(() => {
     if (!customerName && !phone && !address) return; // সবগুলো খালি থাকলে সেভ করার দরকার নেই
@@ -100,7 +116,7 @@ export default function OrderSection({ slug }) {
   };
 
   const inputClass = (hasError) =>
-    `w-full rounded-xl border py-3 pl-11 pr-4 text-sm outline-none transition sm:text-base ${
+    `w-full rounded-lg border border-gray-300 py-3 pl-11 pr-4 text-sm outline-none transition sm:text-base ${
       hasError
         ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100"
         : "border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100"
@@ -111,28 +127,21 @@ export default function OrderSection({ slug }) {
       id="order"
       className="relative overflow-hidden bg-gradient-to-b from-white via-red-50/40 to-green-50 py-16"
     >
-      {/* Background */}
-      {/* <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-green-300/20 blur-[120px]" /> */}
-      {/* <div className="absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-red-300/20 blur-[120px]" /> */}
       <Container>
         {/* Heading */}
         <div className="text-center">
-          <span className="rounded-full bg-red-100 px-4 py-1.5 text-sm font-bold text-red-600">
-            🛒 Secure Checkout
-          </span>
-
           <h2 className="mt-5 text-3xl font-extrabold text-gray-900 md:text-5xl">
             এখনই অর্ডার করুন
           </h2>
 
-          <p className="mx-auto mt-4 max-w-2xl text-base text-gray-600">
+          <p className="mx-auto mt-2 max-w-2xl text-base text-gray-600">
             নিচের ফর্মটি পূরণ করুন। আমাদের প্রতিনিধি দ্রুত আপনার সাথে যোগাযোগ
             করবে।
           </p>
         </div>
 
         {/* Layout */}
-        <div className="mx-auto mt-12 max-w-3xl">
+        <div className="mx-auto mt-0 max-w-3xl">
           <div className="rounded-[32px] bg-white p-4 shadow-[0_20px_60px_rgba(0,0,0,.12)] sm:p-8">
             <h3 className="mt-7 text-xl font-bold text-gray-900">
               Delivery Information
@@ -189,7 +198,7 @@ export default function OrderSection({ slug }) {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+            <form onSubmit={handleSubmit} className="mt-6 space-y-2">
               {/* Name */}
               <div>
                 <label htmlFor="customerName">আপনার নাম</label>
@@ -261,9 +270,7 @@ export default function OrderSection({ slug }) {
               </div>
 
               {/* Delivery area */}
-              <p className="text-md font-semibold text-green-800 bg-gray-200 border border-gray-400 rounded-lg p-2">
-                ডেলিভারি চার্জ সারা বাংলাদেশে ফ্রী - পন্য হাতে পেয়ে টাকা দিবেন
-              </p>
+
               {/* <div>
                 <p className="mb-2 text-sm font-semibold text-gray-700">ডেলিভারি এলাকা</p>
                 <div className="grid grid-cols-2 gap-3">
@@ -286,18 +293,14 @@ export default function OrderSection({ slug }) {
               </div> */}
 
               {/* Order Summary */}
-              <div className="rounded-2xl bg-gray-50 p-5">
+              <div className="rounded-2xl bg-gray-50 p-3">
                 <h3 className="text-lg font-bold">অর্ডার সারসংক্ষেপ</h3>
 
-                <div className="mt-4 space-y-2.5 text-sm sm:text-base">
+                <div className="mt-4  text-sm sm:text-base">
                   <div className="flex justify-between text-gray-600">
                     <span>890 × {quantity}</span>
                     <span>৳{total}</span>
                   </div>
-                  {/* <div className="flex justify-between text-gray-600">
-                    <span>ডেলিভারি চার্জ</span>
-                    <span>৳{deliveryCharge}</span>
-                  </div> */}
 
                   <div className="border-t border-gray-200 pt-2.5">
                     <div className="flex justify-between text-lg font-extrabold text-green-600">
@@ -305,6 +308,9 @@ export default function OrderSection({ slug }) {
                       <span>৳{total}</span>
                     </div>
                   </div>
+                  <p className="text-md text-center text-green-800 bg-gray-200 border border-gray-400 rounded-md px-2 py-1">
+                    ডেলিভারি চার্জ ফ্রী
+                  </p>
                 </div>
               </div>
 
@@ -324,7 +330,7 @@ export default function OrderSection({ slug }) {
                     : "bg-gradient-to-r from-green-600 to-red-500 hover:scale-[1.02]"
                 }`}
               >
-                {loading ? "অর্ডার প্রসেস হচ্ছে..." : "🛒 অর্ডার কনফার্ম করুন"}
+                {loading ? "অর্ডার প্রসেস হচ্ছে..." : "🛒 অর্ডার কনফার্ম"}
               </button>
             </form>
 
@@ -355,7 +361,9 @@ export default function OrderSection({ slug }) {
               </div>
             )}
 
-            {isBlocked && <BlockedCustomerPopup onClose={() => setIsBlocked(false)} />}
+            {isBlocked && (
+              <BlockedCustomerPopup onClose={() => setIsBlocked(false)} />
+            )}
           </div>
         </div>
       </Container>

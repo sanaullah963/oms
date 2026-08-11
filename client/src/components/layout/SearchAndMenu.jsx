@@ -17,7 +17,11 @@ function SearchAndMenu() {
     { title: "Note", link: "/note" },
     { title: "Comment", link: "/comment" },
     ...(user?.role === "admin"
-      ? [{ title: "🚫 ব্লক কাস্টমার", link: "/dashboard/blocked-customers" }]
+      ? [
+          { title: "🚫 ব্লক কাস্টমার", link: "/dashboard/blocked-customers" },
+          { title: "📈 সেশন অ্যানালিটিক্স", link: "/dashboard/sessions" },
+          { title: "📈 Event logs", link: "/dashboard/event-logs" },
+        ]
       : []),
   ];
   return (
@@ -120,4 +124,4 @@ function SearchAndMenu() {
   );
 }
 
-export default SearchAndMenu;
+export default SearchAndMenu; 

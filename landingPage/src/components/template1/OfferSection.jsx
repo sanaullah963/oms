@@ -11,15 +11,15 @@ const features = [
 
 export default function OfferSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-red-600 via-red-500 to-green-600 py-16">
+    <section className="relative overflow-hidden bg-gradient-to-br from-red-600 via-red-500 to-green-600 py-7">
       {/* Background */}
       {/* <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-yellow-300/20 blur-[120px]" /> */}
       {/* <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-white/10 blur-[120px]" /> */}
       <Container>
-        <div className="rounded-[40px] bg-white p-7 shadow-2xl lg:col-start-2">
-          <span className="rounded-full bg-red-100 px-4 py-1.5 text-sm font-bold text-red-600">
+        <div className="rounded-2xl bg-white p-5 shadow-2xl lg:col-start-2">
+          {/* <span className="rounded-full bg-red-100 px-4 py-1.5 text-sm font-bold text-red-600">
             🔥 BEST PRICE
-          </span>
+          </span> */}
 
           <h3 className="mt-5 text-3xl font-extrabold text-gray-900">
             আনার দানা
@@ -45,17 +45,20 @@ export default function OfferSection() {
             ))}
           </div>
 
-          {/* Delivery */}
-          <div className="mt-7 rounded-3xl bg-green-50 p-5">
+          <div className="my-4 rounded-xl border-2 border-green-500 bg-gradient-to-r from-green-200 to-blue-300 p-6 text-center shadow-lg">
             <div className="flex flex-col items-center justify-between gap-1">
-              <span className="text-sm font-bold sm:text-base">
-                🚚 হোম ডেলিভারি
+              <span className="text-md font-bold sm:text-base">
+                দুই কৌটা একসাথে ৫৯০ টাকা
               </span>
-              <span className="text-sm font-bold text-green-700 sm:text-base">
+              <span className="text-md font-bold sm:text-base ">
+                ডেলিভারি চার্জ ফ্রী
+              </span>
+              <span className="text-md font-bold text-green-700 sm:text-base">
                 Cash On Delivery
               </span>
             </div>
           </div>
+          {/* Delivery */}
 
           {/* CTA */}
           <a
