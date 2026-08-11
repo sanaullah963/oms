@@ -134,8 +134,7 @@ export function initEngagementTracking(slug) {
     });
 
     const url = `${API_URL}/api/public/tracking/session`;
-    console.log("sendUpdate", url, payload);
-    console.log("sendUpdate---------------",API_URL);
+    
     // পেজ বন্ধ/hidden হওয়ার সময় sendBeacon বেশি নির্ভরযোগ্য (fetch অনেক সময় বাতিল হয়ে যায়)
     if (isExiting && navigator.sendBeacon) {
       const blob = new Blob([payload], { type: "application/json" });
@@ -146,7 +145,7 @@ export function initEngagementTracking(slug) {
         headers: { "Content-Type": "application/json" },
         body: payload,
         keepalive: isExiting,
-      }).catch(() => {});
+      }).catch((err) => console.log(err));
     }
   };
 

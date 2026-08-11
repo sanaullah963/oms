@@ -35,7 +35,7 @@ export default function ImageCarousel({
         <div className="flex shrink-0 gap-2 overflow-x-auto pr-16 sm:w-20 sm:flex-col sm:overflow-x-visible sm:pr-0">
           {images.map((img, i) => (
             <button
-              key={img}
+              key={i}
               type="button"
               onClick={() => setIndex(i)}
               aria-label={`ছবি ${i + 1} দেখুন`}
