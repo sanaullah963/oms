@@ -111,10 +111,9 @@ export default function FloatingContactButton({
     };
   }, []);
 
-  const waLink = `https://wa.me/${String(whatsappNumber).replace(
-    /[^\d]/g,
-    "",
-  )}`;
+  const waLink = whatsappNumber
+    ? `https://wa.me/${String(whatsappNumber).replace(/[^\d]/g, "")}`
+    : "";
 
   return (
     <div
@@ -129,28 +128,32 @@ export default function FloatingContactButton({
             : "opacity-0 translate-y-3 pointer-events-none"
         }`}
       >
-        {/* WhatsApp */}
-        <a
-          href={waLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={OPTION_BASE}
-        >
-          WhatsApp
-          <span className={`${OPTION_ICON_BASE} bg-[#25D366] text-white`}>
-            <IconWhatsapp width={16} height={16} />
-          </span>
-        </a>
+        {/* WhatsApp — নম্বর খালি থাকলে ভাঙা wa.me/ লিংক তৈরি না করে পুরো অপশনটাই হাইড */}
+        {whatsappNumber && (
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={OPTION_BASE}
+          >
+            WhatsApp
+            <span className={`${OPTION_ICON_BASE} bg-[#25D366] text-white`}>
+              <IconWhatsapp width={16} height={16} />
+            </span>
+          </a>
+        )}
 
         {/* Call */}
-        <a href={`tel:${callNumber}`} className={OPTION_BASE}>
-          Call
-          <span
-            className={`${OPTION_ICON_BASE} bg-sig-gold text-sig-plum-deep`}
-          >
-            <IconPhone width={16} height={16} />
-          </span>
-        </a>
+        {callNumber && (
+          <a href={`tel:${callNumber}`} className={OPTION_BASE}>
+            Call
+            <span
+              className={`${OPTION_ICON_BASE} bg-sig-gold text-sig-plum-deep`}
+            >
+              <IconPhone width={16} height={16} />
+            </span>
+          </a>
+        )}
 
         {/* IMO */}
         {imoNumber && (

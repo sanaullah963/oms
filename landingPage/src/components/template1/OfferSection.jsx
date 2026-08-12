@@ -2,14 +2,13 @@
 
 import Container from "../common-ui/Container";
 
-const features = [
-  "মুখের রুচি বৃদ্ধিতে সহায়ক",
-  "হজমে সহায়ক",
-  "স্বাস্থ্যকর জীবনযাত্রার অংশ",
-  "১০০% হারবাল",
-];
+export default function OfferSection({ page }) {
+  const productName = page?.productName || "";
+  const price = page?.price ?? 0;
+  const originalPrice = page?.originalPrice;
+  const features = page?.features?.length ? page.features : [];
+  const freeDelivery = page?.freeDelivery !== false;
 
-export default function OfferSection() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-red-600 via-red-500 to-green-600 py-7">
       {/* Background */}
@@ -22,22 +21,26 @@ export default function OfferSection() {
           </span> */}
 
           <h3 className="mt-5 text-3xl font-extrabold text-gray-900">
-            আনার দানা
+            {productName}
           </h3>
 
           {/* Price */}
           <div className="mt-6">
-            <p className="text-lg text-gray-400 line-through">৳১২০০</p>
+            {originalPrice ? (
+              <p className="text-lg text-gray-400 line-through">
+                ৳{originalPrice}
+              </p>
+            ) : null}
             <h2 className="mt-1 text-5xl font-extrabold text-green-600">
-              ৳৮৯০
+              ৳{price}
             </h2>
           </div>
 
           {/* Features */}
           <div className="mt-7 space-y-3">
-            {features.map((f) => (
+            {features.map((f, i) => (
               <div
-                key={f}
+                key={i}
                 className="flex items-center gap-3 text-sm sm:text-base"
               >
                 ✅ {f}
@@ -48,10 +51,10 @@ export default function OfferSection() {
           <div className="my-4 rounded-xl border-2 border-green-500 bg-gradient-to-r from-green-200 to-blue-300 p-6 text-center shadow-lg">
             <div className="flex flex-col items-center justify-between gap-1">
               <span className="text-md font-bold sm:text-base">
-                দুই কৌটা একসাথে ৫৯০ টাকা
+                সীমিত সময়ের অফার মূল্য ৳{price}
               </span>
               <span className="text-md font-bold sm:text-base ">
-                ডেলিভারি চার্জ ফ্রী
+                {freeDelivery ? "ডেলিভারি চার্জ ফ্রী" : "সারা বাংলাদেশে হোম ডেলিভারি"}
               </span>
               <span className="text-md font-bold text-green-700 sm:text-base">
                 Cash On Delivery

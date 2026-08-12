@@ -8,27 +8,33 @@ import {
 } from "react-icons/fa";
 import Link from "next/link";
 import ImageCarousel from "./ImageCarousel";
-import Image from "next/image";
 
-const heroImages = [
-  "https://i.ibb.co.com/gZYtS0Jw/4.png",
-  "https://i.ibb.co.com/gZYtS0Jw/4.png",
-  "https://i.ibb.co.com/vB3DZMK/6321226837614a6933114d685c48e4f8-jpg-188x188-jpg.webp",
-  "/images/anardana-3.jpg",
-  "/images/anardana-4.jpg",
-];
+const FALLBACK_IMAGES = ["/placeholder/p1.jpg"];
 
-export default function HeroTop() {
+export default function HeroTop({ page }) {
+  const productName = page?.productName || "";
+  // topTagline নতুন dedicated field — খালি থাকলে পুরনো tagline field-এ fallback (migration safety)
+  const topTagline = page?.topTagline || page?.tagline || "";
+  // hero.heading/description খালি থাকলে productName/description-এ fallback করে,
+  // যাতে পুরনো পেজ (hero object যোগ হওয়ার আগে তৈরি) ভাঙা না দেখায়
+  const heroHeading = page?.hero?.heading || productName;
+  const heroDescription = page?.hero?.description || page?.description || "";
+  const price = page?.price ?? 0;
+  const originalPrice = page?.originalPrice;
+  const images = page?.images?.length ? page.images : FALLBACK_IMAGES;
+  const freeDelivery = page?.freeDelivery !== false;
+  const callNumber = page?.phoneNumber || "";
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-red-50 via-white to-green-50">
       {/* Background */}
       {/* <div className="absolute -left-32 top-0 h-72 w-72 rounded-full bg-green-300/30 blur-3xl" /> */}
       {/* <div className="absolute -right-32 bottom-0 h-72 w-72 rounded-full bg-red-300/30 blur-3xl" /> */}
 
-      {/* Announcement */}
+      {/* Announcement — dedicated topTagline field, না থাকলে জেনেরিক টেক্সট */}
       <div className="bg-gradient-to-r from-red-600 to-red-500 text-white">
         <div className="mx-auto max-w-7xl px-3 py-1.5 text-center text-xl font-bold sm:text-sm">
-          স্থায়ীভাবে ওজন বাড়বে মাত্র ১ মাস ঔষধ খেলেই
+          {topTagline || "বিশেষ অফার চলছে"}
         </div>
       </div>
       <div className="relative mx-auto max-w-7xl px-3 py-2 sm:px-4">
@@ -56,20 +62,18 @@ export default function HeroTop() {
             <div className="min-w-0">
               <span className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3.5 py-1.5 text-sm font-semibold text-green-700">
                 <FaLeaf />
-                ১০০% ইউনানী ঔষধ
+                ১০০% অরিজিনাল প্রোডাক্ট
               </span>
 
               <h1 className="mt-5 text-3xl font-extrabold leading-tight text-gray-900 md:text-5xl">
-                স্থায়ীভাবে ওজন বাড়ানোর জন্য
-                <span className="text-green-600"> আনার দানা </span>
-                খান,
+                <span className="text-green-600">{heroHeading}</span>
               </h1>
 
-              <p className="mt-5 text-base leading-7 text-gray-600">
-                মুখের রুচি বৃদ্ধি করে, হজম শক্তি উন্নত করে, ওজন বাড়াতে সাহায্য
-                করে, শরীরে শক্তি যোগায় এবং সার্বিক স্বাস্থ্য ভালো রাখতে সহায়ক।
-                স্থায়ীভাবে ওজন বাড়ায়।
-              </p>
+              {heroDescription && (
+                <p className="mt-5 text-base leading-7 text-gray-600">
+                  {heroDescription}
+                </p>
+              )}
 
               {/* CTA */}
               <div className="mt-4 flex flex-wrap gap-2">
@@ -88,22 +92,24 @@ export default function HeroTop() {
                 </a>
               </div>
 
-              {/* Bottom */}
+              {/* Price highlight */}
               <div className="mt-8 flex items-center gap-3 rounded-xl bg-green-100 p-3.5">
                 <div>
-                  <h4 className="text-base font-bold">
-                    একজনের ফুল কোর্স (২ কৌটা)
-                  </h4>
+                  <h4 className="text-base font-bold">বিশেষ মূল্যে পাচ্ছেন</h4>
                   <p className="text-sm text-gray-600">
-                    একসাথে দাম মাত্র{" "}
-                    <span className="mx-2  text-3xl font-extrabold text-red-600">
-                      ৫৯০ টাকা
+                    এখনই দাম মাত্র{" "}
+                    <span className="mx-2 text-3xl font-extrabold text-red-600">
+                      ৳{price}
                     </span>
-                    এক মাসের ঔষধ ।
                   </p>
                 </div>
               </div>
-                <a href="#use-process" className="bg-yellow-400 py-2 px-3 rounded-md font-semibold text-gray-800">খাওয়ার নিয়াম</a>
+              <a
+                href="#use-process"
+                className="bg-yellow-400 py-2 px-3 rounded-md font-semibold text-gray-800"
+              >
+                ব্যবহারের নিয়ম
+              </a>
 
               <div className="mt-8 flex items-center gap-3 rounded-xl bg-green-100 p-3.5">
                 <div>
@@ -121,8 +127,8 @@ export default function HeroTop() {
             <div className="relative min-w-0">
               <div className="relative min-w-0">
                 <ImageCarousel
-                  images={heroImages}
-                  alt="আনার দানা"
+                  images={images}
+                  alt={productName}
                   width={650}
                   height={650}
                   imageClassName="rounded-lg shadow-2xl"
@@ -134,17 +140,20 @@ export default function HeroTop() {
 
         {/* Price */}
         <div className="mt-8 text-center">
-          <div className=""></div>
           <div className=" flex items-center justify-center gap-3">
-            <p className="text-lg inline-block text-gray-400 line-through">
-              ৳৭২০
-            </p>
-            <h2 className="text-5xl  inline-block font-extrabold text-red-600">
-              ৳৫৯০
+            {originalPrice ? (
+              <p className="text-lg inline-block text-gray-400 line-through">
+                ৳{originalPrice}
+              </p>
+            ) : null}
+            <h2 className="text-5xl inline-block font-extrabold text-red-600">
+              ৳{price}
             </h2>
           </div>
           <p className="text-md text-gray-700 mt-2">
-            🚚 ডেলিভারি চার্জ সারাদেশে ফ্রী
+            {freeDelivery
+              ? "🚚 ডেলিভারি চার্জ সারাদেশে ফ্রী"
+              : "🚚 সারা বাংলাদেশে হোম ডেলিভারি"}
           </p>
         </div>
 
@@ -158,13 +167,15 @@ export default function HeroTop() {
             এখনই অর্ডার করুন
           </Link>
 
-          <a
-            href="tel:+8801XXXXXXXXX"
-            className="flex items-center justify-center gap-3 rounded-2xl border-2 border-green-600 py-4 text-lg font-bold text-green-700"
-          >
-            <FaPhoneAlt />
-            ফোন করুন
-          </a>
+          {callNumber && (
+            <a
+              href={`tel:${callNumber}`}
+              className="flex items-center justify-center gap-3 rounded-2xl border-2 border-green-600 py-4 text-lg font-bold text-green-700"
+            >
+              <FaPhoneAlt />
+              ফোন করুন
+            </a>
+          )}
         </div>
 
         {/* Scroll */}
@@ -175,5 +186,3 @@ export default function HeroTop() {
     </section>
   );
 }
-
-// overflow

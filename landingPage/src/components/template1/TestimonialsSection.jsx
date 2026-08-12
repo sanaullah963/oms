@@ -3,29 +3,16 @@ import { MdSend } from "react-icons/md";
 import Container from "../common-ui/Container";
 import { useState } from "react";
 
-const reviews = [
-  {
-    initial: "R",
-    name: "রাকিব",
-    date: "15/3/2025",
-    text: "নিয়মিত ব্যবহারের ফলে আমার খাওয়ার রুচিতে ইতিবাচক পরিবর্তন লক্ষ্য করেছি।",
-  },
-  {
-    initial: "R",
-    name: "রাকিব",
-    date: "15/3/2025",
-    text: "নিয়মিত ব্যবহারের ফলে আমার খাওয়ার রুচিতে ইতিবাচক পরিবর্তন লক্ষ্য করেছি।",
-  },
-];
+export default function TestimonialsSection({ page }) {
+  const testimonials = page?.testimonials?.length ? page.testimonials : [];
 
-export default function TestimonialsSection() {
   const [formData, setFormData] = useState({
     name: "",
     number: "",
     rating: "",
     comment: "",
   });
-const handleChange = (e) => {
+  const handleChange = (e) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
@@ -34,17 +21,10 @@ const handleChange = (e) => {
   const handelCommentSubmit = (e) => {
     e.preventDefault();
     console.log("Comment Data:", formData);
-    // if we want to clear the form
-    // setFormData({
-    //   name: "",
-    //   rating: "",
-    //   comment: "",
-    // });
   };
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-green-50 py-16">
-      {/* <div className="absolute -top-20 left-0 h-80 w-80 rounded-full bg-green-200/30 blur-[120px]" /> */}
-      {/* <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-red-200/30 blur-[120px]" /> */}
       <Container>
         {/* Heading */}
         <div className="mx-auto max-w-3xl text-center">
@@ -64,42 +44,28 @@ const handleChange = (e) => {
 
         {/* Review Slider */}
         <div className="mt-10 snap-x snap-mandatory grid gap-2 grid-cols-1 md:grid-cols-2">
-          {reviews.map((r, i) => (
+          {testimonials.map((r, i) => (
             <div
               key={i}
               className=" snap-center rounded-xl border border-gray-400 bg-white px-4 py-2 shadow-xl"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-green-600 text-lg font-bold text-white">
-                  {r.initial}
+                  {r.name?.[0] || "?"}
                 </div>
                 <div>
                   <div className="flex gap-3">
                     <h3 className="text-lg font-bold">{r.name}</h3>
-                    <div className="text-lg text-yellow-500">★★★★★</div>
+                    <div className="text-lg text-yellow-500">
+                      {"★".repeat(r.rating || 5)}
+                      {"☆".repeat(5 - (r.rating || 5))}
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-500">{r.date}</p>
                 </div>
               </div>
               <p className="mt-2 text-sm text-gray-600">{r.text}</p>
             </div>
           ))}
-
-          {/* <div className=" snap-center rounded-xl border border-gray-400 bg-white px-4 py-2 shadow-xl">
-            <form className="flex w-full justify-between rounded-3xl">
-              <input
-                type="text"
-                placeholder="+ add your comment"
-                className="flex-1 border-b-2 border-b-gray-500"
-              />
-              <button
-                type="submit"
-                className="rounded-full bg-blue-500 p-2 text-white"
-              >
-                <MdSend />
-              </button>
-            </form>
-          </div> */}
 
           <div className="rounded-xl border border-gray-300 bg-white p-2 shadow-xl">
             <h2 className="text-lg font-bold text-gray-800">আপনার মন্তব্য</h2>
@@ -164,22 +130,6 @@ const handleChange = (e) => {
             </form>
           </div>
         </div>
-
-        {/* Trust Features */}
-        {/* <div className="mt-14 grid gap-5 md:grid-cols-3">
-          <div className="rounded-3xl bg-gradient-to-r from-green-600 to-red-500 p-6 text-white shadow-2xl">
-            <h3 className="text-2xl font-extrabold">আজই অর্ডার করুন</h3>
-            <p className="mt-4 leading-7 text-white/90">
-              স্বাস্থ্যকর জীবনযাত্রার অংশ হিসেবে আনার দানা যুক্ত করুন।
-            </p>
-            <a
-              href="#order"
-              className="mt-6 inline-flex rounded-2xl bg-white px-6 py-3 text-sm font-bold text-green-700 transition hover:scale-105"
-            >
-              🛒 এখনই অর্ডার করুন
-            </a>
-          </div>
-        </div> */}
       </Container>
     </section>
   );

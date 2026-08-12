@@ -4,9 +4,7 @@
 // { blocked: true } রিটার্ন করলে)। অর্ডার তৈরি হয়নি — কাস্টমারকে WhatsApp-এ
 // সরাসরি যোগাযোগ করতে বলা হয়। ---
 
-const WHATSAPP_NUMBER = "+8801886362484"; // TemplateOneBody.jsx-এ ব্যবহৃত একই বিজনেস WhatsApp নম্বর
-
-export default function BlockedCustomerPopup({ onClose }) {
+export default function BlockedCustomerPopup({ whatsappNumber, onClose }) {
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 p-5">
       <div className="w-full max-w-md rounded-[35px] bg-white p-8 text-center shadow-2xl">
@@ -25,14 +23,16 @@ export default function BlockedCustomerPopup({ onClose }) {
           করব।
         </p>
 
-        <a
-          href={`https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-6 inline-block w-full rounded-2xl bg-green-600 py-3 text-lg font-bold text-white"
-        >
-          🟢 WhatsApp-এ যোগাযোগ করুন
-        </a>
+        {whatsappNumber && (
+          <a
+            href={`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-block w-full rounded-2xl bg-green-600 py-3 text-lg font-bold text-white"
+          >
+            🟢 WhatsApp-এ যোগাযোগ করুন
+          </a>
+        )}
 
         <button
           onClick={onClose}

@@ -31,7 +31,7 @@ exports.getPublicLandingPage = async (req, res) => {
 // --- POST /api/public/landing-pages/:slug/order — কাস্টমার অর্ডার সাবমিট করলে ---
 exports.submitPublicOrder = async (req, res) => {
   try {
-    const { name, phone, address, quantity, honeypot, tracking = {} } = req.body;
+    const { name, phone, address, quantity, deliveryArea, honeypot, tracking = {} } = req.body;
 
     // 🛡️ বট প্রোটেকশন: এই ফিল্ডটা মানুষের জন্য UI-তে দেখানো হবে না, শুধু বট এটা পূরণ করবে
     if (honeypot) {
@@ -73,10 +73,23 @@ exports.submitPublicOrder = async (req, res) => {
     }
 
     const qty = Math.max(1, parseInt(quantity, 10) || 1);
-    const totalCOD = page.price * qty;
+
+    // --- ডেলিভারি চার্জ backend-এ authoritative-ভাবে হিসাব করা হয় — frontend থেকে
+    // আসা কোনো charge/total কখনো trust করা হয় না, শুধু "inside"/"outside" এলাকা-নির্বাচন
+    // নেওয়া হয়। freeDelivery === true হলে সর্বোচ্চ প্রায়োরিটি পেয়ে চার্জ সবসময় 0,
+    // পুরনো deliveryChargeInsideDhaka/OutsideDhaka ভ্যালু DB-তে থাকলেও ব্যবহৃত হবে না। ---
+    const area = deliveryArea === "outside" ? "outside" : "inside";
+    let deliveryCharge = 0;
+    if (!page.freeDelivery) {
+      const rawCharge =
+        area === "outside" ? page.deliveryChargeOutsideDhaka : page.deliveryChargeInsideDhaka;
+      deliveryCharge = Math.max(0, Number(rawCharge) || 0); // negative charge কখনো accept হবে না
+    }
+
+    const totalCOD = page.price * qty + deliveryCharge;
 
     const order = await Order.create({
-      rawInputText: `${name}\n${phone}\n${address}\nProduct: ${page.productName} x${qty}`,
+      rawInputText: `${name}\n${phone}\n${address}\nProduct: ${page.productName} x${qty}\nDelivery: ৳${deliveryCharge} (${area === "outside" ? "ঢাকার বাইরে" : "ঢাকার ভেতরে"})`,
       castomerName: name,
       castomerPhone: [phone],
       productCode: page.productCode,

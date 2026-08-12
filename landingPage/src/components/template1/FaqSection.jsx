@@ -3,14 +3,8 @@ import { MdSend } from "react-icons/md";
 import Container from "../common-ui/Container";
 import { useState } from "react";
 
-const faqs = [
-  ["কিভাবে অর্ডার করবো?", "নিচের অর্ডার ফর্ম পূরণ করুন।"],
-  ["পেমেন্ট কিভাবে করবো?", "Cash On Delivery."],
-  ["ডেলিভারি কতদিন লাগে?", "২-৫ কর্মদিবস।"],
-  ["সারা বাংলাদেশে পাওয়া যাবে?", "জি, সারা বাংলাদেশে।"],
-];
-
-export default function FaqSection() {
+export default function FaqSection({ page }) {
+  const faqs = page?.faqs?.length ? page.faqs : [];
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [formData, setFormData] = useState({
     phone: "",
@@ -57,12 +51,12 @@ export default function FaqSection() {
         </div>
 
         <div className="mt-10 space-y-2">
-          {faqs.map(([q, a]) => (
-            <details key={q} className="rounded-lg border p-2 shadow">
+          {faqs.map((f, i) => (
+            <details key={i} className="rounded-lg border p-2 shadow">
               <summary className="cursor-pointer text-lg font-bold ">
-                {q}
+                {f.question}
               </summary>
-              <p className="mt-2 leading-7 text-gray-600">{a}</p>
+              <p className="mt-2 leading-7 text-gray-600">{f.answer}</p>
             </details>
           ))}
 

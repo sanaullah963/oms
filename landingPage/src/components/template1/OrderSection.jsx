@@ -13,14 +13,22 @@ import { saveDraftOrder } from "@/utils/tracking";
 import { landingService } from "@/services/landingService";
 import BlockedCustomerPopup from "./BlockedCustomerPopup";
 
-const PRODUCT_PRICE = 890;
-const PRODUCT_NAME = "আনার দানা";
-const PRODUCT_IMAGE = "/images/anardana.jpg";
+const FALLBACK_IMAGE = "/placeholder/p1.jpg";
 
-export default function OrderSection({ slug, setIsOrderVisible }) {
+export default function OrderSection({ page, slug, setIsOrderVisible }) {
+  const productName = page?.productName || "";
+  const price = page?.price ?? 0;
+  const originalPrice = page?.originalPrice;
+  const productImage = page?.images?.[0] || FALLBACK_IMAGE;
+  const freeDelivery = page?.freeDelivery !== false;
+  const insideCharge = page?.deliveryChargeInsideDhaka;
+  const outsideCharge = page?.deliveryChargeOutsideDhaka;
+  const whatsappNumber = page?.whatsappNumber || "";
+
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [deliveryArea, setDeliveryArea] = useState("inside"); // ফ্রি ডেলিভারি না থাকলেই শুধু ব্যবহৃত হয়
   const [success, setSuccess] = useState(false);
   const [apiError, setApiError] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
@@ -47,10 +55,19 @@ export default function OrderSection({ slug, setIsOrderVisible }) {
 
   useEffect(() => {
     if (!customerName && !phone && !address) return; // সবগুলো খালি থাকলে সেভ করার দরকার নেই
-    saveDraftOrder("anardana", { customerName, phone, address, quantity });
-  }, [customerName, phone, address, quantity]);
+    // আগে এখানে "anardana" ফিক্সড স্ট্রিং হার্ডকোড করা ছিল, ফলে যেকোনো slug-এর
+    // পেজ থেকে draft order ভুলভাবে "anardana" slug দিয়ে সেভ হতো — এখন আসল slug ব্যবহার হচ্ছে
+    saveDraftOrder(slug, { customerName, phone, address, quantity });
+  }, [customerName, phone, address, quantity, slug]);
 
-  const total = PRODUCT_PRICE * quantity; // for delivery charge not included
+  const total = price * quantity; // চূড়ান্ত totalCOD সহ ডেলিভারি চার্জ ব্যাক-এন্ড authoritative-ভাবে হিসাব করে
+  // শুধু UI-তে দেখানোর জন্য — client-side এই সংখ্যাটা কখনো order submit-এ trust করা হয় না
+  const deliveryChargeDisplay = freeDelivery
+    ? 0
+    : deliveryArea === "outside"
+      ? outsideCharge ?? 0
+      : insideCharge ?? 0;
+  const grandTotalDisplay = total + deliveryChargeDisplay;
 
   const validateForm = () => {
     const newErrors = {};
@@ -78,17 +95,17 @@ export default function OrderSection({ slug, setIsOrderVisible }) {
     setIsBlocked(false);
 
     try {
+      // productCode/price/name পাঠানোর দরকার নেই — backend slug দিয়ে LandingPage
+      // খুঁজে নিজেই authoritative price/productCode ব্যবহার করে (frontend থেকে আসা
+      // product info কখনো trust করে না), তাই এখানে শুধু কাস্টমার ইনপুট পাঠানো হচ্ছে
       const payload = {
         name: customerName,
         phone,
         address,
         quantity,
-        total,
-        productCode: "P-Landing01",
-        product: {
-          name: PRODUCT_NAME,
-          price: PRODUCT_PRICE,
-        },
+        // freeDelivery হলে backend এমনিতেই deliveryArea ignore করে (charge সবসময় 0),
+        // তাই এটা পাঠাতে সমস্যা নেই — actual charge হিসাব backend-এই হয়
+        deliveryArea,
       };
       // landingService.submitOrder নিজে থেকেই fbp/fbc/UTM/sessionId/fingerprintHash-সহ
       // tracking payload যোগ করে দেয় (এতদিন raw axios.post ব্যবহার হতো বলে এই
@@ -100,7 +117,7 @@ export default function OrderSection({ slug, setIsOrderVisible }) {
       setPhone("");
       setAddress("");
       setQuantity(1);
-      // setDeliveryArea("inside");
+      setDeliveryArea("inside");
       setAgree(false);
     } catch (err) {
       console.error(err);
@@ -154,8 +171,8 @@ export default function OrderSection({ slug, setIsOrderVisible }) {
             <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-gray-50 pe-2 sm:p-4">
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white sm:h-20 sm:w-20">
                 <Image
-                  src={PRODUCT_IMAGE}
-                  alt={PRODUCT_NAME}
+                  src={productImage}
+                  alt={productName}
                   fill
                   className="object-cover"
                 />
@@ -163,13 +180,15 @@ export default function OrderSection({ slug, setIsOrderVisible }) {
 
               <div className="min-w-0 flex-1">
                 <h4 className="truncate text-base font-bold text-gray-900 sm:text-lg">
-                  {PRODUCT_NAME}
+                  {productName}
                 </h4>
                 <p className="text-sm text-green-600 font-semibold sm:text-base">
-                  ৳{PRODUCT_PRICE}
-                  <span className="ml-1 text-xs font-normal text-gray-400 line-through">
-                    ৳১২০০
-                  </span>
+                  ৳{price}
+                  {originalPrice ? (
+                    <span className="ml-1 text-xs font-normal text-gray-400 line-through">
+                      ৳{originalPrice}
+                    </span>
+                  ) : null}
                 </p>
               </div>
 
@@ -269,28 +288,32 @@ export default function OrderSection({ slug, setIsOrderVisible }) {
                 )}
               </div>
 
-              {/* Delivery area */}
-
-              {/* <div>
-                <p className="mb-2 text-sm font-semibold text-gray-700">ডেলিভারি এলাকা</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {deliveryOptions.map((opt) => (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      onClick={() => setDeliveryArea(opt.key)}
-                      className={`rounded-xl border-2 px-3 py-3 text-left text-sm transition sm:text-base ${
-                        deliveryArea === opt.key
-                          ? "border-green-500 bg-green-50"
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                      }`}
-                    >
-                      <span className="block font-bold text-gray-900">{opt.label}</span>
-                      <span className="text-xs text-gray-500 sm:text-sm">৳{opt.charge}</span>
-                    </button>
-                  ))}
+              {/* Delivery area — শুধু Free Delivery বন্ধ থাকলেই দেখানো হয় */}
+              {!freeDelivery && (
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-gray-700">ডেলিভারি এলাকা</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { key: "inside", label: "ঢাকার ভেতরে", charge: insideCharge ?? 0 },
+                      { key: "outside", label: "ঢাকার বাইরে", charge: outsideCharge ?? 0 },
+                    ].map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setDeliveryArea(opt.key)}
+                        className={`rounded-xl border-2 px-3 py-3 text-left text-sm transition sm:text-base ${
+                          deliveryArea === opt.key
+                            ? "border-green-500 bg-green-50"
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}
+                      >
+                        <span className="block font-bold text-gray-900">{opt.label}</span>
+                        <span className="text-xs text-gray-500 sm:text-sm">৳{opt.charge}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div> */}
+              )}
 
               {/* Order Summary */}
               <div className="rounded-2xl bg-gray-50 p-3">
@@ -298,18 +321,27 @@ export default function OrderSection({ slug, setIsOrderVisible }) {
 
                 <div className="mt-4  text-sm sm:text-base">
                   <div className="flex justify-between text-gray-600">
-                    <span>890 × {quantity}</span>
+                    <span>{price} × {quantity}</span>
                     <span>৳{total}</span>
                   </div>
+
+                  {!freeDelivery && (
+                    <div className="flex justify-between text-gray-600">
+                      <span>ডেলিভারি চার্জ ({deliveryArea === "outside" ? "ঢাকার বাইরে" : "ঢাকার ভেতরে"})</span>
+                      <span>৳{deliveryChargeDisplay}</span>
+                    </div>
+                  )}
 
                   <div className="border-t border-gray-200 pt-2.5">
                     <div className="flex justify-between text-lg font-extrabold text-green-600">
                       <span>মোট</span>
-                      <span>৳{total}</span>
+                      <span>৳{grandTotalDisplay}</span>
                     </div>
                   </div>
                   <p className="text-md text-center text-green-800 bg-gray-200 border border-gray-400 rounded-md px-2 py-1">
-                    ডেলিভারি চার্জ ফ্রী
+                    {freeDelivery
+                      ? "ডেলিভারি চার্জ ফ্রী"
+                      : `ডেলিভারি চার্জ প্রযোজ্য (ঢাকায় ৳${insideCharge ?? 0}, ঢাকার বাইরে ৳${outsideCharge ?? 0})`}
                   </p>
                 </div>
               </div>
@@ -362,7 +394,10 @@ export default function OrderSection({ slug, setIsOrderVisible }) {
             )}
 
             {isBlocked && (
-              <BlockedCustomerPopup onClose={() => setIsBlocked(false)} />
+              <BlockedCustomerPopup
+                whatsappNumber={whatsappNumber}
+                onClose={() => setIsBlocked(false)}
+              />
             )}
           </div>
         </div>

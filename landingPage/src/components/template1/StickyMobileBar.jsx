@@ -22,7 +22,9 @@
 
 "use client";
 
-export default function StickyMobileBar({ isVisible }) {
+export default function StickyMobileBar({ page, isVisible }) {
+  const price = page?.price ?? 0;
+
   return (
     <div
       className={`fixed bottom-0 left-0 right-0 z-40 border-t bg-white px-4 py-3 shadow-[0_-10px_30px_rgba(0,0,0,.1)] transition-transform duration-300 lg:hidden ${
@@ -31,7 +33,7 @@ export default function StickyMobileBar({ isVisible }) {
     >
       <div className="flex items-center gap-2">
         <div>
-          <h3 className="text-3xl font-extrabold text-green-600">৳৮৯০</h3>
+          <h3 className="text-3xl font-extrabold text-green-600">৳{price}</h3>
         </div>
 
         <a
