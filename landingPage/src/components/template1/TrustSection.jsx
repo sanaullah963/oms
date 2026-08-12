@@ -29,7 +29,7 @@ export default function TrustSection({ page }) {
   const reviewImages = page?.reviewImages?.length
     ? page.reviewImages
     : FALLBACK_IMAGE;
-console.log(page);
+// console.log(page);
   return (
     <section
       id="reviews-image"

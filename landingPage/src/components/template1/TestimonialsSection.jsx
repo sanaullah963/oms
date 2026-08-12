@@ -20,7 +20,7 @@ export default function TestimonialsSection({ page }) {
   };
   const handelCommentSubmit = (e) => {
     e.preventDefault();
-    console.log("Comment Data:", formData);
+    // console.log("Comment Data:", formData);
   };
 
   return (

@@ -136,7 +136,7 @@ export default function FloatingContactButton({
             rel="noopener noreferrer"
             className={OPTION_BASE}
           >
-            WhatsApp
+            WhatsApp {whatsappNumber == 11 ? whatsappNumber : whatsappNumber.slice(-11)}
             <span className={`${OPTION_ICON_BASE} bg-[#25D366] text-white`}>
               <IconWhatsapp width={16} height={16} />
             </span>
@@ -145,8 +145,9 @@ export default function FloatingContactButton({
 
         {/* Call */}
         {callNumber && (
-          <a href={`tel:${callNumber}`} className={OPTION_BASE}>
-            Call
+          <a href={`tel:${callNumber}`} className={OPTION_BASE} target="_blank">
+            Call {callNumber}
+            
             <span
               className={`${OPTION_ICON_BASE} bg-sig-gold text-sig-plum-deep`}
             >
@@ -157,8 +158,8 @@ export default function FloatingContactButton({
 
         {/* IMO */}
         {imoNumber && (
-          <a href={`imo://chat?phone=${imoNumber}`} className={OPTION_BASE}>
-            IMO
+          <a href={`https://s.imoim.net/AWgRo2`} className={OPTION_BASE} target="_blank">
+            IMO {imoNumber}
             <span className={`${OPTION_ICON_BASE} bg-[#7B2FBE] text-white`}>
               <IconChat width={16} height={16} />
             </span>

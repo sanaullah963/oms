@@ -29,7 +29,7 @@ export default function TemplateOneBody({ slug, page }) {
   // এখন WhatsApp/Call/IMO — তিনটাই আলাদা field, একটা আরেকটার fallback না —
   // অন্তত একটা নম্বর থাকলেই ফ্লোটিং কন্টাক্ট বাটন দেখানো হবে, প্রতিটা অপশন
   // নিজের নম্বর অনুযায়ী ভেতরে-ভেতরে conditionally hide হবে (FloatingContactButton.jsx দেখুন)
-  const whatsappNumber = page?.whatsappNumber || "";
+  const whatsappNumber = page?.whatsappNumber ? `88${page?.whatsappNumber}` : "";
   const phoneNumber = page?.phoneNumber || "";
   const imoNumber = page?.imoNumber || "";
   const hasAnyContact = whatsappNumber || phoneNumber || imoNumber;

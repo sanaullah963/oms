@@ -19,13 +19,15 @@ export default function BlockedCustomerPopup({ whatsappNumber, onClose }) {
         <p className="mt-4 leading-7 text-gray-600">
           আপনার অর্ডারটি এই মুহূর্তে অটোমেটিক্যালি গ্রহণ করা যাচ্ছে না।
           <br />
-          অনুগ্রহ করে সরাসরি আমাদের হোয়াটসঅ্যাপে যোগাযোগ করুন — আমরা দ্রুত সাহায্য
-          করব।
+          অনুগ্রহ করে সরাসরি আমাদের হোয়াটসঅ্যাপে যোগাযোগ করুন — আমরা দ্রুত
+          সাহায্য করব।
         </p>
 
         {whatsappNumber && (
           <a
-            href={`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`}
+            href={`https://wa.me/88${whatsappNumber}?text=${encodeURIComponent(
+              `আমি অর্ডার করার চেষ্টা করছি ,কিন্তু আমার অর্ডারটা গ্রহণ করা হচ্ছে না। আমি অর্ডার করতে চাই`,
+            )}`}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-6 inline-block w-full rounded-2xl bg-green-600 py-3 text-lg font-bold text-white"

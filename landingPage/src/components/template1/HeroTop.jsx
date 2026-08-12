@@ -5,6 +5,7 @@ import {
   FaPhoneAlt,
   FaArrowDown,
   FaShoppingCart,
+  FaWhatsapp,
 } from "react-icons/fa";
 import Link from "next/link";
 import ImageCarousel from "./ImageCarousel";
@@ -24,7 +25,9 @@ export default function HeroTop({ page }) {
   const images = page?.images?.length ? page.images : FALLBACK_IMAGES;
   const freeDelivery = page?.freeDelivery !== false;
   const callNumber = page?.phoneNumber || "";
-
+  const whatsappNumber = page?.whatsappNumber
+    ? `88${page?.whatsappNumber}`
+    : "";
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-red-50 via-white to-green-50">
       {/* Background */}
@@ -77,19 +80,29 @@ export default function HeroTop({ page }) {
 
               {/* CTA */}
               <div className="mt-4 flex flex-wrap gap-2">
-                <a
-                  href="#order"
-                  className="animate-soft-ripple rounded-md bg-green-600 px-4 py-2 text-lg font-bold text-white shadow-lg transition hover:scale-105 hover:bg-green-700 sm:text-base"
-                >
-                  এখনই অর্ডার করুন
-                </a>
-
-                <a
-                  href="#benefits"
-                  className="flex items-center gap-2 rounded-md border border-green-600 bg-green-100 px-4 py-2 text-sm font-bold text-green-700 hover:bg-green-50 sm:text-base"
-                >
-                  বিস্তারিত দেখুন
-                </a>
+                <div className="">
+                  <a
+                    href="#order"
+                    className="animate-soft-ripple rounded-md bg-green-600 px-4 py-2 text-lg font-bold text-white shadow-lg transition hover:scale-105 hover:bg-green-700 sm:text-base"
+                  >
+                    এখনই অর্ডার করুন
+                  </a>
+                </div>
+                <div className="flex gap-2 pt-3">
+                  <a
+                    href="#benefits"
+                    className="flex items-center gap-2 rounded-md border border-green-600 bg-green-100 px-4 py-2 text-sm font-bold text-green-700 hover:bg-green-50 sm:text-base"
+                  >
+                    বিস্তারিত দেখুন
+                  </a>
+                  <a
+                    href={`https://wa.me/${whatsappNumber}`}
+                    className="flex items-center gap-2 rounded-md border border-green-600 bg-green-400 px-4 py-2 text-sm font-bold text-green-700 hover:bg-green-50 sm:text-base"
+                  >
+                    <FaWhatsapp />
+                    Whatsapp
+                  </a>
+                </div>
               </div>
 
               {/* Price highlight */}

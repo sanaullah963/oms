@@ -31,7 +31,8 @@ export default function FaqSection({ page }) {
       alert("আপনার প্রশ্নটি লিখুন");
       return;
     }
-    alert(formData);
+    
+    alert(formData.question);
     // Reset Form
     setFormData({
       phone: "",

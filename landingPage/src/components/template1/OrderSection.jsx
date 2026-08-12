@@ -30,6 +30,8 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
   const [address, setAddress] = useState("");
   const [deliveryArea, setDeliveryArea] = useState("inside"); // ফ্রি ডেলিভারি না থাকলেই শুধু ব্যবহৃত হয়
   const [success, setSuccess] = useState(false);
+  const [lastOrder, setLastOrder] = useState(null); // সফল অর্ডারের স্ন্যাপশট — ফর্ম ক্লিয়ার হওয়ার আগেই সেভ করা হয়, মডালে দেখানোর জন্য
+  const [copied, setCopied] = useState(false);
   const [apiError, setApiError] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
   const [agree, setAgree] = useState(false);
@@ -112,6 +114,16 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
       // অ্যাট্রিবিউশন ডেটা চূড়ান্ত অর্ডারের সাথে সার্ভারে যেত না — এখন ঠিক হয়েছে)
       const response = await landingService.submitOrder(slug, payload);
 
+      // ফর্ম ক্লিয়ার করার আগে সফল অর্ডারের তথ্য স্ন্যাপশট নেওয়া হচ্ছে —
+      // মডালে দেখানোর জন্য (কাস্টমার-facing কোনো unique order ID সিস্টেম নেই,
+      // তাই রেফারেন্স হিসেবে কাস্টমারের ফোন নম্বর ব্যবহার হচ্ছে)
+      setLastOrder({
+        name: customerName,
+        phone,
+        address,
+        quantity,
+        total: grandTotalDisplay,
+      });
       setSuccess(true);
       setCustomerName("");
       setPhone("");
@@ -138,6 +150,24 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
         ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100"
         : "border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-100"
     }`;
+
+  const handleCopyReference = async () => {
+    if (!lastOrder?.phone) return;
+    try {
+      await navigator.clipboard.writeText(lastOrder.phone);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard API না থাকলে (পুরনো ব্রাউজার) নিরবে ব্যর্থ হবে, কাস্টমার ম্যানুয়ালি সিলেক্ট করে কপি করতে পারবে
+    }
+  };
+
+  // WhatsApp-এ রেফারেন্স নম্বর-সহ প্রি-ফিলড মেসেজ, যাতে কাস্টমারকে টাইপ করতে না হয়
+  const whatsappTrackLink = whatsappNumber
+    ? `https://wa.me/88${whatsappNumber}?text=${encodeURIComponent(
+        `আমার অর্ডার ট্র্যাক করতে চাই। রেফারেন্স নম্বর: ${lastOrder?.phone || ""}`,
+      )}`
+    : "";
 
   return (
     <section
@@ -368,7 +398,7 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
 
             {success && (
               <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 p-5">
-                <div className="w-full max-w-md rounded-[35px] bg-white p-8 text-center shadow-2xl">
+                <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[35px] bg-white p-6 text-center shadow-2xl sm:p-8">
                   <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-4xl">
                     ✅
                   </div>
@@ -377,15 +407,80 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                     ধন্যবাদ
                   </h2>
 
-                  <p className="mt-4 leading-7 text-gray-600">
-                    আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে।
-                    <br />
-                    আমাদের প্রতিনিধি খুব শীঘ্রই আপনার সাথে যোগাযোগ করবে।
+                  <p className="mt-3 leading-7 text-gray-600">
+                    আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে। আমাদের প্রতিনিধি
+                    শীঘ্রই আপনার সাথে যোগাযোগ করবে।
                   </p>
+
+                  {lastOrder && (
+                    <>
+                      {/* Reference number — কপি করে হোয়াটসঅ্যাপে দিলে অর্ডার খুঁজে পাওয়া যাবে */}
+                      <div className="mt-5 rounded-2xl border-2 border-dashed border-green-300 bg-green-50 p-4">
+                        <p className="text-xs font-semibold text-gray-500">
+                          আপনার অর্ডার সম্পর্কিত  যে কোন আপডেট পেতে হোয়াটসঅ্যাপে আপনার নাম্বারটি আমাদের দিলেই হবে
+                        </p>
+                        {/* <div className="mt-1 flex items-center justify-center gap-2">
+                          <span className="text-2xl font-extrabold tracking-wide text-green-700">
+                            {lastOrder.phone}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleCopyReference}
+                            className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-green-700"
+                          >
+                            {copied ? "কপি হয়েছে ✓" : "কপি করুন"}
+                          </button>
+                        </div> */}
+                        {/* <p className="mt-2 text-xs leading-5 text-gray-500">
+                          আপনার অর্ডার সম্পর্কিত  যে কোন আপডেট পেতে হোয়াটসঅ্যাপে আপনার নাম্বারটি আমাদের দিলেই হবে
+
+                        </p> */}
+                      </div>
+
+                      {/* Order summary */}
+                      <div className="mt-4 space-y-1.5 rounded-2xl bg-gray-50 p-4 text-left text-sm">
+                        <div className="flex justify-between gap-2">
+                          <span className="text-gray-500">নাম</span>
+                          <span className="font-semibold text-gray-800">
+                            {lastOrder.name}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="shrink-0 text-gray-500">ঠিকানা</span>
+                          <span className="text-right font-semibold text-gray-800">
+                            {lastOrder.address}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-gray-500">পরিমাণ</span>
+                          <span className="font-semibold text-gray-800">
+                            {lastOrder.quantity}টি
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2 border-t border-gray-200 pt-1.5">
+                          <span className="text-gray-500">মোট মূল্য</span>
+                          <span className="font-extrabold text-green-600">
+                            ৳{lastOrder.total}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {whatsappTrackLink && (
+                    <a
+                      href={whatsappTrackLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3 text-lg font-bold text-white shadow-lg transition hover:scale-[1.02]"
+                    >
+                      🟢 WhatsApp-এ যোগাযোগ করুন
+                    </a>
+                  )}
 
                   <button
                     onClick={() => setSuccess(false)}
-                    className="mt-8 w-full rounded-2xl bg-green-600 py-3 text-lg font-bold text-white"
+                    className="mt-3 w-full rounded-2xl bg-gray-100 py-3 text-lg font-bold text-gray-700"
                   >
                     ঠিক আছে
                   </button>

@@ -6,7 +6,7 @@ const DEFAULT_STEP = {
 };
 
 export default function UsageGuideSection({ page }) {
-  const whatsappNumber = page?.whatsappNumber || "";
+  const whatsappNumber = page?.whatsappNumber ? `88${page?.whatsappNumber}` : "";
   // usageProcess খালি থাকলে (পুরনো পেজ) একটা জেনেরিক ডিফল্ট ধাপ দেখানো হয়,
   // ভাঙা/ফাঁকা সেকশন দেখাবে না
   const steps = page?.usageProcess?.length ? page.usageProcess : [DEFAULT_STEP];

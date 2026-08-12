@@ -110,7 +110,7 @@ export async function getTrackingPayloadWithFingerprint(slug) {
  */
 export function initEngagementTracking(slug) {
   if (typeof window === "undefined") return () => {};
-  console.log("initEngagementTracking", slug);
+  // console.log("initEngagementTracking", slug);
   const entryTime = Date.now();
   const metrics = {
     maxScrollDepth: 0,
@@ -210,7 +210,7 @@ let draftDebounceTimer = null;
  */
 export function saveDraftOrder(slug, formData) {
   if (typeof window === "undefined") return;
-  console.log("saveDraftOrder", formData);
+  // console.log("saveDraftOrder", formData);
   clearTimeout(draftDebounceTimer);
   draftDebounceTimer = setTimeout(() => {
     fetch(`${API_URL}/api/public/tracking/draft`, {
