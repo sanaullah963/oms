@@ -6,8 +6,8 @@ const TEMPLATES = [
   
   
   {
-    href: "/templates/anardanav2",
-    title: "anardana-v2",
+    href: "/templates",
+    title: "not work",
     desc: "হলুদ-জলপাই রঙ, বারবার CTA, কল বাটন, FB-কমেন্ট স্টাইল রিভিউ — আপনার দেওয়া রেফারেন্স থেকে অনুপ্রাণিত",
   },
 ];
