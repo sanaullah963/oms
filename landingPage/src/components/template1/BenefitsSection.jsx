@@ -47,9 +47,8 @@ export default function BenefitsSection({ page }) {
               )}
             </div>
           ))}
-
           {/* price segment */}
-          <div className="rounded-xl border-2 border-green-500 bg-gradient-to-r from-green-200 to-blue-300 p-6 text-center shadow-lg">
+          {/* <div className="rounded-xl border-2 border-green-500 bg-gradient-to-r from-green-200 to-blue-300 p-6 text-center shadow-lg">
             <p className="text-lg font-medium text-gray-700">বিশেষ অফার মূল্য</p>
 
             <h2 className="mt-2 text-4xl font-extrabold text-green-700">
@@ -61,7 +60,7 @@ export default function BenefitsSection({ page }) {
                 ৳{price}
               </span>
             </div>
-          </div>
+          </div> */}
 
           <div className="rounded-3xl border border-green-100 bg-gradient-to-br from-green-600 to-red-500 p-5 text-white shadow-2xl">
             <h3 className="text-2xl font-extrabold">আজই শুরু করুন</h3>
