@@ -23,7 +23,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="bn">
       <body className={`${hindSiliguri.variable} font-sans antialiased`} cz-shortcut-listen="true">
-        {/* --- Meta Pixel বেস কোড: PageView স্বয়ংক্রিয়ভাবে পাঠায়, _fbp/_fbc কুকি নিজে থেকে সেট করে --- */}
+        {/* --- Meta Pixel বেস কোড: fbq init সাথে সাথে হয় (যাতে _fbp/_fbc কুকি দ্রুত সেট
+        হয় ও পরবর্তী ইভেন্টের জন্য fbq প্রস্তুত থাকে), কিন্তু PageView ট্র্যাক করা হয়
+        পেজ লোডের ~১ সেকেন্ড পর — এতে যেসব ভিজিটর সাথে সাথেই পেজ ছেড়ে চলে যায়
+        (বট বা ভুল ক্লিক) তারা PageView-এ কাউন্ট হয় না, ফলে এই ইভেন্টের ওপর ভিত্তি করে
+        বানানো Custom Audience-এর মান (quality) ভালো হয় --- */}
         {META_PIXEL_ID && (
           <Script id="meta-pixel-base" strategy="afterInteractive">
             {`
@@ -36,7 +40,7 @@ export default function RootLayout({ children }) {
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
               fbq('init', '${META_PIXEL_ID}');
-              fbq('track', 'PageView');
+              setTimeout(function () { fbq('track', 'PageView'); }, 1000);
             `}
           </Script>
         )}

@@ -1,6 +1,6 @@
-# প্রজেক্ট সামারি — OMS (oms-main) + Anardana Landing (anardanaLanding-main)
+# প্রজেক্ট সামারি — OMS (oms-main) + Anardana Landing (lanidgUi)
 
-*পুরো কোডবেস (client + server, উভয় রিপো) শুরু থেকে শেষ পর্যন্ত পড়ে তৈরি করা হয়েছে।*
+*পুরো কোডবেস (client + server + lanidgUi, তিনটা প্রজেক্ট) শুরু থেকে শেষ পর্যন্ত পড়ে তৈরি করা হয়েছে, এবং তারপর একাধিক আপডেটে (ফ্রড ডিটেকশন সিস্টেম, সেশন অ্যানালিটিক্স ড্যাশবোর্ড, Meta CAPI/Pixel ফিক্স, কয়েকটা বাগ ফিক্স) সবসময় সিঙ্ক রাখা হয়েছে। সর্বশেষ আপডেট §৯–§১১-এ।*
 
 ---
 
@@ -174,15 +174,18 @@
 - **`server/models/Session.js`** — প্রতিটা ল্যান্ডিং পেজ ভিজিটের জন্য একটা ডকুমেন্ট। `visitorId` (localStorage-এ persist, একই ব্রাউজারে বারবার ভিজিটেও অপরিবর্তিত — return visitor শনাক্তের জন্য) বনাম `sessionId` (sessionStorage, প্রতি ট্যাব/ভিজিটে নতুন)। মেট্রিক: `timeOnPageSeconds`, `maxScrollDepth`, `clickCount`, `focusCount`/`blurCount`, `visibilityChangeCount`, `isBounce` (১০ সেকেন্ডের কম + কোনো ক্লিক নেই + স্ক্রল ২৫%-এর কম হলে bounce ধরা হয়), `isReturnVisitor`।
 - **`lanidgUi/src/utils/tracking.js` → `initEngagementTracking(slug)`** — scroll/click/focus/blur/visibilitychange/beforeunload ইভেন্ট লিসেন করে, প্রতি ১৫ সেকেন্ডে (heartbeat) এবং পেজ ছাড়ার সময় (`visibilitychange` hidden বা `beforeunload`) সার্ভারে পাঠায়। এক্সিট হওয়ার সময় `navigator.sendBeacon` ব্যবহার করা হয় (fetch-এর চেয়ে বেশি নির্ভরযোগ্য)। `TemplateOneBody.jsx`-এ `useEffect`-এর ভেতর কল হয়, cleanup রিটার্ন করে।
 - **`publicTrackingController.updateSession`** — `POST /api/public/tracking/session`, upsert করে `Session` ডকুমেন্ট।
-- ⚠️ **লক্ষণীয়:** এই ডেটা (bounce rate, scroll depth, return visitor ইত্যাদি) এখনো কোনো ড্যাশবোর্ড/অ্যানালিটিক্স UI-তে দেখানো হয় না — `dashboardController.js`-এ `Session` মডেলের কোনো ব্যবহার নেই। ডেটা কালেক্ট হচ্ছে, কিন্তু এখনো surface করা হয়নি।
+- ✅ **আপডেট (§১০ দেখুন):** এই ডেটা (bounce rate, scroll depth, return visitor ইত্যাদি) এখন `/dashboard/sessions` পেজে টেবিল + গ্রাফ আকারে অ্যাডমিনদের দেখানো হয় — নতুন `sessionController.js` (aggregation) দিয়ে সামারি ও দৈনিক ট্রেন্ড বের করা হয়, `recharts` দিয়ে চার্ট রেন্ডার হয়।
 
 ### ৬.৩ Meta Conversions API (CAPI) ইন্টিগ্রেশন
 
 - **`server/utils/metaCapi.js`** — `sendCapiEvent({eventName, orderId, sessionId, userData, customData})`: ফোন/ইমেইল SHA-256 হ্যাশ করে (Meta-র নিয়ম মেনে, বাংলাদেশি নম্বরকে `880`-প্রিফিক্সড E.164-এ নিয়ে গিয়ে), Graph API-তে POST করে, প্রতিটা ইভেন্ট **`EventLog`** মডেলে সেভ থাকে (payload + Meta response + status: pending/sent/failed)। কখনো throw করে না, ব্যর্থ হলেও কলিং কোড না ভাঙার জন্য ডিজাইন করা।
 - **`server/models/EventLog.js`** — `eventName` (Purchase/Lead/InitiateCheckout/ViewContent/PageView), unique `eventId` (dedup key, ভবিষ্যতে ব্রাউজার Pixel-এর সাথে মেলানোর জন্য), status, retryCount।
-- **এখন যা পাঠানো হয়:** কাস্টমার ল্যান্ডিং পেজ থেকে অর্ডার সাবমিট করলে শুধু **`Lead`** ইভেন্ট যায় (`publicLandingController.submitPublicOrder`-এর শেষে)।
-- ⚠️ **এখনো implement হয়নি (TODO, কমেন্টে উল্লেখ আছে):** অ্যাডমিন অর্ডার "Confirmed" করলে **`Purchase`** ইভেন্ট পাঠানোর কথা ছিল (কোডের কমেন্টে লেখা আছে), কিন্তু `orderController.js`-এ কোথাও `sendCapiEvent`/`Purchase` কল নেই — এই অংশটা এখনো বাকি।
-- **`retryEvent(eventLogId)`** — আগের payload অপরিবর্তিত রেখে আবার পাঠানোর ফাংশন, ব্যবহৃত হয় `eventLogController`/`eventLogRoutes` থেকে, ক্লায়েন্টে `EventLogViewer.jsx` (dashboard/event-logs পেজ) থেকে অ্যাডমিন ম্যানুয়ালি রিট্রাই করতে পারে।
+- **যা পাঠানো হয় (৩টা ইভেন্ট):**
+  1. **`PageView`** — ব্রাউজার Pixel (`fbq('track', 'PageView')`), `lanidgUi/src/app/layout.js`-এ। ✅ **আপডেট:** আগে পেজ লোড হওয়ার সাথে সাথেই যেত, এখন `fbq('init', ...)` সাথে সাথে হলেও `PageView` ট্র্যাক করা হয় **~১ সেকেন্ড ডিলে দিয়ে** (`setTimeout`) — এতে দ্রুত বাউন্স করা ভিজিটর/বট এই ইভেন্টে কাউন্ট হয় না, ফলে এর উপর ভিত্তি করে বানানো Custom Audience-এর মান ভালো হয়।
+  2. **`Lead`** — কাস্টমার ল্যান্ডিং পেজ থেকে অর্ডার সাবমিট করলে (`publicLandingController.submitPublicOrder`-এর শেষে), সার্ভার-সাইড CAPI দিয়ে।
+  3. **`Purchase`** — ✅ **এখন Implement করা হয়েছে** (আগে শুধু TODO কমেন্ট ছিল)। অ্যাডমিন অর্ডার "Confirmed" করলে `orderSocket.js`-এর `triggerPurchaseEvent()` কল হয়, কিন্তু **শুধু `Order.origin === "landing_page"` হলেই** — ম্যানুয়ালি/পেস্ট করে বানানো অর্ডার Confirm করলে কখনো Purchase ইভেন্ট যায় না (কারণ সেগুলোর সাথে কোনো fbp/fbc/সেশন অ্যাট্রিবিউশন থাকে না)। এই গেটিং-এর জন্য `Order` মডেলে নতুন `origin` ফিল্ড (`"landing_page"` | `"manual"`, ডিফল্ট `"manual"`) যোগ করা হয়েছে এবং `publicLandingController.js`-এ ল্যান্ডিং পেজ অর্ডার তৈরির সময় এটা এক্সপ্লিসিটলি সেট করা হয়।
+- ❌ **এখনো নেই:** `ViewContent` (প্রোডাক্ট পেজ দেখলে) এবং `InitiateCheckout` (অর্ডার ফর্মে টাইপ শুরু করলে) — এই দুইটা ইভেন্ট এখনো implement করা হয়নি।
+- **`retryEvent(eventLogId)`** — আগের payload অপরিবর্তিত রেখে আবার পাঠানোর ফাংশন, ব্যবহৃত হয় `eventLogController`/`eventLogRoutes` থেকে, ক্লায়েন্টে `EventLogViewer.jsx` (dashboard/event-logs পেজ) থেকে অ্যাডমিন ম্যানুয়ালি রিট্রাই করতে পারে। ⚠️ এই পেজটা (`/dashboard/event-logs`) ব্যাকএন্ড+ফ্রন্টএন্ড সম্পূর্ণ তৈরি থাকলেও নেভিগেশন মেনুতে (`SearchAndMenu.jsx`) এখনো এর কোনো লিংক নেই — যোগ করার প্রস্তাব দেওয়া হয়েছিল, এখনো করা হয়নি (§৭ দেখুন)।
 
 ### ৬.৪ কাস্টমার টাইমলাইন / প্রোফাইল (Admin-only)
 
@@ -196,18 +199,23 @@
 1. `[slug]/page.js` এখন `slug`-কে `TemplateOneBody`-তে prop হিসেবে পাস করে (আগে শুধু `console.log` হতো), কিন্তু **এখনো `fetchLandingPageServerSide(slug)` কল করে `LandingPage` মডেলের আসল ডেটা (দাম, প্রোডাক্ট নাম, ছবি) fetch করে না** — `landingService.js`-এ ফাংশনটা প্রস্তুত থাকলেও অব্যবহৃত।
 2. `TemplateOneBody`/`OrderSection`-এর সব সেকশন এখনো হার্ডকোডেড ("আনার দানা", `PRODUCT_PRICE = 890`, `productCode: "P-Landing01"`)।
 3. তবে `slug` prop এখন কাজে লাগছে — `OrderSection`-এ draft autosave (`saveDraftOrder(slug, ...)`, §৬.১) এবং `TemplateOneBody`-তে engagement tracking (`initEngagementTracking(slug)`, §৬.২) দুটোই slug-ভিত্তিক।
-4. **অর্ডার সাবমিট করার সময়ও এখনো পুরনো সমস্যা রয়ে গেছে:** `OrderSection.jsx`-এর `handleSubmit` এখনো raw `axios.post` ব্যবহার করে (`landingService.submitOrder` না), তাই চূড়ান্ত অর্ডারের সাথে `fbp`/`fbc`/UTM/সেশন-আইডি পাঠানো হয় **না** — যদিও একই কাস্টমারের attribution ডেটা তার আগের draft/session রেকর্ডে (§৬.১, §৬.২) আলাদাভাবে সেভ হয়ে থাকে (ফোন নম্বর/সেশন দিয়ে পরে মেলানো সম্ভব, কিন্তু সরাসরি `Order.tracking`-এ যায় না)।
+4. ✅ **ফিক্সড:** আগে `OrderSection.jsx`-এর `handleSubmit` raw `axios.post` ব্যবহার করত (`landingService.submitOrder` না), তাই চূড়ান্ত অর্ডারের সাথে `fbp`/`fbc`/UTM/সেশন-আইডি পাঠানো হতো না। এখন `landingService.submitOrder` ব্যবহার করা হয় — সাথে ব্রাউজার ফিঙ্গারপ্রিন্ট হ্যাশও যোগ হয়েছে (§৯ দেখুন), তাই এখন এই পুরো tracking payload সরাসরি `Order.tracking`-এ যাচ্ছে।
+5. ✅ **ফিক্সড (ড্রাফট অর্ডার নাম বাগ):** `server/controllers/publicTrackingController.js`-এর `saveDraftOrder`-এ `buildUpdate({ customerName, ... })` পাঠানো হচ্ছিল, কিন্তু `DraftOrder` স্কিমার ফিল্ডের নাম `name` — Mongoose strict-schema হওয়ায় অচেনা `customerName` ফিল্ড চুপচাপ বাদ পড়ে যাচ্ছিল, ফলে ইনকমপ্লিট অর্ডারে কাস্টমারের নাম কখনো সেভ হতো না। এখন `name: customerName` করে ঠিক করা হয়েছে (ক্লায়েন্ট আগে থেকেই সঠিক `draft.name` পড়ছিল)।
 
 ## ৭. পরবর্তী কাজের জন্য সুপারিশ (Cleanup / TODO তালিকা)
 
 1. ~~cron বাগ ফিক্স~~ ✅ **ফিক্সড** — বিস্তারিত §৮.১-এ।
-2. **lanidgUi-এ dynamic rendering এখনো যোগ হয়নি** — `[slug]/page.js` → `fetchLandingPageServerSide(slug)` কল করে ডেটা আনা → `TemplateOneBody`-কে prop হিসেবে পাস করা → প্রতিটা সেকশন কম্পোনেন্টকে (HeroTop, OrderSection, ইত্যাদি) props নেওয়ার মতো রিফ্যাক্টর করা (দেখুন §৬.৫)।
-3. **`OrderSection.jsx`-কে `landingService.submitOrder` ব্যবহার করানো** — যাতে চূড়ান্ত অর্ডারের সাথেও tracking payload (attribution/fbp/fbc/sessionId) সরাসরি যায়, এবং `productCode` হার্ডকোড না থেকে page ডেটা থেকে আসে (draft/session-এ আলাদাভাবে এই ডেটা যাচ্ছে, কিন্তু `Order.tracking`-এ যাচ্ছে না — §৬.৫)।
-4. **Purchase CAPI ইভেন্ট implement করা** — অর্ডার "Confirmed" হলে `sendCapiEvent({eventName: "Purchase", ...})` কল করা এখনো বাকি, শুধু কমেন্টে প্ল্যান লেখা আছে (§৬.৩)।
-5. **Session/এনগেজমেন্ট ডেটা ড্যাশবোর্ডে surface করা** — bounce rate, scroll depth, return visitor% ইত্যাদি এখন শুধু DB-তে জমা হচ্ছে, কোনো UI/অ্যানালিটিক্সে দেখানো হচ্ছে না (§৬.২)।
-6. **ডেড/কমেন্ট-আউট কোড পরিষ্কার করা** — `models/Order.js`-এর উপরের কমেন্ট-আউট ব্লক, `controllers/facebookController.js`-এর কমেন্ট-আউট পুরনো ভার্সন, `orderController copy.js`, `steadfastController copy.js`, `facebookPages copy.js` — এগুলো ব্যবহৃত হয় না, রিপো থেকে সরানো যায়।
-7. অন্য প্রোডাক্টের জন্য নতুন টেমপ্লেট বানানোর সময় (`templates/` ফোল্ডার) — একবার ডায়নামিক রেন্ডারিং হয়ে গেলে একই টেমপ্লেট বিভিন্ন `LandingPage` slug দিয়ে reuse করা সম্ভব হবে, আলাদা কোড লেখা লাগবে না।
-8. **কাস্টমার ফ্রড/ডুপ্লিকেট ডিটেকশন সিস্টেম — এখনো implement করা হয়নি (planned)।** এখন শুধু `OrderList.jsx`-এ ক্লায়েন্ট-সাইড একটা সাধারণ ডুপ্লিকেট-ফোন কাউন্ট আছে (`utils/orderHelpers.js` → `multupleOrderCheck`, বর্তমানে লোড হওয়া অর্ডারের মধ্যেই শুধু গোনে)। ইউজারের বর্ণনা করা স্পেক (Phone/Browser Fingerprint/IP/Facebook Tracking Match, Admin-এর জন্য Badge + Detection Modal, Manual Block System, Blocked Customer Popup) সম্পূর্ণ নতুন — বিস্তারিত নিচে §৯-এ।
+2. **lanidgUi-এ dynamic rendering এখনো যোগ হয়নি** — `[slug]/page.js` → `fetchLandingPageServerSide(slug)` কল করে ডেটা আনা → `TemplateOneBody`-কে prop হিসেবে পাস করা → প্রতিটা সেকশন কম্পোনেন্টকে (HeroTop, OrderSection, ইত্যাদি) props নেওয়ার মতো রিফ্যাক্টর করা (দেখুন §৬.৫)। *(এখনো বাকি)*
+3. ~~`OrderSection.jsx`-কে `landingService.submitOrder` ব্যবহার করানো~~ ✅ **ফিক্সড** — বিস্তারিত §৬.৫ আইটেম ৪-এ। (তবে `productCode` এখনো হার্ডকোড — page ডেটা থেকে ডাইনামিক করা এখনো বাকি, আইটেম ২-এর সাথে যুক্ত।)
+4. ~~Purchase CAPI ইভেন্ট implement করা~~ ✅ **ফিক্সড** — বিস্তারিত §৬.৩-এ। শুধু ল্যান্ডিং পেজ অর্ডারে যায় (`origin === "landing_page"`)।
+5. ~~Session/এনগেজমেন্ট ডেটা ড্যাশবোর্ডে surface করা~~ ✅ **ফিক্সড** — নতুন `/dashboard/sessions` পেজ, বিস্তারিত §১০-এ।
+6. **ডেড/কমেন্ট-আউট কোড পরিষ্কার করা** — `models/Order.js`-এর উপরের কমেন্ট-আউট ব্লক, `controllers/facebookController.js`-এর কমেন্ট-আউট পুরনো ভার্সন, `orderController copy.js`, `steadfastController copy.js`, `facebookPages copy.js` — এগুলো ব্যবহৃত হয় না, রিপো থেকে সরানো যায়। *(এখনো বাকি)*
+7. অন্য প্রোডাক্টের জন্য নতুন টেমপ্লেট বানানোর সময় (`templates/` ফোল্ডার) — একবার ডায়নামিক রেন্ডারিং হয়ে গেলে একই টেমপ্লেট বিভিন্ন `LandingPage` slug দিয়ে reuse করা সম্ভব হবে, আলাদা কোড লেখা লাগবে না। *(এখনো বাকি)*
+8. ~~কাস্টমার ফ্রড/ডুপ্লিকেট ডিটেকশন সিস্টেম~~ ✅ **সম্পূর্ণ Implement করা হয়েছে** — বিস্তারিত §৯-এ (এখন এটা আর "planned" না)।
+9. **`/dashboard/event-logs` পেজে নেভিগেশন লিংক নেই** — ব্যাকএন্ড+ফ্রন্টএন্ড (মডেল, কন্ট্রোলার, রুট, `EventLogViewer.jsx`, পেজ) সবকিছু আগে থেকেই সম্পূর্ণ তৈরি ছিল, শুধু `SearchAndMenu.jsx`-এর মেনুতে লিংক যোগ করা বাকি (আলোচনা হয়েছিল, এখনো কোডে যোগ করা হয়নি)।
+10. **ImgBB URL থেকে ছবি দেখানো** — অ্যাডমিন `LandingPageForm.jsx`-এ "প্রোডাক্ট ছবি (URL)" ফিল্ডে যেকোনো ইমেজ URL (যেমন ImgBB) দিতে পারে, কিন্তু `lanidgUi`-এর `next.config.js`-এ কোনো `images.remotePatterns` সেট করা নেই — Next.js-এর `<Image>` কম্পোনেন্ট (ImageCarousel/HeroTop/TrustSection-এ ব্যবহৃত) হোয়াইটলিস্ট না-করা ডোমেইনের ছবি রেন্ডার করতে অস্বীকার করবে। ফিক্স: `lanidgUi/next.config.js`-এ `images: { remotePatterns: [{ hostname: "i.ibb.co" }] }` যোগ করা — আলোচনা শুরু হয়েছিল, কোড পরিবর্তন এখনো করা হয়নি।
+11. **`ViewContent` ও `InitiateCheckout` CAPI ইভেন্ট** — এখনো implement করা হয়নি (§৬.৩ দেখুন)।
+12. **পুরনো (ফিক্সের আগে তৈরি হওয়া) ল্যান্ডিং পেজ অর্ডারে `origin` ফিল্ড মাইগ্রেট করা** — নতুন অর্ডারে ঠিকভাবে `origin: "landing_page"` সেট হচ্ছে, কিন্তু ফিক্সের আগের পুরনো অর্ডারগুলোর `origin` ডিফল্ট `"manual"` হিসেবে থেকে যাবে (এমনকি সেগুলো আসলে ল্যান্ডিং পেজ থেকে আসা হলেও) — নিরাপদ দিকেই ভুল (Purchase ইভেন্ট মিস হবে, বাড়তি যাবে না), কিন্তু চাইলে `tracking.sessionId` আছে এমন পুরনো অর্ডার খুঁজে একটা মাইগ্রেশন স্ক্রিপ্ট দিয়ে ঠিক করা যায়।
 
 ---
 
@@ -257,21 +265,117 @@
 - `scheduledDate` পার হয়ে গেলে (cron job রিলিজ করার আগেও, সেফটি নেট হিসেবে) অর্ডারটা আবার দেখা যাবে — যাতে কোনো কারণে সার্ভার ডাউন থাকলে বা cron মিস হলে ডেটা "হারিয়ে" না যায়, মডারেটর অন্তত ম্যানুয়ালি খেয়াল করতে পারে।
 - যেহেতু `STATUS_TABS`-এ কোনো আলাদা "Scheduled" ট্যাব নেই, তাই এই দুটো ফিক্স মিলিয়ে এখন শিডিউলড অর্ডার তার নির্ধারিত তারিখ না আসা পর্যন্ত ড্যাশবোর্ডের কোথাও (Pending/All/অন্য কোনো স্ট্যাটাস ট্যাব) দেখা যাবে না, এবং তারিখ আসার পর ব্যাকএন্ড cron স্বয়ংক্রিয়ভাবে সেটাকে "Pending"-এ ফিরিয়ে এনে স্বাভাবিকভাবে ভিজিবল করে দেবে।
 
+### ৮.৩ Backend — ড্রাফট অর্ডারে কাস্টমারের নাম সেভ না হওয়া বাগ ফিক্স
+**ফাইল:** `server/controllers/publicTrackingController.js`
+
+**সমস্যা ছিল:** `saveDraftOrder`-এ `buildUpdate({ landingPageSlug, customerName, phone, address, ... })` পাঠানো হচ্ছিল, কিন্তু `DraftOrder` স্কিমার ফিল্ডের নাম `customerName` না, `name`। Mongoose ডিফল্টভাবে strict schema মেনে চলায় অচেনা `customerName` ফিল্ডটা প্রতিবার চুপচাপ বাদ পড়ে যাচ্ছিল (কোনো error ছাড়াই) — ফলে ইনকমপ্লিট/ড্রাফট অর্ডারে কাস্টমারের নাম কখনো সেভ হতো না, শুধু ফোন/ঠিকানা সেভ হতো।
+
+**ফিক্স:**
+```diff
+  const update = buildUpdate({
+    landingPageSlug,
+-   customerName,
++   name: customerName,
+    phone,
+    address,
+```
+ক্লায়েন্ট সাইড (`DraftOrderCard.jsx`) আগে থেকেই সঠিক `draft.name` পড়ছিল, তাই শুধু এই লিখন-পক্ষের (write-side) এক লাইন বদলালেই যথেষ্ট ছিল।
+
+### ৮.৪ Backend — Purchase CAPI ইভেন্ট শুধু ল্যান্ডিং পেজ অর্ডারে সীমাবদ্ধ করা
+**ফাইল:** `server/models/Order.js`, `server/controllers/publicLandingController.js`, `server/sockets/orderSocket.js`
+
+**সমস্যা ছিল:** `orderSocket.js`-এর `handleUpdateStatus`-এ কোনো অর্ডার "Confirmed" স্ট্যাটাসে গেলেই `triggerPurchaseEvent()` কল হতো — এটা ল্যান্ডিং পেজ থেকে আসা অর্ডার হোক বা অ্যাডমিন/মডারেটর ম্যানুয়ালি WhatsApp/Messenger থেকে পেস্ট করা অর্ডার হোক, দুটোতেই সমানভাবে Purchase ইভেন্ট Meta-তে চলে যেত। ম্যানুয়াল অর্ডারে কোনো `fbp`/`fbc`/সেশন অ্যাট্রিবিউশন ডেটা থাকে না বলে এই ইভেন্টগুলো Meta-র ক্যাম্পেইন অপ্টিমাইজেশনে ভুল সিগন্যাল দিচ্ছিল।
+
+**ফিক্স:**
+1. `Order` মডেলে নতুন `origin` ফিল্ড (`"landing_page"` | `"manual"`, ডিফল্ট `"manual"`)।
+2. `publicLandingController.js`-এ ল্যান্ডিং পেজ অর্ডার তৈরির সময় `origin: "landing_page"` এক্সপ্লিসিটলি সেট করা।
+3. `orderSocket.js`-এ শর্ত যোগ:
+```diff
+- if (newStatus === "Confirmed") {
++ if (newStatus === "Confirmed" && updatedOrder.origin === "landing_page") {
+    triggerPurchaseEvent(updatedOrder)...
+  }
+```
+এখন থেকে ম্যানুয়াল অর্ডার Confirm করলে (ডিফল্ট `origin: "manual"` থাকায়) Purchase ইভেন্ট আর যায় না।
+
+> ⚠️ **নোট:** এই ফিক্স শুধু নতুন তৈরি হওয়া অর্ডারের জন্য কাজ করে — ফিক্সের আগে ডাটাবেজে থাকা পুরনো ল্যান্ডিং-পেজ অর্ডারগুলোর `origin` ফাঁকা/ডিফল্ট (`"manual"`) থেকে যাবে (দেখুন §৭ আইটেম ১২)।
+
+### ৮.৫ Frontend — Meta Pixel PageView ইভেন্ট ~১ সেকেন্ড ডিলে
+**ফাইল:** `lanidgUi/src/app/layout.js`
+
+**উদ্দেশ্য:** PageView ইভেন্টের ওপর ভিত্তি করে Meta-তে Custom Audience বানানোর সময় দ্রুত বাউন্স করা ভিজিটর/বট এই অডিয়েন্সে না ঢোকে, সেজন্য।
+
+**ফিক্স:** `fbq('init', ...)` সাথে সাথে চলে (যাতে `_fbp` কুকি দ্রুত সেট হয় ও Lead/Purchase CAPI ইভেন্টে ব্যবহারযোগ্য থাকে), কিন্তু `fbq('track', 'PageView')` এখন `setTimeout(..., 1000)`-এ র‍্যাপ করা — পেজ লোডের ১ সেকেন্ড পর পাঠানো হয়।
+
 ---
 
-## ৯. প্রস্তাবিত ফিচার — কাস্টমার ফ্রড/ডুপ্লিকেট ডিটেকশন সিস্টেম (এখনো implement করা হয়নি)
+## ৯. কাস্টমার ফ্রড/ডুপ্লিকেট ডিটেকশন সিস্টেম ✅ (সম্পূর্ণ Implement করা হয়েছে)
 
-*(এটা কোডবেসে নেই — ইউজারের দেওয়া স্পেক ডকুমেন্ট থেকে সারাংশ + কোডবেসে কী কী ইতিমধ্যে ভিত্তি হিসেবে আছে তা নোট করা হলো, যাতে ভবিষ্যতে implement করার সময় কাজে লাগে।)*
+*(আগে এই সেকশনে শুধু স্পেক-সারাংশ ছিল, "planned" হিসেবে। এখন পুরোটাই কোডবেসে আছে — নিচে ফাইল-বাই-ফাইল বর্ণনা।)*
 
-### ৯.১ স্পেকের সারাংশ
-নতুন Order এলে সিস্টেম স্বয়ংক্রিয়ভাবে আগের Order-এর সাথে মিল খুঁজবে (Phone/Browser Fingerprint/IP/Facebook Tracking — fbp, fbc, fbclid), কিন্তু কাউকে **কখনো অটোমেটিক Block করবে না**। Order Card-এ Badge দেখাবে ("Multiple Orders Detected" ইত্যাদি), ক্লিক করলে একটা Modal-এ কারণসহ (✅ Same Phone, ✅ Same Fingerprint ইত্যাদি) আগের ম্যাচ হওয়া অর্ডারগুলো দেখাবে, এবং Admin ম্যানুয়ালি Approve/Ignore/Block করবে। Block করা কাস্টমার পরে আবার অর্ডার করার চেষ্টা করলে ল্যান্ডিং পেজে একটা Popup দেখিয়ে WhatsApp-এ যোগাযোগ করতে বলবে।
+**মূলনীতি (অপরিবর্তিত):** কোথাও কোনো অটোমেটিক ব্লক হয় না — সিস্টেম শুধু আগের অর্ডারের সাথে ম্যাচ খুঁজে ফ্ল্যাগ করে, চূড়ান্ত Approve/Ignore/Block সিদ্ধান্ত সবসময় অ্যাডমিন/মডারেটরের।
 
-### ৯.২ কোডবেসে যা ইতিমধ্যে ভিত্তি হিসেবে আছে
-- **Phone Match (Rule ১):** সরাসরি `Order.castomerPhone`/`DraftOrder.phone` দিয়ে সম্ভব, `customerController.getCustomerTimeline` (§৬.৪) ইতিমধ্যে ফোন দিয়ে সব অর্ডার/draft একত্র করে — এটাকেই স্বয়ংক্রিয় ম্যাচিং-এর ভিত্তি হিসেবে ব্যবহার করা যায়।
-- **IP Match (Rule ৩):** `Order.tracking.ip`, `Session.tracking.ip`, `DraftOrder.tracking.ip` — তিনটাতেই ইতিমধ্যে ক্লায়েন্ট IP সেভ হচ্ছে (`getClientIp()` হেল্পার দিয়ে)।
-- **Facebook Tracking Match (Rule ৪):** `fbp`/`fbc`/`fbclid` — Order, Session, DraftOrder তিনটা মডেলেই `tracking{}` অবজেক্টে ইতিমধ্যে ফিল্ড আছে এবং ক্যাপচার হচ্ছে (`tracking.js` → `getTrackingPayload`)।
-- **Browser Fingerprint (Rule ২):** ❌ এখনো নেই। কোনো ফাইলে canvas/WebGL hash, `navigator.hardwareConcurrency`/`deviceMemory` ইত্যাদি সংগ্রহ বা SHA-256 হ্যাশিং কোড নেই — এটা সম্পূর্ণ নতুন করে বানাতে হবে (client-side JS + নতুন `fingerprintHash` ফিল্ড Order/Session/DraftOrder মডেলে)।
-- **Manual Block System:** ❌ এখনো নেই — কোনো `Block`/`BlockedCustomer` মডেল, `isBlocked` ফ্ল্যাগ, বা ব্লক-চেক মিডলওয়্যার কোডবেসে নেই। `publicLandingController.submitPublicOrder`-এ অর্ডার নেওয়ার আগে ব্লক-চেক করার কোনো লজিক নেই।
-- **Detection Badge/Modal (UI):** ❌ এখনো নেই — `OrderCard.jsx`-এ শুধু ক্লায়েন্ট-সাইড সাধারণ ডুপ্লিকেট-ফোন কাউন্ট আছে (§৭ আইটেম ৮), কোনো Badge/Modal/Detection Reasons UI নেই।
+### ৯.১ Backend
 
-**সংক্ষেপে:** Phone + IP + Facebook Tracking ম্যাচিং-এর কাঁচামাল (raw ডেটা) ইতিমধ্যে DB-তে জমা হচ্ছে (Order/Session/DraftOrder-এর `tracking{}`), তাই এই তিনটা Rule-এর জন্য একটা matching query/endpoint লেখাই মূল কাজ। Browser Fingerprint সম্পূর্ণ নতুন (client + server দুই পাশেই), এবং পুরো Manual Block System + Frontend Badge/Modal/Popup UI — সবকিছুই এখনো শূন্য থেকে বানাতে হবে।
+| ফাইল | কাজ |
+|---|---|
+| `server/models/BlockedCustomer.js` (নতুন) | phone/fingerprintHash/ip/fbp/fbc/fbclid দিয়ে ম্যানুয়ালি ব্লক করা কাস্টমার রাখে — যেকোনো একটা ফিল্ড ম্যাচ করলেই ব্লক ধরা হয়। |
+| `server/models/Order.js` | নতুন `fraudCheck{}` (isSuspicious, reasons[] প্রতি-রুল matchedOrderIds সহ, reviewStatus: none/pending/approved/ignored/blocked, reviewedBy/reviewedAt), নতুন `tracking.fingerprintHash`, নতুন `origin` (§৮.৪ দেখুন)। |
+| `server/models/DraftOrder.js`, `server/models/Session.js` | `tracking.fingerprintHash` ফিল্ড যোগ (consistency-র জন্য)। |
+| `server/utils/fraudDetection.js` (নতুন) | `checkFraudSignals({phone, fingerprintHash, ip, fbp, fbc, fbclid, excludeOrderId})` — Phone/Fingerprint/IP/Facebook চারটা রুল দিয়ে আগের `Order`-এর সাথে ম্যাচ খুঁজে কারণসহ রিটার্ন করে। `checkBlocked({...})` — `BlockedCustomer` লিস্টের সাথে মেলে কিনা চেক করে। |
+| `server/controllers/publicLandingController.js` | অর্ডার তৈরির **আগে** `checkBlocked()` — ম্যাচ পেলে `403 { blocked: true }`, অর্ডার তৈরিই হয় না। তৈরির **পরে** `checkFraudSignals()` — ম্যাচ পেলে `fraudCheck.isSuspicious = true` সেভ হয় (`reviewStatus: "pending"`)। |
+| `server/controllers/orderController.js` | `createManualOrder`-এও (ম্যানুয়ালি পেস্ট করা অর্ডার) এখন `checkFraudSignals({ phone })` কল হয় (শুধু ফোন-ম্যাচ, যেহেতু fingerprint/IP/FB ডেটা নেই)। নতুন `reviewFraudOrder` (`PATCH /:id/fraud-review`, action: approve/ignore/block — block করলে `BlockedCustomer` রেকর্ড তৈরি হয়)। নতুন `getFraudMatches` (`GET /:id/fraud-matches` — ম্যাচ হওয়া প্রতিটা আগের অর্ডারের পূর্ণ তথ্য রিটার্ন করে: নাম, ফোন, প্রোডাক্ট, টাকা, orderStatus, courier.courierStatus, তারিখ)। |
+| `server/controllers/blockController.js` + `server/routes/blockRoutes.js` (নতুন) | `/api/blocked-customers` (admin-only) — `GET /` (লিস্ট), `POST /` (ম্যানুয়ালি ব্লক, শুধু ফোন দিয়েও করা যায়), `POST /from-order/:orderId` (একটা অর্ডারের সব আইডেন্টিফায়ার দিয়ে ব্লক), `PATCH /:id/unblock`। |
+
+### ৯.২ Admin Dashboard (client)
+
+| ফাইল | কাজ |
+|---|---|
+| `client/src/components/orders/OrderCard.jsx` | `order.fraudCheck.isSuspicious` হলে "⚠️ Multiple Orders" Badge (blocked হলে লাল, ignored হলে ধূসর) — **ল্যান্ডিং পেজ ও ম্যানুয়াল, দুই ধরনের অর্ডারেই** দেখায় (§৯.১-এ `createManualOrder`-এও ফ্রড-চেক যোগ হওয়ায়)। |
+| `client/src/components/orders/FraudDetectionModal.jsx` (নতুন) | Badge-এ ক্লিক করলে খোলে — কোন রুল (Phone/Fingerprint/IP/Facebook) ম্যাচ করেছে তা দেখায়, `getFraudMatches` API কল করে ম্যাচ হওয়া প্রতিটা আগের অর্ডারের **পূর্ণ বিবরণ** (orderStatus + courier/delivery status রঙিন ব্যাজ আকারে) দেখায়। তিনটা অ্যাকশন বাটন: **Approve** (reviewStatus="approved", Badge চলে যায়), **Ignore** (reviewStatus="ignored", কেউ ব্লক হয় না), **Block Customer** (reviewStatus="blocked" + নতুন `BlockedCustomer` রেকর্ড তৈরি, কনফার্মেশন + ঐচ্ছিক কারণ-সহ)। |
+| `client/src/app/dashboard/blocked-customers/page.js` (নতুন) | ব্লক করা সব কাস্টমারের লিস্ট + ফোন নম্বর দিয়ে সরাসরি ম্যানুয়াল ব্লক করার ফর্ম + আনব্লক বাটন। |
+| `client/src/services/blockService.js` (নতুন), `orderService.js` | `orderService.reviewFraud()`, `orderService.getFraudMatches()` যোগ করা হয়েছে। |
+| `client/src/components/layout/SearchAndMenu.jsx` | admin-only মেনুতে "🚫 ব্লক কাস্টমার" লিংক যোগ। |
+
+### ৯.৩ Landing Page (lanidgUi)
+
+| ফাইল | কাজ |
+|---|---|
+| `lanidgUi/src/utils/fingerprint.js` (নতুন) | canvas + WebGL রেন্ডারিং হ্যাশ + `navigator`/`screen` প্রোপার্টি একসাথে করে SHA-256 হ্যাশ বানায় (`getFingerprintHash()`), ট্যাব চলাকালীন cache থাকে। |
+| `lanidgUi/src/utils/tracking.js` | নতুন `getTrackingPayloadWithFingerprint(slug)` — fingerprint হ্যাশ-সহ ট্র্যাকিং পেলোড রিটার্ন করে (async)। |
+| `lanidgUi/src/services/landingService.js` | `submitOrder` এখন এই নতুন পেলোড ব্যবহার করে। |
+| `lanidgUi/src/components/template1/OrderSection.jsx` | raw `axios.post` থেকে `landingService.submitOrder` ব্যবহারে সুইচ (§৮.৩-এর সাথে সম্পর্কিত বাগ ফিক্সও একসাথে হয়ে গেছে — §৬.৫ আইটেম ৪)। সার্ভার `403 { blocked: true }` রিটার্ন করলে `BlockedCustomerPopup` দেখায়। |
+| `lanidgUi/src/components/template1/BlockedCustomerPopup.jsx` (নতুন) | ব্লক করা কাস্টমার আবার অর্ডার করার চেষ্টা করলে দেখানো হয় — WhatsApp-এ যোগাযোগ করার বাটন (`FloatingContactButton`-এ ব্যবহৃত একই নম্বর: `+8801886362484`)। |
+
+### ৯.৪ যা এখনো বাকি (এই ফিচারের ভেতরে)
+- ম্যানুয়াল অর্ডারে শুধু ফোন-ম্যাচিং হয় (fingerprint/IP/FB নেই, কারণ raw টেক্সট পেস্টে সেই ডেটা আসে না) — এটা ডিজাইন অনুযায়ীই, বাগ না।
+- `Session` মডেলেও `fingerprintHash`/`ip` আছে কিন্তু `checkFraudSignals()` এখনো শুধু `Order` কালেকশন কুয়েরি করে, `Session`-কে সিগন্যাল হিসেবে ব্যবহার করে না (ভবিষ্যতে চাইলে সম্প্রসারণ করা যায়)।
+
+---
+
+## ১০. নতুন ফিচার — সেশন (এনগেজমেন্ট) অ্যানালিটিক্স ড্যাশবোর্ড
+
+*(§৬.২-এ যে ডেটা কালেক্ট হচ্ছিল কিন্তু কোথাও দেখানো হচ্ছিল না, সেটা এখন সম্পূর্ণ একটা admin পেজে টেবিল + গ্রাফ আকারে দেখানো হয়।)*
+
+| ফাইল | কাজ |
+|---|---|
+| `server/controllers/sessionController.js` (নতুন) | `getSessionSummary` — date-range aggregation দিয়ে: টোটাল সেশন, bounce rate, return visitor %, গড় সময়/স্ক্রল-ডেপথ, দৈনিক ট্রেন্ড (chart-এর জন্য), ল্যান্ডিং-পেজ-ভিত্তিক ব্রেকডাউন, সোর্স/UTM-ভিত্তিক ব্রেকডাউন। `listSessions` — ফিল্টারযোগ্য (bounce/return visitor), পেজিনেটেড raw সেশন লিস্ট। |
+| `server/routes/sessionRoutes.js` (নতুন) | `/api/sessions` (admin-only): `GET /summary`, `GET /`। |
+| `client/src/services/sessionService.js` (নতুন) | API কল। |
+| `client/src/components/dashboard/SessionStatsCards.jsx`, `SessionTrendChart.jsx`, `SessionBreakdownCharts.jsx`, `SessionTable.jsx` (নতুন) | যথাক্রমে সামারি কার্ড, দৈনিক সেশন-vs-বাউন্স চার্ট (`recharts` — আগে থেকেই dependency-তে ছিল), ল্যান্ডিং-পেজ/সোর্স ব্রেকডাউন চার্ট, ফিল্টারযোগ্য পেজিনেটেড টেবিল। |
+| `client/src/app/dashboard/sessions/page.js` (নতুন) | সব একসাথে জোড়া, আগে থেকে থাকা `DateRangeFilter` কম্পোনেন্ট রিইউজ করে (আজ/গতকাল/৭দিন/৩০দিন/১বছর/কাস্টম)। |
+| `client/src/components/layout/SearchAndMenu.jsx`, `client/src/app/dashboard/page.js` | admin-only "📈 সেশন অ্যানালিটিক্স" লিংক যোগ (মেনু + মূল ড্যাশবোর্ডের কুইক-লিংক)। |
+
+---
+
+## ১১. Meta Pixel/CAPI ইভেন্ট — বর্তমান পূর্ণ চিত্র (একনজরে)
+
+| ইভেন্ট | কখন | কীভাবে | স্ট্যাটাস |
+|---|---|---|---|
+| `PageView` | পেজ লোডের ~১ সেকেন্ড পর | ব্রাউজার Pixel | ✅ (§৮.৫) |
+| `Lead` | কাস্টমার ফর্ম সাবমিট করলে | সার্ভার CAPI | ✅ |
+| `Purchase` | অ্যাডমিন "Confirmed" করলে, শুধু `origin === "landing_page"` | সার্ভার CAPI | ✅ (§৮.৪) |
+| `ViewContent` | প্রোডাক্ট পেজ দেখলে | — | ❌ এখনো নেই |
+| `InitiateCheckout` | ফর্মে টাইপ শুরু করলে | — | ❌ এখনো নেই |
+
+`EventLog` মডেল/কন্ট্রোলার/`/dashboard/event-logs` পেজ — সব আগে থেকেই সম্পূর্ণ তৈরি ছিল, শুধু নেভিগেশন মেনুতে লিংক নেই (§৭ আইটেম ৯)।
