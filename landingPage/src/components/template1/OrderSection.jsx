@@ -7,7 +7,9 @@ import {
   FaMapMarkerAlt,
   FaMinus,
   FaPlus,
+  FaCheckSquare,
 } from "react-icons/fa";
+
 import Container from "@/components/common-ui/Container";
 import { saveDraftOrder } from "@/utils/tracking";
 import { landingService } from "@/services/landingService";
@@ -314,12 +316,13 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                         key={t._id}
                         type="button"
                         onClick={() => setSelectedTypeId(t._id)}
-                        className={`rounded-lg border-2 px-1.5 py-3 text-left text-sm transition sm:text-base ${
+                        className={`relative rounded-lg border-2 px-1.5 py-3 text-left text-sm transition sm:text-base ${
                           selectedTypeId === t._id
-                            ? "border-green-600 bg-green-200/80"
-                            : "border-gray-300 bg-green-100 hover:border-gray-300"
+                            ? "border-green-700 bg-green-100"
+                            : "border-gray-300 bg-green-50 hover:border-gray-300"
                         }`}
                       >
+                        <span className="absolute top-0 right-0">{selectedTypeId === t._id && '✅'}</span>
                         <span className="block font-bold text-gray-900">
                           {t.label}
                         </span>
@@ -355,12 +358,13 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                         key={opt.key}
                         type="button"
                         onClick={() => setDeliveryArea(opt.key)}
-                        className={`rounded-xl border-2 px-3 py-3 text-left text-sm transition sm:text-base ${
+                        className={`relative rounded-md border-2 px-3 py-3 text-left text-sm transition sm:text-base ${
                           deliveryArea === opt.key
-                            ? "border-green-500 bg-green-50"
-                            : "border-gray-200 bg-white hover:border-gray-300"
+                            ? "border-green-700 bg-green-100"
+                            : "border-gray-200 bg-green-50 hover:border-gray-300"
                         }`}
                       >
+                        <span className="absolute top-0 right-0">{deliveryArea === opt.key && '✅'}</span>
                         <span className="block font-bold text-gray-900">{opt.label}</span>
                         <span className="text-xs text-gray-500 sm:text-sm">৳{opt.charge}</span>
                       </button>
