@@ -2,6 +2,7 @@
 import { MdSend } from "react-icons/md";
 import Container from "../common-ui/Container";
 import { useState } from "react";
+import { IoIosArrowDown, IoIosArrowForward } from "react-icons/io";
 
 export default function TestimonialsSection({ page }) {
   const testimonials = page?.testimonials?.length ? page.testimonials : [];
@@ -12,6 +13,7 @@ export default function TestimonialsSection({ page }) {
     rating: "",
     comment: "",
   });
+  const [showCommentForm, setShowCommentForm] = useState(false);
   const handleChange = (e) => {
     setFormData((prev) => ({
       ...prev,
@@ -68,66 +70,81 @@ export default function TestimonialsSection({ page }) {
           ))}
 
           <div className="rounded-xl border border-gray-300 bg-white p-2 shadow-xl">
-            <h2 className="text-lg font-bold text-gray-800">আপনার মন্তব্য</h2>
-            <form
-              className="flex flex-col gap-3  md:items-center"
-              onSubmit={handelCommentSubmit}
-            >
-              {/* Name */}
-              <input
-                type="text"
-                placeholder="Your Name"
-                name="name"
-                onChange={handleChange}
-                className="rounded-lg border border-gray-300 px-3 py-2 outline-none w-full focus:border-blue-500 md:w-52"
-                required
-              />
-              {/* number */}
-              <input
-                type="tel"
-                placeholder="Number"
-                name="number"
-                onChange={handleChange}
-                className="rounded-lg border border-gray-300 px-3 py-2 outline-none w-full focus:border-blue-500 md:w-52"
-                required
-              />
-
-              {/* Rating */}
-              <select
-                className="rounded-lg border border-gray-300 px-3 py-2 outline-none w-full focus:border-blue-500 md:w-36"
-                required
-                defaultValue=""
-                onChange={handleChange}
-                name="rating"
+            <div className="flex items-center gap-3 justify-between">
+              <p>আমি মন্তব্য করতে চাই</p>
+              <h2
+                className="text-lg font-bold text-gray-800  flex-1 cursor-pointer text-end"
+                onClick={() =>
+                  showCommentForm
+                    ? setShowCommentForm(false)
+                    : setShowCommentForm(true)
+                }
               >
-                <option value="" disabled>
-                  Rating
-                </option>
-                <option value="1">1 ★</option>
-                <option value="2">2 ★★</option>
-                <option value="3">3 ★★★</option>
-                <option value="4">4 ★★★★</option>
-                <option value="5">5 ★★★★★</option>
-              </select>
+                {showCommentForm ? <IoIosArrowDown /> : <IoIosArrowForward />}
+              </h2>
+            </div>
 
-              {/* Comment */}
-              <input
-                type="text"
-                name="comment"
-                onChange={handleChange}
-                placeholder="Write your comment..."
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
-                required
-              />
-
-              {/* Submit */}
-              <button
-                type="submit"
-                className="flex h-11 w-11 items-center justify-center rounded-lg mx-auto w-full bg-blue-500 text-white transition px-3 hover:bg-blue-600"
+            {showCommentForm && (
+              <form
+                className="flex flex-col gap-3  md:items-center"
+                onSubmit={handelCommentSubmit}
               >
-                <MdSend size={20} />
-              </button>
-            </form>
+                {/* Name */}
+                <input
+                  type="text"
+                  placeholder="Your Name"
+                  name="name"
+                  onChange={handleChange}
+                  className="rounded-lg border border-gray-300 px-3 py-2 outline-none w-full focus:border-blue-500 md:w-52"
+                  required
+                />
+                {/* number */}
+                <input
+                  type="tel"
+                  placeholder="Number"
+                  name="number"
+                  onChange={handleChange}
+                  className="rounded-lg border border-gray-300 px-3 py-2 outline-none w-full focus:border-blue-500 md:w-52"
+                  required
+                />
+
+                {/* Rating */}
+                <select
+                  className="rounded-lg border border-gray-300 px-3 py-2 outline-none w-full focus:border-blue-500 md:w-36"
+                  required
+                  defaultValue=""
+                  onChange={handleChange}
+                  name="rating"
+                >
+                  <option value="" disabled>
+                    Rating
+                  </option>
+                  <option value="1">1 ★</option>
+                  <option value="2">2 ★★</option>
+                  <option value="3">3 ★★★</option>
+                  <option value="4">4 ★★★★</option>
+                  <option value="5">5 ★★★★★</option>
+                </select>
+
+                {/* Comment */}
+                <input
+                  type="text"
+                  name="comment"
+                  onChange={handleChange}
+                  placeholder="Write your comment..."
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+                  required
+                />
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg mx-auto w-full bg-blue-500 text-white transition px-3 hover:bg-blue-600"
+                >
+                  <MdSend size={20} />
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </Container>

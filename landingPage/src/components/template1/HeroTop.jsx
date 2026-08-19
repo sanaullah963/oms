@@ -85,7 +85,7 @@ export default function HeroTop({ page }) {
                     href="#order"
                     className="animate-soft-ripple rounded-md bg-green-600 px-4 py-2 text-lg font-bold text-white shadow-lg transition hover:scale-105 hover:bg-green-700 sm:text-base"
                   >
-                    এখনই অর্ডার করুন
+                    অর্ডার করতে চাই
                   </a>
                 </div>
                 <div className="flex gap-2 pt-3">

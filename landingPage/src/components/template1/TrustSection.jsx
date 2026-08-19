@@ -36,8 +36,8 @@ export default function TrustSection({ page }) {
       className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-green-900 py-16 text-white"
     >
       {/* Background Blur */}
-      <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-green-500/20 blur-3xl"></div>
-      <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-red-500/20 blur-3xl"></div>
+      {/* <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-green-500/20 blur-3xl"></div> */}
+      {/* <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-red-500/20 blur-3xl"></div> */}
       <div className="relative mx-auto max-w-3xl px-4">
         {/* Heading */}
         <div className="mx-auto max-w-3xl text-center">

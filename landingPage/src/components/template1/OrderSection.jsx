@@ -197,55 +197,7 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
               সঠিক তথ্য দিন যাতে দ্রুত ডেলিভারি করা যায়।
             </p>
 
-            {/* Product + quantity card */}
-            <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-gray-50 pe-2 sm:p-4">
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white sm:h-20 sm:w-20">
-                <Image
-                  src={productImage}
-                  alt={productName}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <h4 className="truncate text-base font-bold text-gray-900 sm:text-lg">
-                  {productName}
-                </h4>
-                <p className="text-sm text-green-600 font-semibold sm:text-base">
-                  ৳{price}
-                  {originalPrice ? (
-                    <span className="ml-1 text-xs font-normal text-gray-400 line-through">
-                      ৳{originalPrice}
-                    </span>
-                  ) : null}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-1">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  aria-label="কমান"
-                  className="flex h-10 w-10 cursor-pointer items-center justify-center text-gray-600 transition hover:bg-red-50 hover:text-red-600"
-                >
-                  <FaMinus size={11} />
-                </button>
-
-                <div className="w-6 text-center text-base font-bold">
-                  {quantity}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  aria-label="বাড়ান"
-                  className="flex h-10 w-10 cursor-pointer items-center justify-center  text-gray-600 transition hover:bg-green-50 hover:text-green-600"
-                >
-                  <FaPlus size={11} />
-                </button>
-              </div>
-            </div>
+           
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-2">
               {/* Name */}
@@ -348,7 +300,55 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
               {/* Order Summary */}
               <div className="rounded-2xl bg-gray-50 p-3">
                 <h3 className="text-lg font-bold">অর্ডার সারসংক্ষেপ</h3>
+                 {/* Product + quantity card */}
+            <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 sm:p-4">
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white sm:h-20 sm:w-20">
+                <Image
+                  src={productImage}
+                  alt={productName}
+                  fill
+                  className="object-cover"
+                />
+              </div>
 
+              <div className="min-w-0 flex-1">
+                <h4 className="truncate text-base font-bold text-gray-900 sm:text-lg">
+                  {productName}
+                </h4>
+                <p className="text-sm text-green-600 font-semibold sm:text-base">
+                  ৳{price}
+                  {originalPrice ? (
+                    <span className="ml-1 text-xs font-normal text-gray-400 line-through">
+                      ৳{originalPrice}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-green-100 p-1">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  aria-label="কমান"
+                  className="flex h-12 w-10 cursor-pointer items-center justify-center text-gray-600 transition hover:bg-geen-300 bg-green-200 hover:text-red-600"
+                >
+                  <FaMinus size={11} />
+                </button>
+
+                <div className="w-6 text-center text-base font-bold">
+                  {quantity}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => q + 1)}
+                  aria-label="বাড়ান"
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center  text-gray-600 transition hover:bg-green-300 bg-green-200 hover:text-green-600"
+                >
+                  <FaPlus size={11} />
+                </button>
+              </div>
+            </div>
                 <div className="mt-4  text-sm sm:text-base">
                   <div className="flex justify-between text-gray-600">
                     <span>{price} × {quantity}</span>
@@ -368,11 +368,12 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                       <span>৳{grandTotalDisplay}</span>
                     </div>
                   </div>
-                  <p className="text-md text-center text-green-800 bg-gray-200 border border-gray-400 rounded-md px-2 py-1">
+                  <p className="text-md text-center text-green-800 bg-gray-200  rounded-md px-2 py-1">
                     {freeDelivery
                       ? "ডেলিভারি চার্জ ফ্রী"
-                      : `ডেলিভারি চার্জ প্রযোজ্য (ঢাকায় ৳${insideCharge ?? 0}, ঢাকার বাইরে ৳${outsideCharge ?? 0})`}
+                      : `ডেলিভারি চার্জ (ঢাকায় ৳${insideCharge ?? 0}, ঢাকার বাইরে ৳${outsideCharge ?? 0})`}
                   </p>
+                
                 </div>
               </div>
 

@@ -157,4 +157,33 @@ const OrderSchema = new mongoose.Schema({
   },
 });
 
+// --- ইনডেক্স (হোমপেজ লোড, সার্চ, ফিল্টার — সবকিছু দ্রুত করার জন্য) ---
+
+// getOrders (aggregate): moderator ownership filter সবচেয়ে বেশি ব্যবহৃত হয়, orderStatus দিয়ে
+// Cancelled/Booked ফিল্টারও চলে। compound index দুটোই কভার করে।
+OrderSchema.index({ createdBy: 1, orderStatus: 1 });
+
+// শুধু orderStatus দিয়েও ফিল্টার হয় (এডমিনের ক্ষেত্রে ownershipFilter খালি থাকে)
+OrderSchema.index({ orderStatus: 1 });
+
+// getOrders-এর $sort/lastActivityTime এবং Cancelled/Booked-এর ২-দিনের উইন্ডো ফিল্টার
+OrderSchema.index({ "activities.timestamp": -1 });
+
+// সার্চ (socket handleSearchQuery) + attachCourierHistory + fraudDetection (phone match) —
+// castomerPhone একটা array ফিল্ড, multikey index অটোমেটিক হয়
+OrderSchema.index({ castomerPhone: 1 });
+
+// Steadfast trackingId দিয়ে লুকআপ/সার্চ
+OrderSchema.index({ "courier.trackingId": 1 });
+
+// "প্রয়োজনীয়" ট্যাব/নোটিফিকেশন ফিল্টার
+OrderSchema.index({ needsAttention: 1 });
+
+// dashboardController-এর ডেট-রেঞ্জ অ্যানালিটিক্স (Delivered/Cancelled amount ইত্যাদি)
+OrderSchema.index({ "courier.statusUpdatedAt": -1 });
+
+// createdAt দিয়ে সরাসরি সর্ট/ফিল্টার করার দরকার হলে (ডকুমেন্টে timestamps নেই, তবে _id থেকে
+// সময় বের করা যায়; ভবিষ্যতে timestamps: true যোগ করলে এই ইনডেক্স কাজে লাগবে)
+// OrderSchema.set("timestamps", true); // <-- চাইলে uncomment করে ব্যবহার করা যায়
+
 module.exports = mongoose.model("Order", OrderSchema);
