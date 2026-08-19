@@ -11,6 +11,7 @@ import OfferSection from "@/components/template1/OfferSection";
 import OrderSection from "@/components/template1/OrderSection";
 import StickyMobileBar from "@/components/template1/StickyMobileBar";
 import Footer from "@/components/template1/Footer";
+import RecentOrderPopup from "@/components/template1/RecentOrderPopup";
 import { captureAttributionOnLoad, initEngagementTracking } from "@/utils/tracking";
 
 // page = server-side এ fetch করা LandingPage ডকুমেন্ট (slug অনুযায়ী)।
@@ -36,6 +37,7 @@ export default function TemplateOneBody({ slug, page }) {
 
   return (
     <>
+      <RecentOrderPopup page={page} />
       <HeroTop page={page} />
       <BenefitsSection page={page} />
       <FaqSection page={page} />

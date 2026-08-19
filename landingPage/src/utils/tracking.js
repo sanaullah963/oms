@@ -45,9 +45,13 @@ export function captureAttributionOnLoad() {
   if (typeof window === "undefined") return;
 
   const params = new URLSearchParams(window.location.search);
-  const hasNewParams = ["utm_source", "utm_medium", "utm_campaign", "fbclid", "gclid"].some((k) =>
-    params.has(k),
-  );
+  const hasNewParams = [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "fbclid",
+    "gclid",
+  ].some((k) => params.has(k));
 
   const existing = window.localStorage.getItem(ATTRIBUTION_KEY);
   if (existing && !hasNewParams) return;
@@ -76,7 +80,6 @@ function getStoredAttribution() {
   }
 }
 
-
 export function getTrackingPayload(slug) {
   if (typeof window === "undefined") return {};
   return {
@@ -88,7 +91,6 @@ export function getTrackingPayload(slug) {
     ...getStoredAttribution(),
   };
 }
-
 
 export async function getTrackingPayloadWithFingerprint(slug) {
   const base = getTrackingPayload(slug);
@@ -120,7 +122,8 @@ export function initEngagementTracking(slug) {
     visibilityChangeCount: 0,
   };
 
-  const getTimeOnPageSeconds = () => Math.round((Date.now() - entryTime) / 1000);
+  const getTimeOnPageSeconds = () =>
+    Math.round((Date.now() - entryTime) / 1000);
 
   const sendUpdate = (isExiting = false) => {
     const payload = JSON.stringify({
@@ -134,7 +137,7 @@ export function initEngagementTracking(slug) {
     });
 
     const url = `${API_URL}/api/public/tracking/session`;
-    
+
     // পেজ বন্ধ/hidden হওয়ার সময় sendBeacon বেশি নির্ভরযোগ্য (fetch অনেক সময় বাতিল হয়ে যায়)
     if (isExiting && navigator.sendBeacon) {
       const blob = new Blob([payload], { type: "application/json" });
@@ -151,8 +154,12 @@ export function initEngagementTracking(slug) {
 
   const handleScroll = () => {
     const scrollTop = window.scrollY;
-    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const percent = docHeight > 0 ? Math.min(100, Math.round((scrollTop / docHeight) * 100)) : 0;
+    const docHeight =
+      document.documentElement.scrollHeight - window.innerHeight;
+    const percent =
+      docHeight > 0
+        ? Math.min(100, Math.round((scrollTop / docHeight) * 100))
+        : 0;
     if (percent > metrics.maxScrollDepth) metrics.maxScrollDepth = percent;
   };
 
@@ -186,6 +193,7 @@ export function initEngagementTracking(slug) {
   document.addEventListener("visibilitychange", handleVisibilityChange);
   window.addEventListener("beforeunload", handleBeforeUnload);
 
+  sendUpdate(false); // পেজ লোড হওয়ার সাথে সাথেই প্রথম session/PageView কল যাবে, ১৫ সেকেন্ড অপেক্ষা করবে না
   const heartbeat = setInterval(() => sendUpdate(false), HEARTBEAT_MS);
 
   // --- cleanup ---
@@ -201,7 +209,6 @@ export function initEngagementTracking(slug) {
 }
 
 let draftDebounceTimer = null;
-
 
 /**
  * ফর্মে টাইপ করার সময় কল করুন — ৮০০ms debounce করে সার্ভারে ড্রাফট সেভ করে।

@@ -2,6 +2,7 @@ const Session = require("../models/Session");
 const DraftOrder = require("../models/DraftOrder");
 const LandingPage = require("../models/LandingPage");
 const { emitDraftUpdate } = require("../utils/socketBroadcast");
+const { sendCapiEvent } = require("../utils/metaCapi");
 
 function getClientIp(req) {
   const forwarded = req.headers["x-forwarded-for"];
@@ -44,6 +45,26 @@ exports.updateSession = async (req, res) => {
     if (!existing) {
       const priorCount = await Session.countDocuments({ visitorId, sessionId: { $ne: sessionId } });
       isReturnVisitor = priorCount > 0;
+
+      // --- এই সেশনের প্রথম হিট, অর্থাৎ আসল পেজভিউ — সার্ভার-সাইড CAPI PageView পাঠানো হচ্ছে ---
+      // ব্রাউজার Pixel-এর PageView অনেক সময় AdBlock/ITP-এর কারণে মিস হয়ে যায়, তাই এটা সেই
+      // ইভেন্টের একটা সার্ভার-সাইড ব্যাকআপ/সাপ্লিমেন্ট হিসেবে কাজ করবে। শুধু নতুন সেশনেই
+      // পাঠানো হচ্ছে (heartbeat-এ বারবার না), যাতে একই ভিজিটের জন্য বারবার কাউন্ট না হয়।
+      sendCapiEvent({
+        eventName: "PageView",
+        eventId: `pageview_${sessionId}`, // ভবিষ্যতে ব্রাউজার Pixel-এও এই eventId ব্যবহার করলে ডিডুপ হবে
+        sessionId,
+        eventSourceUrl: req.headers["referer"] || req.headers["origin"] || undefined,
+        userData: {
+          ip: getClientIp(req),
+          userAgent: req.headers["user-agent"],
+          fbc: tracking.fbc,
+          fbp: tracking.fbp,
+        },
+        customData: {
+          contentName: landingPageSlug || undefined,
+        },
+      }).catch((err) => console.error("Meta CAPI PageView event error:", err));
     }
 
     const update = buildUpdate({
