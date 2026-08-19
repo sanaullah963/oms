@@ -53,6 +53,22 @@ const UsageStepSchema = new mongoose.Schema(
   { _id: false },
 );
 
+// --- একাধিক "প্রোডাক্ট টাইপ / প্যাকেজ" (যেমন "1 পিস", "2 পিস", "৫০ বক্স") — প্রতিটার
+// নিজস্ব প্রাইস ও নিজস্ব ডেলিভারি রুল (ফ্রি অথবা ইনসাইড/আউটসাইড চার্জ) থাকে। কাস্টমার
+// ল্যান্ডিং পেজে এখান থেকে একটা টাইপ বেছে নেয়, তারপর +/- দিয়ে quantity বাড়ায়-কমায়
+// (totalCOD = selectedType.price × qty)। _id (default Mongoose ObjectId) দিয়েই
+// ফ্রন্টএন্ড থেকে backend-এ কোন টাইপ সিলেক্ট হয়েছে সেটা রেফারেন্স করা হয়
+// (দেখুন publicLandingController.js-এর submitPublicOrder) ---
+const ProductTypeSchema = new mongoose.Schema({
+  label: { type: String, required: true, trim: true }, // যেমন "1 পিস", "2 পিস", "৫০ বক্স"
+  price: { type: Number, required: true },
+  originalPrice: { type: Number, default: null }, // থাকলে কাটা দাগ দিয়ে দেখানো হবে
+  freeDelivery: { type: Boolean, default: true },
+  deliveryChargeInsideDhaka: { type: Number, default: 70 },
+  deliveryChargeOutsideDhaka: { type: Number, default: 130 },
+  isDefault: { type: Boolean, default: false }, // পেজ লোড হওয়ার সাথে সাথে প্রথমে এটাই সিলেক্ট থাকবে
+});
+
 const LandingPageSchema = new mongoose.Schema(
   {
     // URL-এ ব্যবহৃত হবে: yoursite.com/{slug}
@@ -93,11 +109,17 @@ const LandingPageSchema = new mongoose.Schema(
     imoNumber: { type: String, default: "" },
     // ডেলিভারি চার্জ ফ্রি নাকি আলাদা — TRUE হলে backend/order calculation-এ delivery charge
     // সবসময় 0 (নিচের deliveryChargeInsideDhaka/OutsideDhaka-এ পুরনো ভ্যালু থাকলেও ব্যবহৃত হবে না,
-    // দেখুন publicLandingController.js-এর submitPublicOrder)
+    // দেখুন publicLandingController.js-এর submitPublicOrder)।
+    // --- লিগ্যাসি/ডিফল্ট ফিল্ড — নিচের productTypes খালি থাকলেই শুধু এগুলো ব্যবহৃত হয়
+    // (পুরনো ল্যান্ডিং পেজ ভাঙবে না)। productTypes-এ এন্ট্রি থাকলে প্রতিটা টাইপের
+    // নিজস্ব price/freeDelivery/charge ব্যবহৃত হয়, এই top-level ফিল্ডগুলো তখন আর
+    // ব্যবহৃত হয় না। ---
     freeDelivery: { type: Boolean, default: true },
     // ঢাকার ভেতরে/বাইরে আলাদা ডেলিভারি চার্জ দেখানোর জন্য (শুধু তথ্য দেখানো, courier booking-এর হিসাব থেকে আলাদা)
     deliveryChargeInsideDhaka: { type: Number, default: 70 },
     deliveryChargeOutsideDhaka: { type: Number, default: 130 },
+    // --- নতুন: প্রোডাক্ট টাইপ/প্যাকেজ ভিত্তিক প্রাইসিং + ডেলিভারি (দেখুন ProductTypeSchema-এর কমেন্ট) ---
+    productTypes: { type: [ProductTypeSchema], default: [] },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },

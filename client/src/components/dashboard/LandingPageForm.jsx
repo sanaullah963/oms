@@ -11,6 +11,7 @@ const emptyForm = {
   hero: { heading: "", description: "" },
   price: "",
   originalPrice: "",
+  productTypes: [],
   images: [""],
   features: [""],
   benefits: {
@@ -66,6 +67,143 @@ function ListField({ label, items, onChange, placeholder }) {
         className="mt-1 text-xs text-indigo-600 font-medium cursor-pointer"
       >
         + আরেকটা যোগ করুন
+      </button>
+    </div>
+  );
+}
+
+// --- একাধিক প্রোডাক্ট টাইপ/প্যাকেজ ম্যানেজ করার জন্য — প্রতিটার নিজস্ব
+// label/price/originalPrice + নিজস্ব ডেলিভারি রুল (ফ্রি অথবা ইনসাইড/আউটসাইড চার্জ)।
+// isDefault শুধু একটাতেই true রাখা হয় (রেডিও-এর মতো) — কাস্টমার পেজে ঢুকলে
+// প্রথমে এটাই সিলেক্ট থাকবে ---
+function ProductTypesField({ items, onChange }) {
+  const update = (i, field, value) => {
+    const copy = [...items];
+    copy[i] = { ...copy[i], [field]: value };
+    onChange(copy);
+  };
+
+  const setDefault = (i) => {
+    onChange(items.map((it, idx) => ({ ...it, isDefault: idx === i })));
+  };
+
+  const addType = () => {
+    onChange([
+      ...items,
+      {
+        label: "",
+        price: "",
+        originalPrice: "",
+        freeDelivery: true,
+        deliveryChargeInsideDhaka: 70,
+        deliveryChargeOutsideDhaka: 130,
+        isDefault: items.length === 0, // প্রথমটা হলে ডিফল্ট ভাবে ডিফল্ট
+      },
+    ]);
+  };
+
+  const removeType = (i) => {
+    const copy = items.filter((_, idx) => idx !== i);
+    // ডিফল্ট টাইপটাই ডিলিট হয়ে গেলে বাকিদের মধ্যে প্রথমটাকে ডিফল্ট করে দেওয়া হচ্ছে
+    if (copy.length && !copy.some((it) => it.isDefault)) {
+      copy[0] = { ...copy[0], isDefault: true };
+    }
+    onChange(copy);
+  };
+
+  return (
+    <div>
+      <label className="text-xs text-gray-500">
+        প্রোডাক্ট টাইপ/প্যাকেজ (ঐচ্ছিক — যোগ করলে কাস্টমার পেজে quantity-এর
+        বদলে এখান থেকে একটা টাইপ বেছে নেবে, প্রতিটার নিজস্ব দাম ও ডেলিভারি রুল থাকবে)
+      </label>
+      {items.map((it, i) => (
+        <div
+          key={i}
+          className="border border-gray-200 rounded-lg p-2 mt-1.5 space-y-1.5"
+        >
+          <div className="flex gap-1 items-center">
+            <input
+              type="radio"
+              name="defaultProductType"
+              checked={!!it.isDefault}
+              onChange={() => setDefault(i)}
+              title="পেজ লোড হওয়ার সাথে সাথে এই টাইপটা ডিফল্ট সিলেক্ট থাকবে"
+            />
+            <input
+              type="text"
+              value={it.label}
+              onChange={(e) => update(i, "label", e.target.value)}
+              placeholder="যেমনঃ ১ পিস / ২ পিস / ৫০ বক্স"
+              className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => removeType(i)}
+              className="px-2 bg-red-100 text-red-600 rounded text-xs cursor-pointer"
+            >
+              মুছুন
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5">
+            <input
+              type="number"
+              value={it.price}
+              onChange={(e) => update(i, "price", e.target.value)}
+              placeholder="দাম (৳)"
+              className="border border-gray-300 rounded px-2 py-1 text-sm"
+            />
+            <input
+              type="number"
+              value={it.originalPrice || ""}
+              onChange={(e) => update(i, "originalPrice", e.target.value)}
+              placeholder="আগের দাম (ঐচ্ছিক)"
+              className="border border-gray-300 rounded px-2 py-1 text-sm"
+            />
+          </div>
+
+          <label className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={!!it.freeDelivery}
+              onChange={(e) => update(i, "freeDelivery", e.target.checked)}
+            />
+            এই টাইপে Free Delivery
+          </label>
+
+          {!it.freeDelivery && (
+            <div className="grid grid-cols-2 gap-1.5">
+              <input
+                type="number"
+                value={it.deliveryChargeInsideDhaka}
+                onChange={(e) =>
+                  update(i, "deliveryChargeInsideDhaka", e.target.value)
+                }
+                placeholder="ঢাকার ভেতরে চার্জ"
+                min={0}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              />
+              <input
+                type="number"
+                value={it.deliveryChargeOutsideDhaka}
+                onChange={(e) =>
+                  update(i, "deliveryChargeOutsideDhaka", e.target.value)
+                }
+                placeholder="ঢাকার বাইরে চার্জ"
+                min={0}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              />
+            </div>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addType}
+        className="mt-1.5 text-xs text-indigo-600 font-medium cursor-pointer"
+      >
+        + প্রোডাক্ট টাইপ যোগ করুন
       </button>
     </div>
   );
@@ -178,6 +316,33 @@ export default function LandingPageForm({
         0,
         Number(form.deliveryChargeOutsideDhaka) || 0,
       ),
+      // লেবেল বা দাম-বিহীন টাইপ বাদ দেওয়া হচ্ছে; isDefault ঠিক একটাতেই থাকা
+      // নিশ্চিত করা হচ্ছে (কেউ না থাকলে প্রথমটাকে ডিফল্ট করে দেওয়া হচ্ছে)
+      productTypes: (() => {
+        const valid = form.productTypes
+          .filter(
+            (t) => t.label.trim() && t.price !== "" && !isNaN(Number(t.price)),
+          )
+          .map((t) => ({
+            label: t.label.trim(),
+            price: Number(t.price),
+            originalPrice: t.originalPrice ? Number(t.originalPrice) : null,
+            freeDelivery: !!t.freeDelivery,
+            deliveryChargeInsideDhaka: Math.max(
+              0,
+              Number(t.deliveryChargeInsideDhaka) || 0,
+            ),
+            deliveryChargeOutsideDhaka: Math.max(
+              0,
+              Number(t.deliveryChargeOutsideDhaka) || 0,
+            ),
+            isDefault: !!t.isDefault,
+          }));
+        if (valid.length && !valid.some((t) => t.isDefault)) {
+          valid[0].isDefault = true;
+        }
+        return valid;
+      })(),
     };
     onSubmit(cleaned);
   };
@@ -517,6 +682,11 @@ export default function LandingPageForm({
           />
         </div>
       </div>
+
+      <ProductTypesField
+        items={form.productTypes}
+        onChange={(v) => handleChange("productTypes", v)}
+      />
 
       <div>
         <label className="text-xs text-gray-500">কাস্টমার রিভিউ</label>

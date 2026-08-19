@@ -17,13 +17,13 @@ const FALLBACK_IMAGE = "/placeholder/p1.jpg";
 
 export default function OrderSection({ page, slug, setIsOrderVisible }) {
   const productName = page?.productName || "";
-  const price = page?.price ?? 0;
-  const originalPrice = page?.originalPrice;
   const productImage = page?.images?.[0] || FALLBACK_IMAGE;
-  const freeDelivery = page?.freeDelivery !== false;
-  const insideCharge = page?.deliveryChargeInsideDhaka;
-  const outsideCharge = page?.deliveryChargeOutsideDhaka;
   const whatsappNumber = page?.whatsappNumber || "";
+  // --- একাধিক প্রোডাক্ট টাইপ/প্যাকেজ থাকলে (নতুন ফিচার) কাস্টমার এখান থেকে একটা
+  // বেছে নেবে — প্রতিটার নিজস্ব price/originalPrice/freeDelivery/charge থাকে।
+  // productTypes খালি থাকলে (পুরনো পেজ) আগের মতোই top-level price/freeDelivery ব্যবহৃত হয় ---
+  const productTypes = page?.productTypes || [];
+  const hasProductTypes = productTypes.length > 0;
 
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -38,6 +38,27 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [quantity, setQuantity] = useState(1);
+  // ডিফল্ট হিসেবে isDefault:true মার্ক করা টাইপ, না থাকলে প্রথমটা সিলেক্ট থাকবে
+  const [selectedTypeId, setSelectedTypeId] = useState(
+    () =>
+      productTypes.find((t) => t.isDefault)?._id || productTypes[0]?._id || null,
+  );
+
+  const activeType = hasProductTypes
+    ? productTypes.find((t) => t._id === selectedTypeId) || productTypes[0]
+    : null;
+
+  const price = activeType ? activeType.price : (page?.price ?? 0);
+  const originalPrice = activeType ? activeType.originalPrice : page?.originalPrice;
+  const freeDelivery = activeType
+    ? activeType.freeDelivery !== false
+    : page?.freeDelivery !== false;
+  const insideCharge = activeType
+    ? activeType.deliveryChargeInsideDhaka
+    : page?.deliveryChargeInsideDhaka;
+  const outsideCharge = activeType
+    ? activeType.deliveryChargeOutsideDhaka
+    : page?.deliveryChargeOutsideDhaka;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -53,14 +74,23 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
     };
   }, [setIsOrderVisible]);
 
-
+  // প্যাকেজ পরিবর্তন হলে quantity রিসেট হয়ে যাবে, যাতে ভুল সংখ্যায় অর্ডার না হয়ে যায়
+  useEffect(() => {
+    setQuantity(1);
+  }, [selectedTypeId]);
 
   useEffect(() => {
     if (!customerName && !phone && !address) return; // সবগুলো খালি থাকলে সেভ করার দরকার নেই
     // আগে এখানে "anardana" ফিক্সড স্ট্রিং হার্ডকোড করা ছিল, ফলে যেকোনো slug-এর
     // পেজ থেকে draft order ভুলভাবে "anardana" slug দিয়ে সেভ হতো — এখন আসল slug ব্যবহার হচ্ছে
-    saveDraftOrder(slug, { customerName, phone, address, quantity });
-  }, [customerName, phone, address, quantity, slug]);
+    saveDraftOrder(slug, {
+      customerName,
+      phone,
+      address,
+      quantity,
+      productTypeId: activeType?._id || null,
+    });
+  }, [customerName, phone, address, quantity, slug, activeType]);
 
   const total = price * quantity; // চূড়ান্ত totalCOD সহ ডেলিভারি চার্জ ব্যাক-এন্ড authoritative-ভাবে হিসাব করে
   // শুধু UI-তে দেখানোর জন্য — client-side এই সংখ্যাটা কখনো order submit-এ trust করা হয় না
@@ -108,6 +138,8 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
         // freeDelivery হলে backend এমনিতেই deliveryArea ignore করে (charge সবসময় 0),
         // তাই এটা পাঠাতে সমস্যা নেই — actual charge হিসাব backend-এই হয়
         deliveryArea,
+        // productTypes থাকলে backend এই আইডি দিয়ে সেই টাইপের price/delivery rule খুঁজে নেয়
+        productTypeId: activeType?._id || undefined,
       };
       // landingService.submitOrder নিজে থেকেই fbp/fbc/UTM/sessionId/fingerprintHash-সহ
       // tracking payload যোগ করে দেয় (এতদিন raw axios.post ব্যবহার হতো বলে এই
@@ -270,6 +302,46 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                 )}
               </div>
 
+{/* প্রোডাক্ট টাইপ/প্যাকেজ সিলেকশন — শুধু productTypes থাকলেই দেখানো হয় */}
+              {hasProductTypes && (
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-gray-700">
+                    প্যাকেজ বেছে নিন
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {productTypes.map((t) => (
+                      <button
+                        key={t._id}
+                        type="button"
+                        onClick={() => setSelectedTypeId(t._id)}
+                        className={`rounded-lg border-2 px-1.5 py-3 text-left text-sm transition sm:text-base ${
+                          selectedTypeId === t._id
+                            ? "border-green-600 bg-green-200/80"
+                            : "border-gray-300 bg-green-100 hover:border-gray-300"
+                        }`}
+                      >
+                        <span className="block font-bold text-gray-900">
+                          {t.label}
+                        </span>
+                        <span className="text-green-600 font-semibold">
+                          ৳{t.price}
+                          {t.originalPrice ? (
+                            <span className="ml-1 text-xs font-normal text-gray-400 line-through">
+                              ৳{t.originalPrice}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="block text-xs text-gray-500">
+                          {t.freeDelivery !== false
+                            ? "ফ্রি ডেলিভারি"
+                            : "ডেলিভারি চার্জ প্রযোজ্য"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Delivery area — শুধু Free Delivery বন্ধ থাকলেই দেখানো হয় */}
               {!freeDelivery && (
                 <div>
@@ -296,6 +368,8 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                   </div>
                 </div>
               )}
+
+              
 
               {/* Order Summary */}
               <div className="rounded-2xl bg-gray-50 p-3">
@@ -343,7 +417,7 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                   type="button"
                   onClick={() => setQuantity((q) => q + 1)}
                   aria-label="বাড়ান"
-                  className="flex h-10 w-10 cursor-pointer items-center justify-center  text-gray-600 transition hover:bg-green-300 bg-green-200 hover:text-green-600"
+                  className="flex h-12 w-10 cursor-pointer items-center justify-center  text-gray-600 transition hover:bg-green-300 bg-green-200 hover:text-green-600"
                 >
                   <FaPlus size={11} />
                 </button>
@@ -368,11 +442,11 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                       <span>৳{grandTotalDisplay}</span>
                     </div>
                   </div>
-                  <p className="text-md text-center text-green-800 bg-gray-200  rounded-md px-2 py-1">
+                  {/* <p className="text-md text-center text-green-800 bg-gray-200  rounded-md px-2 py-1">
                     {freeDelivery
                       ? "ডেলিভারি চার্জ ফ্রী"
                       : `ডেলিভারি চার্জ (ঢাকায় ৳${insideCharge ?? 0}, ঢাকার বাইরে ৳${outsideCharge ?? 0})`}
-                  </p>
+                  </p> */}
                 
                 </div>
               </div>

@@ -31,7 +31,16 @@ exports.getPublicLandingPage = async (req, res) => {
 // --- POST /api/public/landing-pages/:slug/order — কাস্টমার অর্ডার সাবমিট করলে ---
 exports.submitPublicOrder = async (req, res) => {
   try {
-    const { name, phone, address, quantity, deliveryArea, honeypot, tracking = {} } = req.body;
+    const {
+      name,
+      phone,
+      address,
+      quantity,
+      deliveryArea,
+      productTypeId,
+      honeypot,
+      tracking = {},
+    } = req.body;
 
     // 🛡️ বট প্রোটেকশন: এই ফিল্ডটা মানুষের জন্য UI-তে দেখানো হবে না, শুধু বট এটা পূরণ করবে
     if (honeypot) {
@@ -74,22 +83,44 @@ exports.submitPublicOrder = async (req, res) => {
 
     const qty = Math.max(1, parseInt(quantity, 10) || 1);
 
-    // --- ডেলিভারি চার্জ backend-এ authoritative-ভাবে হিসাব করা হয় — frontend থেকে
-    // আসা কোনো charge/total কখনো trust করা হয় না, শুধু "inside"/"outside" এলাকা-নির্বাচন
-    // নেওয়া হয়। freeDelivery === true হলে সর্বোচ্চ প্রায়োরিটি পেয়ে চার্জ সবসময় 0,
-    // পুরনো deliveryChargeInsideDhaka/OutsideDhaka ভ্যালু DB-তে থাকলেও ব্যবহৃত হবে না। ---
+    // --- ইউনিট প্রাইস ও ডেলিভারি রুল কোথা থেকে নেওয়া হবে ঠিক করা হচ্ছে — page.productTypes
+    // এ এন্ট্রি থাকলে (নতুন "টাইপ/প্যাকেজ" ফিচার) কাস্টমারের সিলেক্ট করা productTypeId
+    // অনুযায়ী সেই টাইপের নিজস্ব price/freeDelivery/charge ব্যবহার হবে; productTypes খালি
+    // থাকলে (পুরনো পেজ) আগের মতোই page-এর top-level price/freeDelivery/charge ব্যবহার হবে।
+    // frontend থেকে আসা কোনো price/charge/total কখনোই trust করা হয় না — সবসময় DB-তে
+    // সেভ থাকা ভ্যালু দিয়েই backend-এ authoritative-ভাবে হিসাব হয়। ---
+    let unitPrice = page.price;
+    let productTypeLabel = null;
+    let freeDeliveryRule = page.freeDelivery;
+    let insideChargeRule = page.deliveryChargeInsideDhaka;
+    let outsideChargeRule = page.deliveryChargeOutsideDhaka;
+
+    if (page.productTypes && page.productTypes.length > 0) {
+      const selectedType = page.productTypes.id(productTypeId);
+      if (!selectedType) {
+        return res.status(400).json({ message: "সঠিক প্রোডাক্ট টাইপ/প্যাকেজ নির্বাচন করুন।" });
+      }
+      unitPrice = selectedType.price;
+      productTypeLabel = selectedType.label;
+      freeDeliveryRule = selectedType.freeDelivery;
+      insideChargeRule = selectedType.deliveryChargeInsideDhaka;
+      outsideChargeRule = selectedType.deliveryChargeOutsideDhaka;
+    }
+
+    // --- ডেলিভারি চার্জ backend-এ authoritative-ভাবে হিসাব করা হয় — শুধু "inside"/"outside"
+    // এলাকা-নির্বাচন নেওয়া হয়। freeDeliveryRule === true হলে চার্জ সবসময় 0। ---
     const area = deliveryArea === "outside" ? "outside" : "inside";
     let deliveryCharge = 0;
-    if (!page.freeDelivery) {
-      const rawCharge =
-        area === "outside" ? page.deliveryChargeOutsideDhaka : page.deliveryChargeInsideDhaka;
+    if (!freeDeliveryRule) {
+      const rawCharge = area === "outside" ? outsideChargeRule : insideChargeRule;
       deliveryCharge = Math.max(0, Number(rawCharge) || 0); // negative charge কখনো accept হবে না
     }
 
-    const totalCOD = page.price * qty + deliveryCharge;
+    const totalCOD = unitPrice * qty + deliveryCharge;
+    const productLabelSuffix = productTypeLabel ? ` (${productTypeLabel})` : "";
 
     const order = await Order.create({
-      rawInputText: `${name}\n${phone}\n${address}\nProduct: ${page.productName} x${qty}\nDelivery: ৳${deliveryCharge} (${area === "outside" ? "ঢাকার বাইরে" : "ঢাকার ভেতরে"})`,
+      rawInputText: `${name}\n${phone}\n${address}\nProduct: ${page.productName}${productLabelSuffix} x${qty}\nDelivery: ৳${deliveryCharge} (${area === "outside" ? "ঢাকার বাইরে" : "ঢাকার ভেতরে"})`,
       castomerName: name,
       castomerPhone: [phone],
       productCode: page.productCode,
@@ -100,7 +131,7 @@ exports.submitPublicOrder = async (req, res) => {
       activities: [
         {
           type: "Order Created",
-          description: `ল্যান্ডিং পেজ থেকে অর্ডার এসেছে — "${page.productName}" (${qty}টি)`,
+          description: `ল্যান্ডিং পেজ থেকে অর্ডার এসেছে — "${page.productName}${productLabelSuffix}" (${qty}টি)`,
         },
       ],
       // --- Meta Pixel/CAPI-এর জন্য অ্যাট্রিবিউশন ডেটা সংরক্ষণ (এখনই Purchase পাঠানো হচ্ছে না,
