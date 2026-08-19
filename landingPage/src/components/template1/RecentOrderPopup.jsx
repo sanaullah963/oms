@@ -4,16 +4,16 @@ import { useEffect, useState, useCallback, useRef } from "react";
 // --- র‍্যান্ডম নাম ও জেলার লিস্ট — শুধু ভিজুয়াল সোশ্যাল-প্রুফের জন্য, আসল অর্ডার
 // ডেটা থেকে আসে না (কোনো API কল হয় না) ---
 const NAMES = [
-  "আব্দুল", "সাদিয়া", "রফিক", "নাসরিন", "কামাল", "সুমাইয়া", "ইমরান", "ফারজানা",
-  "হাসান", "রুমা", "সজীব", "তানিয়া", "আরিফ", "মিতু", "শাকিল", "লিমা",
-  "রাসেল", "সাথী", "মামুন", "শারমিন", "জাহিদ", "নাজমা", "সোহেল", "রিয়া",
-  "তুহিন", "শিউলি", "মিজান", "রোজিনা", "ফাহিম", "ইয়াসমিন",
+  "আব্দুল", "রবিন", "রফিক", "নাসির উদ্দিন", "কামাল", "সুমাইয়া", "ইমরান", "ফারুক",
+  "হাসান", "সানি", "সজীব", "তানিয়া", "আরিফ", "রাকিন", "সিমুল", "পলাশ",
+  "রাসেল", "সাথিল", "মামুন", "শারমিন", "জাহিদ", "প্রিন্স", "সোহেল", "আদনান লিও",
+  "তুহিন", "মুয়াজ", "মিজান", "মানাফ", "ফাহিম", "খাইরুল",
 ];
 
 const LOCATIONS = [
   "ঢাকা", "চট্টগ্রাম", "খুলনা", "রাজশাহী", "সিলেট", "বরিশাল", "রংপুর",
   "ময়মনসিংহ", "কুমিল্লা", "নোয়াখালী", "ফরিদপুর", "যশোর", "বগুড়া", "দিনাজপুর",
-  "টাঙ্গাইল", "গাজীপুর", "নারায়ণগঞ্জ", "কক্সবাজার", "পাবনা", "জামালপুর",
+  "টাঙ্গাইল", "গাজীপুর", "নারায়ণগঞ্জ", "কক্সবাজার", "পাবনা", "জামালপুর","পটুয়াখালি", "আমতলী", "কুড়িগ্রাম","লালমনিরহাট",
 ];
 
 function pick(arr) {
@@ -25,14 +25,13 @@ function generateFakeOrder() {
     id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     name: pick(NAMES),
     location: pick(LOCATIONS),
-    minutesAgo: Math.floor(Math.random() * 58) + 2, // ২–৫৯ মিনিট আগে
+    minutesAgo: Math.floor(Math.random() * 58) + 1, // ১–৫৯ মিনিট আগে
   };
 }
-
-const FIRST_DELAY_MS = 4000; // পেজ লোডের কতক্ষণ পর প্রথম নোটিফিকেশন দেখাবে
-const VISIBLE_MS = 5000; // একটা নোটিফিকেশন কতক্ষণ দেখা যাবে
-const GAP_MIN_MS = 8000; // দুইটা নোটিফিকেশনের মাঝে সর্বনিম্ন বিরতি
-const GAP_MAX_MS = 18000; // দুইটা নোটিফিকেশনের মাঝে সর্বোচ্চ বিরতি
+const FIRST_DELAY_MS = 3000; // পেজ লোডের কতক্ষণ পর প্রথম নোটিফিকেশন দেখাবে
+const VISIBLE_MS = 4000; // একটা নোটিফিকেশন কতক্ষণ দেখা যাবে
+const GAP_MIN_MS = 5000; // দুইটা নোটিফিকেশনের মাঝে সর্বনিম্ন বিরতি
+const GAP_MAX_MS = 10000; // দুইটা নোটিফিকেশনের মাঝে সর্বোচ্চ বিরতি
 
 // --- কাস্টমার পেজে ব্রাউজ করার সময় মাঝে মাঝে ওপর থেকে একটা "অমুক এইমাত্র অর্ডার
 // করেছেন" স্টাইলের নোটিফিকেশন কার্ড দেখায় (সোশ্যাল প্রুফ/FOMO)। নাম/লোকেশন/সময় সম্পূর্ণ
@@ -41,10 +40,10 @@ export default function RecentOrderPopup({ page }) {
   const [order, setOrder] = useState(null);
   const [visible, setVisible] = useState(false);
   const timerRef = useRef(null);
-
+  
   const productImage = page?.images?.[0] || "";
   const productName = page?.productName || "";
-
+  
   const scheduleNext = useCallback((delay) => {
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
@@ -75,16 +74,16 @@ export default function RecentOrderPopup({ page }) {
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center gap-3 rounded-2xl border border-green-100 bg-white p-3 shadow-xl">
+      <div className="flex items-center gap-3 rounded-md border border-green-100 bg-white p-1 shadow-xl">
         {productImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={productImage}
             alt={productName}
-            className="h-14 w-14 flex-shrink-0 rounded-lg object-cover"
+            className="h-14 w-14 flex-shrink-0 rounded-md object-cover"
           />
         ) : (
-          <div className="h-14 w-14 flex-shrink-0 rounded-lg bg-gray-100" />
+          <div className="h-14 w-14 flex-shrink-0 rounded-md bg-gray-100" />
         )}
         <div className="min-w-0">
           <p className="text-xs font-semibold text-red-500">
@@ -99,7 +98,7 @@ export default function RecentOrderPopup({ page }) {
           type="button"
           onClick={() => setVisible(false)}
           aria-label="বন্ধ করুন"
-          className="ml-auto flex-shrink-0 self-start text-gray-300 hover:text-gray-500 cursor-pointer"
+          className="ml-auto flex-shrink-0 self-center pe-2 text-gray-90000 hover:text-red-500 cursor-pointer"
         >
           ✕
         </button>
