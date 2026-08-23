@@ -40,18 +40,30 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [quantity, setQuantity] = useState(1);
-  // ডিফল্ট হিসেবে isDefault:true মার্ক করা টাইপ, না থাকলে প্রথমটা সিলেক্ট থাকবে
+  // --- ডিফল্ট হিসেবে isDefault:true মার্ক করা টাইপ থাকলে সেটাই সিলেক্ট থাকবে।
+  // আগে এখানে "|| productTypes[0]?._id" ফলব্যাক ছিল, মানে কোনো ডিফল্ট না
+  // থাকলেও প্রথম প্যাকেজটা জোর করে সিলেক্ট দেখানো হতো — এখন সেই ফলব্যাক বাদ
+  // দেওয়া হয়েছে, ডিফল্ট না থাকলে শুরুতে কোনোটাই সিলেক্ট থাকবে না ---
   const [selectedTypeId, setSelectedTypeId] = useState(
-    () =>
-      productTypes.find((t) => t.isDefault)?._id || productTypes[0]?._id || null,
+    () => productTypes.find((t) => t.isDefault)?._id || null,
   );
 
+  // আগে এখানেও "|| productTypes[0]" ফলব্যাক ছিল — সেটা বাদ দেওয়া হয়েছে, যাতে
+  // কিছু সিলেক্ট না করা অবস্থায় activeType সত্যিই null থাকে (প্রথম প্যাকেজের
+  // দাম/ডেলিভারি রুল ভুলবশত ব্যবহার না হয়)
   const activeType = hasProductTypes
-    ? productTypes.find((t) => t._id === selectedTypeId) || productTypes[0]
+    ? productTypes.find((t) => t._id === selectedTypeId) || null
     : null;
 
-  const price = activeType ? activeType.price : (page?.price ?? 0);
-  const originalPrice = activeType ? activeType.originalPrice : page?.originalPrice;
+  // --- productTypes মোডে থাকলে (hasProductTypes) কিছু সিলেক্ট না করা অবস্থায়
+  // আগে এখানে ভুলবশত পুরনো টপ-লেভেল page.price (legacy, এই মোডে অপ্রাসঙ্গিক)
+  // দেখানো হতো — এখন সিলেক্ট না করা পর্যন্ত ৳0 দেখাবে ---
+  const price = activeType ? activeType.price : hasProductTypes ? 0 : (page?.price ?? 0);
+  const originalPrice = activeType
+    ? activeType.originalPrice
+    : hasProductTypes
+      ? null
+      : page?.originalPrice;
   const freeDelivery = activeType
     ? activeType.freeDelivery !== false
     : page?.freeDelivery !== false;
@@ -114,6 +126,11 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
     }
     if (address.trim().length < 10) {
       newErrors.address = "সম্পূর্ণ ঠিকানা লিখুন";
+    }
+    // প্যাকেজ/অফার সিলেকশন থাকলে (hasProductTypes) কিছু একটা বেছে নেওয়া বাধ্যতামূলক —
+    // কোনো popup/alert না দেখিয়ে শুধু ওই সেকশনের নিচে ইনলাইন এরর টেক্সট দেখানো হবে
+    if (hasProductTypes && !selectedTypeId) {
+      newErrors.productType = "যেকোনো একটা অফার বা প্যাকেজ সিলেক্ট করুন";
     }
 
     setErrors(newErrors);
@@ -310,16 +327,26 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                   <p className="mb-2 text-sm font-semibold text-gray-700">
                     প্যাকেজ বেছে নিন
                   </p>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <div
+                    className={`grid grid-cols-2 gap-2 rounded-lg sm:grid-cols-3 ${
+                      errors.productType ? "ring-2 ring-red-500 ring-offset-2 p-1" : ""
+                    }`}
+                  >
                     {productTypes.map((t) => (
                       <button
                         key={t._id}
                         type="button"
-                        onClick={() => setSelectedTypeId(t._id)}
+                        onClick={() => {
+                          setSelectedTypeId(t._id);
+                          // অন্য ফিল্ডের মতোই সিলেক্ট করলে সাথে সাথে এরর টেক্সট সরে যাবে
+                          setErrors((prev) => ({ ...prev, productType: "" }));
+                        }}
                         className={`relative rounded-lg border-2 px-1.5 py-3 text-left text-sm transition sm:text-base ${
                           selectedTypeId === t._id
                             ? "border-green-700 bg-green-100"
-                            : "border-gray-300 bg-green-50 hover:border-gray-300"
+                            : errors.productType
+                              ? "border-red-500 bg-red-50"
+                              : "border-gray-300 bg-green-50 hover:border-gray-300"
                         }`}
                       >
                         <span className="absolute top-0 right-0">{selectedTypeId === t._id && '✅'}</span>
@@ -336,12 +363,17 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                         </span>
                         <span className="block text-xs text-gray-500">
                           {t.freeDelivery !== false
-                            ? "ফ্রি ডেলিভারি"
+                            ? "ডেলিভারি চার্জ ফ্রি"
                             : "ডেলিভারি চার্জ প্রযোজ্য"}
                         </span>
                       </button>
                     ))}
                   </div>
+                  {errors.productType && (
+                    <p className="mt-1.5 text-sm text-red-500">
+                      {errors.productType}
+                    </p>
+                  )}
                 </div>
               )}
 

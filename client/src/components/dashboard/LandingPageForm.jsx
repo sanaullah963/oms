@@ -84,7 +84,15 @@ function ProductTypesField({ items, onChange }) {
   };
 
   const setDefault = (i) => {
-    onChange(items.map((it, idx) => ({ ...it, isDefault: idx === i })));
+    // --- একই আইটেমে আবার ক্লিক করলে সেটা আনসিলেক্ট হয়ে যাবে (কোনোটাই ডিফল্ট
+    // না রাখাও একটা বৈধ অবস্থা), অন্য কোনো আইটেমে ক্লিক করলে আগের মতোই
+    // radio-এর ব্যবহারে সেটাই একমাত্র ডিফল্ট হবে ---
+    onChange(
+      items.map((it, idx) => ({
+        ...it,
+        isDefault: idx === i ? !it.isDefault : false,
+      })),
+    );
   };
 
   const addType = () => {
@@ -97,17 +105,20 @@ function ProductTypesField({ items, onChange }) {
         freeDelivery: true,
         deliveryChargeInsideDhaka: 70,
         deliveryChargeOutsideDhaka: 130,
-        isDefault: items.length === 0, // প্রথমটা হলে ডিফল্ট ভাবে ডিফল্ট
+        // --- আগে এখানে "items.length === 0" থাকলে প্রথম টাইপটাকে জোর করে ডিফল্ট
+        // বানানো হতো। এখন নতুন টাইপ যোগ করলে ডিফল্ট আনচেকড থাকবে — অ্যাডমিন
+        // ইচ্ছা করলে রেডিও বাটনে ক্লিক করে ডিফল্ট বেছে নেবে, নাহলে কোনোটাই
+        // ডিফল্ট থাকবে না ---
+        isDefault: false,
       },
     ]);
   };
 
   const removeType = (i) => {
+    // --- আগে এখানে ডিফল্ট টাইপ ডিলিট হয়ে গেলে বাকিদের মধ্যে প্রথমটাকে জোর করে
+    // ডিফল্ট বানানো হতো। এখন সেটা করা হচ্ছে না — মুছে ফেললে কোনো টাইপ ডিফল্ট
+    // না থাকলেও (সবগুলো isDefault:false) সেটাই থাকবে, কিছু জোর করা হবে না ---
     const copy = items.filter((_, idx) => idx !== i);
-    // ডিফল্ট টাইপটাই ডিলিট হয়ে গেলে বাকিদের মধ্যে প্রথমটাকে ডিফল্ট করে দেওয়া হচ্ছে
-    if (copy.length && !copy.some((it) => it.isDefault)) {
-      copy[0] = { ...copy[0], isDefault: true };
-    }
     onChange(copy);
   };
 
@@ -127,8 +138,12 @@ function ProductTypesField({ items, onChange }) {
               type="radio"
               name="defaultProductType"
               checked={!!it.isDefault}
-              onChange={() => setDefault(i)}
-              title="পেজ লোড হওয়ার সাথে সাথে এই টাইপটা ডিফল্ট সিলেক্ট থাকবে"
+              // radio ইতিমধ্যে checked থাকলে আবার ক্লিক করলে ব্রাউজার onChange fire করে
+              // না (checked স্টেট বদলায় না বলে) — তাই টগল (আনসিলেক্ট) কাজ করানোর জন্য
+              // onClick ব্যবহার করা হচ্ছে, যেটা প্রতিটা ক্লিকেই fire হয়
+              onClick={() => setDefault(i)}
+              onChange={() => {}}
+              title="ক্লিক করে ডিফল্ট সিলেক্ট করুন, আবার ক্লিক করলে আনসিলেক্ট হয়ে যাবে"
             />
             <input
               type="text"
@@ -316,33 +331,29 @@ export default function LandingPageForm({
         0,
         Number(form.deliveryChargeOutsideDhaka) || 0,
       ),
-      // লেবেল বা দাম-বিহীন টাইপ বাদ দেওয়া হচ্ছে; isDefault ঠিক একটাতেই থাকা
-      // নিশ্চিত করা হচ্ছে (কেউ না থাকলে প্রথমটাকে ডিফল্ট করে দেওয়া হচ্ছে)
-      productTypes: (() => {
-        const valid = form.productTypes
-          .filter(
-            (t) => t.label.trim() && t.price !== "" && !isNaN(Number(t.price)),
-          )
-          .map((t) => ({
-            label: t.label.trim(),
-            price: Number(t.price),
-            originalPrice: t.originalPrice ? Number(t.originalPrice) : null,
-            freeDelivery: !!t.freeDelivery,
-            deliveryChargeInsideDhaka: Math.max(
-              0,
-              Number(t.deliveryChargeInsideDhaka) || 0,
-            ),
-            deliveryChargeOutsideDhaka: Math.max(
-              0,
-              Number(t.deliveryChargeOutsideDhaka) || 0,
-            ),
-            isDefault: !!t.isDefault,
-          }));
-        if (valid.length && !valid.some((t) => t.isDefault)) {
-          valid[0].isDefault = true;
-        }
-        return valid;
-      })(),
+      // লেবেল বা দাম-বিহীন টাইপ বাদ দেওয়া হচ্ছে। আগে এখানে কোনো টাইপ ডিফল্ট না
+      // থাকলে প্রথমটাকে জোর করে ডিফল্ট বানানো হতো — এখন সেটা বাদ দেওয়া হয়েছে,
+      // অ্যাডমিন কোনোটাকে ডিফল্ট সিলেক্ট না করলে সেভ হওয়ার পরও কোনোটাই
+      // ডিফল্ট থাকবে না (কাস্টমার পেজে গিয়ে নিজে থেকে বেছে নেবে)
+      productTypes: form.productTypes
+        .filter(
+          (t) => t.label.trim() && t.price !== "" && !isNaN(Number(t.price)),
+        )
+        .map((t) => ({
+          label: t.label.trim(),
+          price: Number(t.price),
+          originalPrice: t.originalPrice ? Number(t.originalPrice) : null,
+          freeDelivery: !!t.freeDelivery,
+          deliveryChargeInsideDhaka: Math.max(
+            0,
+            Number(t.deliveryChargeInsideDhaka) || 0,
+          ),
+          deliveryChargeOutsideDhaka: Math.max(
+            0,
+            Number(t.deliveryChargeOutsideDhaka) || 0,
+          ),
+          isDefault: !!t.isDefault,
+        })),
     };
     onSubmit(cleaned);
   };
