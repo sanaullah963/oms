@@ -4,8 +4,8 @@ export const registerToast = (fn) => {
   showToastFunction = fn;
 };
 
-export const showToast = (message = "Copyed") => {
+export const showToast = (message = "Copyed", { position = "bottom" } = {}) => {
   if (showToastFunction) {
-    showToastFunction(message);
+    showToastFunction(message, position);
   }
 };

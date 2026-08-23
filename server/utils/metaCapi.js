@@ -69,7 +69,7 @@ async function sendCapiEvent({
       status: "failed",
       errorMessage: "META_PIXEL_ID/META_CAPI_ACCESS_TOKEN .env-এ সেট করা নেই।",
     });
-    console.warn(`⚠️ Meta CAPI event "${eventName}" পাঠানো যায়নি — কী সেট করা নেই।`);
+    console.warn(`⚠️ Meta CAPI event "${eventName}" পাঠানো যায়নি — কী সেট করা নেই।`,);
     return { success: false, eventId: finalEventId };
   }
 
@@ -107,7 +107,8 @@ async function sendCapiEvent({
     if (cleanedData.user_data[k] === undefined) delete cleanedData.user_data[k];
   });
   Object.keys(cleanedData.custom_data).forEach((k) => {
-    if (cleanedData.custom_data[k] === undefined) delete cleanedData.custom_data[k];
+    if (cleanedData.custom_data[k] === undefined)
+      delete cleanedData.custom_data[k];
   });
   if (!cleanedData.event_source_url) delete cleanedData.event_source_url;
 
@@ -117,7 +118,7 @@ async function sendCapiEvent({
     const response = await axios.post(url, payload, {
       params: { access_token: META_CAPI_ACCESS_TOKEN },
     });
-
+    console.log("respons-----------", response);
     await EventLog.create({
       eventName,
       eventId: finalEventId,
@@ -133,7 +134,10 @@ async function sendCapiEvent({
     return { success: true, eventId: finalEventId, response: response.data };
   } catch (error) {
     const errorMessage = error.response?.data?.error?.message || error.message;
-    console.error(`❌ Meta CAPI event "${eventName}" পাঠাতে ব্যর্থ:`, errorMessage);
+    console.error(
+      `❌ Meta CAPI event "${eventName}" পাঠাতে ব্যর্থ:`,
+      errorMessage,
+    );
 
     await EventLog.create({
       eventName,
@@ -162,10 +166,16 @@ async function retryEvent(eventLogId) {
     return { success: false, error: "এই ইভেন্ট লগ খুঁজে পাওয়া যায়নি।" };
   }
   if (!log.payload) {
-    return { success: false, error: "এই ইভেন্টের কোনো payload সংরক্ষিত নেই, retry করা যাবে না।" };
+    return {
+      success: false,
+      error: "এই ইভেন্টের কোনো payload সংরক্ষিত নেই, retry করা যাবে না।",
+    };
   }
   if (!META_PIXEL_ID || !META_CAPI_ACCESS_TOKEN) {
-    return { success: false, error: "META_PIXEL_ID/META_CAPI_ACCESS_TOKEN .env-এ সেট করা নেই।" };
+    return {
+      success: false,
+      error: "META_PIXEL_ID/META_CAPI_ACCESS_TOKEN .env-এ সেট করা নেই।",
+    };
   }
 
   const url = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${META_PIXEL_ID}/events`;
@@ -197,4 +207,10 @@ async function retryEvent(eventLogId) {
   }
 }
 
-module.exports = { sendCapiEvent, retryEvent, generateEventId, hashPII, hashPhone };
+module.exports = {
+  sendCapiEvent,
+  retryEvent,
+  generateEventId,
+  hashPII,
+  hashPhone,
+};
