@@ -58,7 +58,11 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
   // --- productTypes মোডে থাকলে (hasProductTypes) কিছু সিলেক্ট না করা অবস্থায়
   // আগে এখানে ভুলবশত পুরনো টপ-লেভেল page.price (legacy, এই মোডে অপ্রাসঙ্গিক)
   // দেখানো হতো — এখন সিলেক্ট না করা পর্যন্ত ৳0 দেখাবে ---
-  const price = activeType ? activeType.price : hasProductTypes ? 0 : (page?.price ?? 0);
+  const price = activeType
+    ? activeType.price
+    : hasProductTypes
+      ? 0
+      : (page?.price ?? 0);
   const originalPrice = activeType
     ? activeType.originalPrice
     : hasProductTypes
@@ -79,7 +83,7 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
       ([entry]) => {
         setIsOrderVisible(entry.isIntersecting);
       },
-      { threshold: 0.1 } // সেকশনের ১০% দৃশ্যমান হলেই ট্রিগার করবে
+      { threshold: 0.1 }, // সেকশনের ১০% দৃশ্যমান হলেই ট্রিগার করবে
     );
     const section = document.getElementById("order");
     if (section) observer.observe(section);
@@ -111,8 +115,8 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
   const deliveryChargeDisplay = freeDelivery
     ? 0
     : deliveryArea === "outside"
-      ? outsideCharge ?? 0
-      : insideCharge ?? 0;
+      ? (outsideCharge ?? 0)
+      : (insideCharge ?? 0);
   const grandTotalDisplay = total + deliveryChargeDisplay;
 
   const validateForm = () => {
@@ -248,8 +252,6 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
               সঠিক তথ্য দিন যাতে দ্রুত ডেলিভারি করা যায়।
             </p>
 
-           
-
             <form onSubmit={handleSubmit} className="mt-6 space-y-2">
               {/* Name */}
               <div>
@@ -321,53 +323,84 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                 )}
               </div>
 
-{/* প্রোডাক্ট টাইপ/প্যাকেজ সিলেকশন — শুধু productTypes থাকলেই দেখানো হয় */}
+              {/* প্রোডাক্ট টাইপ/প্যাকেজ সিলেকশন — শুধু productTypes থাকলেই দেখানো হয় */}
               {hasProductTypes && (
                 <div>
                   <p className="mb-2 text-sm font-semibold text-gray-700">
                     প্যাকেজ বেছে নিন
                   </p>
                   <div
-                    className={`grid grid-cols-2 gap-2 rounded-lg sm:grid-cols-3 ${
-                      errors.productType ? "ring-2 ring-red-500 ring-offset-2 p-1" : ""
+                    className={`grid grid-cols-2 gap-2.5 rounded-lg sm:grid-cols-3 ${
+                      errors.productType
+                        ? "ring-2 ring-red-500 ring-offset-2 p-1"
+                        : ""
                     }`}
                   >
-                    {productTypes.map((t) => (
-                      <button
-                        key={t._id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedTypeId(t._id);
-                          // অন্য ফিল্ডের মতোই সিলেক্ট করলে সাথে সাথে এরর টেক্সট সরে যাবে
-                          setErrors((prev) => ({ ...prev, productType: "" }));
-                        }}
-                        className={`relative rounded-lg border-2 px-1.5 py-3 text-left text-sm transition sm:text-base ${
-                          selectedTypeId === t._id
-                            ? "border-green-700 bg-green-100"
-                            : errors.productType
-                              ? "border-red-500 bg-red-50"
-                              : "border-gray-300 bg-green-50 hover:border-gray-300"
-                        }`}
-                      >
-                        <span className="absolute top-0 right-0">{selectedTypeId === t._id && '✅'}</span>
-                        <span className="block font-bold text-gray-900">
-                          {t.label}
-                        </span>
-                        <span className="text-green-600 font-semibold">
-                          ৳{t.price}
-                          {t.originalPrice ? (
-                            <span className="ml-1 text-xs font-normal text-gray-400 line-through">
-                              ৳{t.originalPrice}
+                    {productTypes.map((t) => {
+                      const isSelected = selectedTypeId === t._id;
+                      return (
+                        <button
+                          key={t._id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTypeId(t._id);
+                            // অন্য ফিল্ডের মতোই সিলেক্ট করলে সাথে সাথে এরর টেক্সট সরে যাবে
+                            setErrors((prev) => ({ ...prev, productType: "" }));
+                          }}
+                          // --- সিলেক্ট/আনসিলেক্ট অবস্থার পার্থক্য আগের চেয়ে অনেক স্পষ্ট করা
+                          // হয়েছে: unselected এখন সাদা/নিরপেক্ষ কার্ড (কোনো দৃষ্টি আকর্ষণ
+                          // করে না), selected হলে সলিড গাঢ় সবুজ ফিল + সাদা টেক্সট + স্কেল-আপ
+                          // + shadow — চোখে পড়ার মতো "উঠে আসা" একটা অনুভূতি তৈরি করে ---
+                          className={`relative rounded-xl border-2 px-2 py-3.5 text-left text-sm transition-all duration-200 sm:text-base ${
+                            isSelected
+                              ? "scale-[1.04] border-green-700 bg-gradient-to-br from-green-600 to-green-800 shadow-lg shadow-green-700/30"
+                              : errors.productType
+                                ? "border-red-400 bg-red-50 hover:border-red-500"
+                                : "border-gray-200 bg-white hover:border-green-400 hover:bg-green-50/50"
+                          }`}
+                        >
+                          {isSelected && (
+                            <span className="absolute -top-2.5 -right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-green-700 shadow-md ring-2 ring-green-700">
+                              <FaCheckSquare className="h-3.5 w-3.5" />
                             </span>
-                          ) : null}
-                        </span>
-                        <span className="block text-xs text-gray-500">
-                          {t.freeDelivery !== false
-                            ? "ডেলিভারি চার্জ ফ্রি"
-                            : "ডেলিভারি চার্জ প্রযোজ্য"}
-                        </span>
-                      </button>
-                    ))}
+                          )}
+                          <span
+                            className={`block font-bold ${
+                              isSelected ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {t.label}
+                          </span>
+                          <span
+                            className={`font-semibold ${
+                              isSelected ? "text-white" : "text-green-600"
+                            }`}
+                          >
+                            ৳{t.price}
+                            {t.originalPrice ? (
+                              <span
+                                className={`ml-1 text-xs font-normal line-through ${
+                                  isSelected
+                                    ? "text-green-100/80"
+                                    : "text-gray-400"
+                                }`}
+                              >
+                                ৳{t.originalPrice}
+                              </span>
+                            ) : null}
+                          </span>
+                          <span
+                            className={`block text-xs ${
+                              isSelected ? "text-green-50/90" : "text-gray-500"
+                            }`}
+                          >
+                            {t.freeDelivery !== false
+                              ? "ফ্রি ডেলিভারি"
+                              : "ডেলিভারি চার্জ প্রযোজ্য"}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                   {errors.productType && (
                     <p className="mt-1.5 text-sm text-red-500">
@@ -380,11 +413,21 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
               {/* Delivery area — শুধু Free Delivery বন্ধ থাকলেই দেখানো হয় */}
               {!freeDelivery && (
                 <div>
-                  <p className="mb-2 text-sm font-semibold text-gray-700">ডেলিভারি এলাকা</p>
+                  <p className="mb-2 text-sm font-semibold text-gray-700">
+                    ডেলিভারি এলাকা
+                  </p>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { key: "inside", label: "ঢাকার ভেতরে", charge: insideCharge ?? 0 },
-                      { key: "outside", label: "ঢাকার বাইরে", charge: outsideCharge ?? 0 },
+                      {
+                        key: "inside",
+                        label: "ঢাকার ভেতরে",
+                        charge: insideCharge ?? 0,
+                      },
+                      {
+                        key: "outside",
+                        label: "ঢাকার বাইরে",
+                        charge: outsideCharge ?? 0,
+                      },
                     ].map((opt) => (
                       <button
                         key={opt.key}
@@ -396,78 +439,90 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                             : "border-gray-200 bg-green-50 hover:border-gray-300"
                         }`}
                       >
-                        <span className="absolute top-0 right-0">{deliveryArea === opt.key && '✅'}</span>
-                        <span className="block font-bold text-gray-900">{opt.label}</span>
-                        <span className="text-xs text-gray-500 sm:text-sm">৳{opt.charge}</span>
+                        <span className="absolute top-0 right-0">
+                          {deliveryArea === opt.key && "✅"}
+                        </span>
+                        <span className="block font-bold text-gray-900">
+                          {opt.label}
+                        </span>
+                        <span className="text-xs text-gray-500 sm:text-sm">
+                          ৳{opt.charge}
+                        </span>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              
-
               {/* Order Summary */}
               <div className="rounded-2xl bg-gray-50 p-3">
                 <h3 className="text-lg font-bold">অর্ডার সারসংক্ষেপ</h3>
-                 {/* Product + quantity card */}
-            <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 sm:p-4">
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white sm:h-20 sm:w-20">
-                <Image
-                  src={productImage}
-                  alt={productName}
-                  fill
-                  className="object-cover"
-                />
-              </div>
+                {/* Product + quantity card */}
+                <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 sm:p-4">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white sm:h-20 sm:w-20">
+                    <Image
+                      src={productImage}
+                      alt={productName}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
 
-              <div className="min-w-0 flex-1">
-                <h4 className="truncate text-base font-bold text-gray-900 sm:text-lg">
-                  {productName}
-                </h4>
-                <p className="text-sm text-green-600 font-semibold sm:text-base">
-                  ৳{price}
-                  {originalPrice ? (
-                    <span className="ml-1 text-xs font-normal text-gray-400 line-through">
-                      ৳{originalPrice}
-                    </span>
-                  ) : null}
-                </p>
-              </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="truncate text-base font-bold text-gray-900 sm:text-lg">
+                      {productName}
+                    </h4>
+                    <p className="text-sm text-green-600 font-semibold sm:text-base">
+                      ৳{price}
+                      {originalPrice ? (
+                        <span className="ml-1 text-xs font-normal text-gray-400 line-through">
+                          ৳{originalPrice}
+                        </span>
+                      ) : null}
+                    </p>
+                  </div>
 
-              <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-green-100 p-1">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  aria-label="কমান"
-                  className="flex h-12 w-10 cursor-pointer items-center justify-center text-gray-600 transition hover:bg-geen-300 bg-green-200 hover:text-red-600"
-                >
-                  <FaMinus size={11} />
-                </button>
+                  <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-green-100 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      aria-label="কমান"
+                      className="flex h-12 w-10 cursor-pointer items-center justify-center text-gray-600 transition hover:bg-geen-300 bg-green-200 hover:text-red-600"
+                    >
+                      <FaMinus size={11} />
+                    </button>
 
-                <div className="w-6 text-center text-base font-bold">
-                  {quantity}
+                    <div className="w-6 text-center text-base font-bold">
+                      {quantity}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((q) => q + 1)}
+                      aria-label="বাড়ান"
+                      className="flex h-12 w-10 cursor-pointer items-center justify-center  text-gray-600 transition hover:bg-green-300 bg-green-200 hover:text-green-600"
+                    >
+                      <FaPlus size={11} />
+                    </button>
+                  </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  aria-label="বাড়ান"
-                  className="flex h-12 w-10 cursor-pointer items-center justify-center  text-gray-600 transition hover:bg-green-300 bg-green-200 hover:text-green-600"
-                >
-                  <FaPlus size={11} />
-                </button>
-              </div>
-            </div>
                 <div className="mt-4  text-sm sm:text-base">
                   <div className="flex justify-between text-gray-600">
-                    <span>{price} × {quantity}</span>
+                    <span>
+                      {price} × {quantity}
+                    </span>
                     <span>৳{total}</span>
                   </div>
 
                   {!freeDelivery && (
                     <div className="flex justify-between text-gray-600">
-                      <span>ডেলিভারি চার্জ ({deliveryArea === "outside" ? "ঢাকার বাইরে" : "ঢাকার ভেতরে"})</span>
+                      <span>
+                        ডেলিভারি চার্জ (
+                        {deliveryArea === "outside"
+                          ? "ঢাকার বাইরে"
+                          : "ঢাকার ভেতরে"}
+                        )
+                      </span>
                       <span>৳{deliveryChargeDisplay}</span>
                     </div>
                   )}
@@ -483,7 +538,6 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                       ? "ডেলিভারি চার্জ ফ্রী"
                       : `ডেলিভারি চার্জ (ঢাকায় ৳${insideCharge ?? 0}, ঢাকার বাইরে ৳${outsideCharge ?? 0})`}
                   </p> */}
-                
                 </div>
               </div>
 
@@ -528,7 +582,8 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                       {/* Reference number — কপি করে হোয়াটসঅ্যাপে দিলে অর্ডার খুঁজে পাওয়া যাবে */}
                       <div className="mt-5 rounded-2xl border-2 border-dashed border-green-300 bg-green-50 p-4">
                         <p className="text-xs font-semibold text-gray-500">
-                          আপনার অর্ডার সম্পর্কিত  যে কোন আপডেট পেতে হোয়াটসঅ্যাপে আপনার নাম্বারটি আমাদের দিলেই হবে
+                          আপনার অর্ডার সম্পর্কিত যে কোন আপডেট পেতে হোয়াটসঅ্যাপে
+                          আপনার নাম্বারটি আমাদের দিলেই হবে
                         </p>
                         {/* <div className="mt-1 flex items-center justify-center gap-2">
                           <span className="text-2xl font-extrabold tracking-wide text-green-700">
