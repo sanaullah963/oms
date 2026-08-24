@@ -111,6 +111,57 @@ export function OrderProvider({ children }) {
     }
   }, [fetchDraftOrders]);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // --- ড্রাফট এডিট করে সার্ভারে সেভ ---
+  const updateDraftOrder = useCallback(async (draftId, data) => {
+    const res = await draftOrderService.update(draftId, data);
+    if (res?.data?.draft) {
+      setDraftOrders((prev) =>
+        prev.map((draft) =>
+          draft?._id === draftId ? res.data.draft : draft,
+        ),
+      );
+    }
+    return res;
+  }, []);
+
+  // --- ড্রাফটকে Pending queue-তে কনভার্ট ---
+  const convertDraftOrder = useCallback(async (draftId, data = {}) => {
+    const res = await draftOrderService.convert(draftId, data);
+    // Socket সাধারণত order/draft remove আপডেট করে দেবে। Socket unavailable হলে
+    // fallback হিসেবে দুই লিস্টই fresh করা হচ্ছে।
+    await Promise.all([fetchOrders(), fetchDraftOrders()]);
+    return res;
+  }, [fetchOrders, fetchDraftOrders]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
   // ---------------- HANDLE ORDER UPDATE (গ্লোবাল মিউটেশন) ----------------
   const handleOrderUpdate = useCallback((data, actionType = "UPDATE") => {
     setOrders((prev) => {
@@ -264,6 +315,8 @@ export function OrderProvider({ children }) {
     draftOrders,
     draftLoading,
     deleteDraftOrder,
+    updateDraftOrder,
+    convertDraftOrder,
   };
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;

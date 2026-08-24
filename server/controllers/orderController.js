@@ -1,8 +1,13 @@
 const Order = require("../models/Order");
 const DraftOrder = require("../models/DraftOrder");
+const LandingPage = require("../models/LandingPage");
 const { parseOrderDetails } = require("../utils/parser");
 const { sendNotificationToApprovedUsers } = require("../utils/webPush");
-const { emitOrderUpdate, emitDraftRemove } = require("../utils/socketBroadcast");
+const {
+  emitOrderUpdate,
+  emitDraftRemove,
+} = require("../utils/socketBroadcast");
+const { withLandingPageMeta } = require("../utils/draftOrderView");
 const { checkFraudSignals } = require("../utils/fraudDetection");
 
 // প্যাটার্ন: একাধিক অর্ডার আলাদা করার জন্য (WhatsApp/Messenger টাইমস্ট্যাম্প ট্যাগ)
@@ -57,7 +62,7 @@ exports.getOrders = async (req, res) => {
 };
 
 // ইনপুট টেক্সট থেকে একাধিক অর্ডার আলাদা করে প্রতিটির জন্য বেসিক ফিল্ড বের করা
-function extractOrdersFromRawText(rawInputText,user) {
+function extractOrdersFromRawText(rawInputText, user) {
   let rawOrders = rawInputText
     .split(MULTIPLE_ORDERS_PATTERN)
     .filter((content) => content.trim().length >= 11);
@@ -172,7 +177,10 @@ exports.createManualOrder = async (req, res) => {
       try {
         const phone = order.castomerPhone?.[0];
         if (!phone) continue;
-        const fraudResult = await checkFraudSignals({ phone, excludeOrderId: order._id });
+        const fraudResult = await checkFraudSignals({
+          phone,
+          excludeOrderId: order._id,
+        });
         if (fraudResult.isSuspicious) {
           order.fraudCheck = {
             isSuspicious: true,
@@ -412,10 +420,23 @@ exports.getDraftOrders = async (req, res) => {
       .sort({ lastActivityAt: -1, updatedAt: -1 })
       .limit(200);
 
-    return res.status(200).json(drafts);
+    const slugs = [
+      ...new Set(drafts.map((draft) => draft.landingPageSlug).filter(Boolean)),
+    ];
+    const pages = await LandingPage.find({ slug: { $in: slugs } }).select(
+      "slug productName productCode price freeDelivery deliveryChargeInsideDhaka deliveryChargeOutsideDhaka productTypes",
+    );
+    const pageMap = new Map(pages.map((page) => [page.slug, page]));
+    const result = drafts.map((draft) =>
+      withLandingPageMeta(draft, pageMap.get(draft.landingPageSlug)),
+    );
+
+    return res.status(200).json(result);
   } catch (error) {
     console.error("Get draft orders error:", error);
-    return res.status(500).json({ message: "ড্রাফট অর্ডার আনতে ব্যর্থ হয়েছে।" });
+    return res
+      .status(500)
+      .json({ message: "ড্রাফট অর্ডার আনতে ব্যর্থ হয়েছে।" });
   }
 };
 
@@ -434,7 +455,9 @@ exports.dismissDraftOrder = async (req, res) => {
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error("Delete draft order error:", error);
-    return res.status(500).json({ message: "ড্রাফট ডিলিট করতে ব্যর্থ হয়েছে।" });
+    return res
+      .status(500)
+      .json({ message: "ড্রাফট ডিলিট করতে ব্যর্থ হয়েছে।" });
   }
 };
 // --- PATCH /api/orders/:id/fraud-review — অ্যাডমিন/মডারেটর একটা অর্ডারের ফ্রড
@@ -449,7 +472,9 @@ exports.reviewFraudOrder = async (req, res) => {
   try {
     const { action, reason } = req.body; // action: 'approve' | 'ignore' | 'block'
     if (!["approve", "ignore", "block"].includes(action)) {
-      return res.status(400).json({ message: "action অবশ্যই approve/ignore/block হতে হবে।" });
+      return res
+        .status(400)
+        .json({ message: "action অবশ্যই approve/ignore/block হতে হবে।" });
     }
 
     const order = await Order.findById(req.params.id);
@@ -457,7 +482,12 @@ exports.reviewFraudOrder = async (req, res) => {
       return res.status(404).json({ message: "অর্ডার খুঁজে পাওয়া যায়নি।" });
     }
 
-    const reviewStatus = action === "approve" ? "approved" : action === "ignore" ? "ignored" : "blocked";
+    const reviewStatus =
+      action === "approve"
+        ? "approved"
+        : action === "ignore"
+          ? "ignored"
+          : "blocked";
 
     order.fraudCheck.reviewStatus = reviewStatus;
     order.fraudCheck.reviewedBy = req.user._id;
@@ -479,7 +509,9 @@ exports.reviewFraudOrder = async (req, res) => {
         fbclid: order.tracking?.fbclid || null,
         castomerName: order.castomerName,
         sourceOrderId: order._id,
-        reason: reason || "Fraud/duplicate detection থেকে ম্যানুয়ালি ব্লক করা হয়েছে",
+        reason:
+          reason ||
+          "Fraud/duplicate detection থেকে ম্যানুয়ালি ব্লক করা হয়েছে",
         blockedBy: req.user._id,
         blockedByName: req.user.name,
       });
@@ -493,7 +525,9 @@ exports.reviewFraudOrder = async (req, res) => {
     return res.status(200).json({ success: true, order });
   } catch (error) {
     console.error("Review fraud order error:", error);
-    return res.status(500).json({ message: "ফ্রড রিভিউ সেভ করতে ব্যর্থ হয়েছে।" });
+    return res
+      .status(500)
+      .json({ message: "ফ্রড রিভিউ সেভ করতে ব্যর্থ হয়েছে।" });
   }
 };
 
@@ -508,7 +542,9 @@ exports.getFraudMatches = async (req, res) => {
     }
 
     const reasons = order.fraudCheck?.reasons || [];
-    const allIds = [...new Set(reasons.flatMap((r) => (r.matchedOrderIds || []).map(String)))];
+    const allIds = [
+      ...new Set(reasons.flatMap((r) => (r.matchedOrderIds || []).map(String))),
+    ];
 
     const matchedOrders = await Order.find({ _id: { $in: allIds } })
       .select(
@@ -520,6 +556,8 @@ exports.getFraudMatches = async (req, res) => {
     return res.status(200).json({ reasons, matchedOrders });
   } catch (error) {
     console.error("Get fraud matches error:", error);
-    return res.status(500).json({ message: "ম্যাচ হওয়া অর্ডারের তথ্য আনতে ব্যর্থ হয়েছে।" });
+    return res
+      .status(500)
+      .json({ message: "ম্যাচ হওয়া অর্ডারের তথ্য আনতে ব্যর্থ হয়েছে।" });
   }
 };

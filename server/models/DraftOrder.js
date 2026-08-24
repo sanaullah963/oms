@@ -41,11 +41,18 @@ const draftOrderSchema = new Schema(
     productTypeLabel: { type: String, default: null },
 
     // --- freeDelivery বন্ধ থাকা পেজে কাস্টমার "ভিতরে/বাইরে" যা সিলেক্ট করেছে ---
-    deliveryArea: { type: String, enum: ["inside", "outside"], default: "inside" },
+    deliveryArea: {
+      type: String,
+      enum: ["inside", "outside"],
+      default: "inside",
+    },
 
     // --- ল্যান্ডিং পেজের প্রোডাক্টের নাম (timeline/UI-তে দেখানোর জন্য, যাতে প্রতিবার
     // LandingPage মডেল populate/lookup না করতে হয়) ---
     productName: { type: String, default: null },
+
+    // সর্বশেষ customer/admin পরিবর্তনের সময় — ইনকমপ্লিট লিস্ট sort করার জন্য ব্যবহৃত হয়।
+    lastActivityAt: { type: Date, default: Date.now, index: true },
 
     // --- draft-এর বর্তমান অবস্থা ---
     status: {
@@ -88,6 +95,9 @@ draftOrderSchema.index({ sessionId: 1, landingPageSlug: 1 });
 
 // --- পুরনো/অসম্পূর্ণ draft গুলো নির্দিষ্ট সময় পর অটো-ডিলিট হয়ে যাবে (৩০ দিন পর) —
 // প্রয়োজন না হলে এই TTL ইনডেক্সটি বাদ দিতে পারেন ---
-draftOrderSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+draftOrderSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 60 * 60 * 24 * 30 },
+);
 
 module.exports = mongoose.model("DraftOrder", draftOrderSchema);

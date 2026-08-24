@@ -3,6 +3,7 @@ const DraftOrder = require("../models/DraftOrder");
 const LandingPage = require("../models/LandingPage");
 const { emitDraftUpdate } = require("../utils/socketBroadcast");
 const { sendCapiEvent } = require("../utils/metaCapi");
+const { withLandingPageMeta } = require("../utils/draftOrderView");
 
 function getClientIp(req) {
   const forwarded = req.headers["x-forwarded-for"];
@@ -205,7 +206,7 @@ exports.saveDraftOrder = async (req, res) => {
     );
 
     const io = req.app.get("io");
-    if (io && draft) emitDraftUpdate(io, draft);
+    if (io && draft) emitDraftUpdate(io, withLandingPageMeta(draft, page));
 
     return res.status(200).json({ success: true });
   } catch (error) {

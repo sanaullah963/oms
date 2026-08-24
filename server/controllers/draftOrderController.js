@@ -1,13 +1,81 @@
 const DraftOrder = require("../models/DraftOrder");
 const LandingPage = require("../models/LandingPage");
-const { emitDraftRemove } = require("../utils/socketBroadcast");
+const {
+  emitDraftRemove,
+  emitDraftUpdate,
+} = require("../utils/socketBroadcast");
+const { withLandingPageMeta } = require("../utils/draftOrderView");
 const { createLandingOrder } = require("../utils/landingOrderCreation");
+
+const PHONE_REGEX = /^01[3-9]\d{8}$/;
 
 // --- PATCH /api/orders/drafts/:id — এডমিন ড্রাফট এডিট করে সেভ করে (কনভার্ট না করেই,
 // শুধু তথ্য ঠিক করার জন্য — যেমন কাস্টমার ফোনে ঠিকানা বদলাতে বললে) ---
 exports.updateDraftOrder = async (req, res) => {
   try {
-    const { name, phone, address, quantity, productTypeId, deliveryArea } = req.body;
+    const { name, phone, address, quantity, productTypeId, deliveryArea } =
+      req.body;
+
+    if (phone !== undefined && !PHONE_REGEX.test(String(phone).trim())) {
+      return res.status(400).json({
+        message: "সঠিক বাংলাদেশি মোবাইল নম্বর দিন (013-019, মোট ১১ ডিজিট)।",
+      });
+    }
+
+    const existingDraft = await DraftOrder.findById(req.params.id);
+    if (!existingDraft) {
+      return res.status(404).json({ message: "ড্রাফট খুঁজে পাওয়া যায়নি।" });
+    }
+
+    const page = await LandingPage.findOne({
+      slug: existingDraft.landingPageSlug,
+      isActive: true,
+    });
+    if (!page) {
+      return res
+        .status(404)
+        .json({ message: "এই ড্রাফটের ল্যান্ডিং পেজটি এখন সক্রিয় নেই।" });
+    }
+
+    if (quantity !== undefined) {
+      const qty = parseInt(quantity, 10);
+      if (!Number.isInteger(qty) || qty < 1) {
+        return res
+          .status(400)
+          .json({ message: "সঠিক quantity নির্বাচন করুন।" });
+      }
+    }
+
+    const effectiveProductTypeId =
+      productTypeId !== undefined ? productTypeId : existingDraft.productTypeId;
+    const effectiveDeliveryArea =
+      deliveryArea !== undefined ? deliveryArea : existingDraft.deliveryArea;
+    if (page.productTypes?.length > 0) {
+      if (
+        !effectiveProductTypeId ||
+        !page.productTypes.id(effectiveProductTypeId)
+      ) {
+        return res
+          .status(400)
+          .json({ message: "সঠিক প্রোডাক্ট টাইপ/প্যাকেজ নির্বাচন করুন।" });
+      }
+      const selectedType = page.productTypes.id(effectiveProductTypeId);
+      if (
+        selectedType.freeDelivery === false &&
+        !["inside", "outside"].includes(effectiveDeliveryArea)
+      ) {
+        return res
+          .status(400)
+          .json({ message: "ডেলিভারি এলাকা নির্বাচন করা আবশ্যক।" });
+      }
+    } else if (
+      page.freeDelivery === false &&
+      !["inside", "outside"].includes(effectiveDeliveryArea)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "ডেলিভারি এলাকা নির্বাচন করা আবশ্যক।" });
+    }
 
     const draft = await DraftOrder.findByIdAndUpdate(
       req.params.id,
@@ -15,9 +83,12 @@ exports.updateDraftOrder = async (req, res) => {
         ...(name !== undefined && { name }),
         ...(phone !== undefined && { phone }),
         ...(address !== undefined && { address }),
-        ...(quantity !== undefined && { quantity: Math.max(1, parseInt(quantity, 10) || 1) }),
+        ...(quantity !== undefined && {
+          quantity: Math.max(1, parseInt(quantity, 10) || 1),
+        }),
         ...(productTypeId !== undefined && { productTypeId }),
         ...(deliveryArea !== undefined && { deliveryArea }),
+        lastActivityAt: new Date(),
       },
       { new: true },
     );
@@ -26,10 +97,16 @@ exports.updateDraftOrder = async (req, res) => {
       return res.status(404).json({ message: "ড্রাফট খুঁজে পাওয়া যায়নি।" });
     }
 
-    return res.status(200).json({ success: true, draft });
+    const enrichedDraft = withLandingPageMeta(draft, page);
+    const io = req.app.get("io");
+    if (io) emitDraftUpdate(io, enrichedDraft);
+
+    return res.status(200).json({ success: true, draft: enrichedDraft });
   } catch (error) {
     console.error("Update draft order error:", error);
-    return res.status(500).json({ message: "ড্রাফট আপডেট করতে ব্যর্থ হয়েছে।" });
+    return res
+      .status(500)
+      .json({ message: "ড্রাফট আপডেট করতে ব্যর্থ হয়েছে।" });
   }
 };
 
@@ -56,9 +133,60 @@ exports.convertDraftToOrder = async (req, res) => {
     const productTypeId = req.body.productTypeId ?? draft.productTypeId;
     const deliveryArea = req.body.deliveryArea ?? draft.deliveryArea;
 
-    const page = await LandingPage.findOne({ slug: draft.landingPageSlug, isActive: true });
+    if (!name?.trim() || !address?.trim()) {
+      return res.status(400).json({ message: "নাম ও সম্পূর্ণ ঠিকানা আবশ্যক।" });
+    }
+    if (!PHONE_REGEX.test(String(phone).trim())) {
+      return res.status(400).json({
+        message: "সঠিক বাংলাদেশি মোবাইল নম্বর দিন (013-019, মোট ১১ ডিজিট)।",
+      });
+    }
+
+    const page = await LandingPage.findOne({
+      slug: draft.landingPageSlug,
+      isActive: true,
+    });
     if (!page) {
-      return res.status(404).json({ message: "এই ড্রাফটের ল্যান্ডিং পেজটি এখন সক্রিয় নেই।" });
+      return res
+        .status(404)
+        .json({ message: "এই ড্রাফটের ল্যান্ডিং পেজটি এখন সক্রিয় নেই।" });
+    }
+
+    const qty = parseInt(quantity, 10);
+    if (qty < 1) {
+      return res.status(400).json({ message: "সঠিক quantity নির্বাচন করুন।" });
+    }
+
+    if (page.productTypes?.length > 0) {
+      if (!productTypeId) {
+        return res
+          .status(400)
+          .json({ message: "প্রোডাক্ট টাইপ/প্যাকেজ নির্বাচন করা আবশ্যক।" });
+      }
+      const selectedType = page.productTypes.id(productTypeId);
+      if (!selectedType) {
+        return res
+          .status(400)
+          .json({
+            message:
+              "নির্বাচিত প্রোডাক্ট টাইপ/প্যাকেজটি এই ল্যান্ডিং পেইজে নেই।",
+          });
+      }
+      if (
+        selectedType.freeDelivery === false &&
+        !["inside", "outside"].includes(deliveryArea)
+      ) {
+        return res
+          .status(400)
+          .json({ message: "ডেলিভারি এলাকা নির্বাচন করা আবশ্যক।" });
+      }
+    } else if (
+      page.freeDelivery === false &&
+      !["inside", "outside"].includes(deliveryArea)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "ডেলিভারি এলাকা নির্বাচন করা আবশ্যক।" });
     }
 
     const io = req.app.get("io");
@@ -70,7 +198,7 @@ exports.convertDraftToOrder = async (req, res) => {
         name,
         phone,
         address,
-        quantity,
+        quantity: qty,
         deliveryArea,
         productTypeId,
         tracking: {
@@ -98,7 +226,9 @@ exports.convertDraftToOrder = async (req, res) => {
       order = result.order;
     } catch (creationError) {
       if (creationError.statusCode) {
-        return res.status(creationError.statusCode).json({ message: creationError.message });
+        return res
+          .status(creationError.statusCode)
+          .json({ message: creationError.message });
       }
       throw creationError;
     }

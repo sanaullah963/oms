@@ -29,19 +29,25 @@ async function createLandingOrder({
   sourceLabel = "ল্যান্ডিং পেজ থেকে",
   io = null,
 }) {
-  const PHONE_REGEX = /^01\d{9}$/;
+  const PHONE_REGEX = /^01[3-9]\d{8}$/;
 
   if (!name || !phone || !address) {
     throw { statusCode: 400, message: "নাম, ফোন নম্বর ও ঠিকানা আবশ্যক।" };
   }
   if (!PHONE_REGEX.test(phone)) {
-    throw { statusCode: 400, message: "সঠিক ফোন নম্বর দিন (উদাহরণ: 01XXXXXXXXX)।" };
+    throw {
+      statusCode: 400,
+      message: "সঠিক ফোন নম্বর দিন (উদাহরণ: 01XXXXXXXXX)।",
+    };
   }
   if (!page) {
     throw { statusCode: 404, message: "এই পেজটি এখন সক্রিয় নেই।" };
   }
 
-  const qty = Math.max(1, parseInt(quantity, 10) || 1);
+  const qty = parseInt(quantity, 10);
+  if (!Number.isInteger(qty) || qty < 1) {
+    throw { statusCode: 400, message: "সঠিক quantity দিন।" };
+  }
 
   // --- ইউনিট প্রাইস ও ডেলিভারি রুল — productTypes থাকলে সেই টাইপ অনুযায়ী, নাহলে
   // page-এর top-level রুল (submitPublicOrder-এর সাথে হুবহু একই লজিক) ---
@@ -53,8 +59,17 @@ async function createLandingOrder({
 
   if (page.productTypes && page.productTypes.length > 0) {
     const selectedType = page.productTypes.id(productTypeId);
+    if (!productTypeId) {
+      throw {
+        statusCode: 400,
+        message: "প্রোডাক্ট টাইপ/প্যাকেজ নির্বাচন করা আবশ্যক।",
+      };
+    }
     if (!selectedType) {
-      throw { statusCode: 400, message: "সঠিক প্রোডাক্ট টাইপ/প্যাকেজ নির্বাচন করুন।" };
+      throw {
+        statusCode: 400,
+        message: "সঠিক প্রোডাক্ট টাইপ/প্যাকেজ নির্বাচন করুন।",
+      };
     }
     unitPrice = selectedType.price;
     productTypeLabel = selectedType.label;
@@ -65,6 +80,9 @@ async function createLandingOrder({
 
   const area = deliveryArea === "outside" ? "outside" : "inside";
   let deliveryCharge = 0;
+  if (!freeDeliveryRule && !["inside", "outside"].includes(deliveryArea)) {
+    throw { statusCode: 400, message: "ডেলিভারি এলাকা নির্বাচন করা আবশ্যক।" };
+  }
   if (!freeDeliveryRule) {
     const rawCharge = area === "outside" ? outsideChargeRule : insideChargeRule;
     deliveryCharge = Math.max(0, Number(rawCharge) || 0);
