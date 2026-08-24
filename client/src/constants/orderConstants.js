@@ -43,6 +43,7 @@ export const STATUS_TABS = [
   { key: "Custom", label: "কাস্টম" },
   { key: "Call Not Received", label: "কল ধরেনি" },
   { key: "Phone Off", label: "ফোন বন্ধ" },
+  { key: "Review", label: "In-Review" },
   { key: "Booked", label: "এন্ট্রি" },
   { key: "Cancelled", label: "বাতিল" },
 ];

@@ -9,7 +9,7 @@ import { orderService } from "@/services/orderService";
 export default function OrderList({ orders, onOrderUpdate, activeStatus, setSearchQuery }) {
   const [sortByLast, setSortByLast] = useState(false);
   const [loading, setLoading] = useState(false);
-
+console.log(orders);
   const groupedOrders = React.useMemo(() => {
     if (!orders) return {};
     return sortByLast ? groupOrdersByLastUpdatedDate(orders) : groupOrdersByDate(orders);

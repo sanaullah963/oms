@@ -45,7 +45,7 @@ function HomePageContent() {
   const day = new Intl.DateTimeFormat("bn-BD", {
     weekday: "long",
   }).format(date);
-  console.log(formatDate(date));
+
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-100">
       <header className="px-1 py-0 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
@@ -67,7 +67,11 @@ function HomePageContent() {
                   ? draftOrders.length
                   : tab.key === "All"
                     ? allPendingOrder.length
-                    : orders.filter((o) => o?.orderStatus === tab.key).length
+                    : tab.key === "Review"
+                      ? orders.filter(
+                          (o) => o?.courier?.courierStatus === "Review",
+                        ).length
+                      : orders.filter((o) => o?.orderStatus === tab.key).length
               }`}
             </button>
           ))}

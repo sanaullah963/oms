@@ -111,20 +111,6 @@ export function OrderProvider({ children }) {
     }
   }, [fetchDraftOrders]);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // --- ড্রাফট এডিট করে সার্ভারে সেভ ---
   const updateDraftOrder = useCallback(async (draftId, data) => {
     const res = await draftOrderService.update(draftId, data);
@@ -147,21 +133,6 @@ export function OrderProvider({ children }) {
     return res;
   }, [fetchOrders, fetchDraftOrders]);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
   // ---------------- HANDLE ORDER UPDATE (গ্লোবাল মিউটেশন) ----------------
   const handleOrderUpdate = useCallback((data, actionType = "UPDATE") => {
     setOrders((prev) => {
@@ -289,6 +260,15 @@ export function OrderProvider({ children }) {
     }
 
     if (activeStatus === "All") return allPendingOrder;
+
+    // "Review" ট্যাবটি Order Status নয়; এটি courier.courierStatus-এর উপর নির্ভর করে।
+    // কুরিয়ারে বুক করার পর courier status "Review" হলে এই ট্যাবে অর্ডারটি দেখাবে।
+    if (activeStatus === "Review") {
+      return safeOrders.filter(
+        (o) => o?.courier?.courierStatus === "Review",
+      );
+    }
+
     return safeOrders.filter((o) => o && o.orderStatus === activeStatus);
   }, [orders, dbOrders, query, activeStatus, allPendingOrder]);
 
