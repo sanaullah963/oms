@@ -17,6 +17,10 @@ const draftOrderSchema = new Schema(
       index: true,
     },
 
+    // --- localStorage-ভিত্তিক persistent visitor আইডি (sessionId-এর চেয়ে দীর্ঘস্থায়ী,
+    // একাধিক সেশন জুড়ে একই কাস্টমারকে চেনার জন্য) ---
+    visitorId: { type: String, default: null, index: true },
+
     landingPageSlug: {
       type: String,
       required: true,
@@ -28,6 +32,16 @@ const draftOrderSchema = new Schema(
     phone: { type: String, default: null, index: true },
     address: { type: String, default: null },
     quantity: { type: Number, default: 1 },
+
+    // --- কাস্টমার যদি প্রোডাক্ট টাইপ/প্যাকেজ সিলেক্ট করে থাকে (LandingPage.productTypes
+    // সাব-ডকুমেন্টের _id রেফারেন্স, আলাদা কালেকশন না হওয়ায় ref ছাড়াই স্টোর করা হচ্ছে) ---
+    productTypeId: { type: String, default: null },
+    // --- ড্যাশবোর্ডে দেখানোর জন্য লেবেল ক্যাশ করে রাখা (productName-এর মতোই, প্রতিবার
+    // LandingPage lookup এড়াতে) ---
+    productTypeLabel: { type: String, default: null },
+
+    // --- freeDelivery বন্ধ থাকা পেজে কাস্টমার "ভিতরে/বাইরে" যা সিলেক্ট করেছে ---
+    deliveryArea: { type: String, enum: ["inside", "outside"], default: "inside" },
 
     // --- ল্যান্ডিং পেজের প্রোডাক্টের নাম (timeline/UI-তে দেখানোর জন্য, যাতে প্রতিবার
     // LandingPage মডেল populate/lookup না করতে হয়) ---

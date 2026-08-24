@@ -98,17 +98,24 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
   }, [selectedTypeId]);
 
   useEffect(() => {
-    if (!customerName && !phone && !address) return; // সবগুলো খালি থাকলে সেভ করার দরকার নেই
-    // আগে এখানে "anardana" ফিক্সড স্ট্রিং হার্ডকোড করা ছিল, ফলে যেকোনো slug-এর
-    // পেজ থেকে draft order ভুলভাবে "anardana" slug দিয়ে সেভ হতো — এখন আসল slug ব্যবহার হচ্ছে
+    // --- ⚠️ আগে নাম/ফোন/ঠিকানার প্রতিটা পরিবর্তনেই (অসম্পূর্ণ ফোন নম্বর দিয়েও)
+    // draft-save API কল হতো, যেটা সার্ভারে অকারণ লোড তৈরি করছিল। এখন ফোন নম্বর
+    // সঠিক ফরম্যাটে (BD মোবাইল নম্বর) না মেলা পর্যন্ত API কলই হবে না — নাম/ঠিকানা
+    // যতই টাইপ করা হোক, ফোন ভ্যালিড না হলে সেভও হবে না। এটাই ব্যবহারিক কারণ:
+    // ফোন নম্বর ছাড়া draft-এ কল করে ফলো-আপ করার কোনো উপায় নেই, তাই অসম্পূর্ণ
+    // ফোন নম্বর অবস্থায় সার্ভারে ডেটা পাঠানোর মানে নেই ---
+    const isPhoneValid = /^01[3-9]\d{8}$/.test(phone);
+    if (!isPhoneValid) return;
+
     saveDraftOrder(slug, {
       customerName,
       phone,
       address,
       quantity,
       productTypeId: activeType?._id || null,
+      deliveryArea,
     });
-  }, [customerName, phone, address, quantity, slug, activeType]);
+  }, [customerName, phone, address, quantity, slug, activeType, deliveryArea]);
 
   const total = price * quantity; // চূড়ান্ত totalCOD সহ ডেলিভারি চার্জ ব্যাক-এন্ড authoritative-ভাবে হিসাব করে
   // শুধু UI-তে দেখানোর জন্য — client-side এই সংখ্যাটা কখনো order submit-এ trust করা হয় না

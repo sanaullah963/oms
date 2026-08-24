@@ -1,10 +1,8 @@
 const LandingPage = require("../models/LandingPage");
-const Order = require("../models/Order");
 const DraftOrder = require("../models/DraftOrder");
-const { sendNotificationToApprovedUsers } = require("../utils/webPush");
-const { emitOrderUpdate, emitDraftRemove } = require("../utils/socketBroadcast");
-const { sendCapiEvent } = require("../utils/metaCapi");
-const { checkFraudSignals, checkBlocked } = require("../utils/fraudDetection");
+const { emitDraftRemove } = require("../utils/socketBroadcast");
+const { checkBlocked } = require("../utils/fraudDetection");
+const { createLandingOrder } = require("../utils/landingOrderCreation");
 
 const PHONE_REGEX = /^01\d{9}$/;
 
@@ -18,9 +16,14 @@ function getClientIp(req) {
 // --- GET /api/public/landing-pages/:slug — কাস্টমার-facing পেজের কনফিগ ---
 exports.getPublicLandingPage = async (req, res) => {
   try {
-    const page = await LandingPage.findOne({ slug: req.params.slug, isActive: true });
+    const page = await LandingPage.findOne({
+      slug: req.params.slug,
+      isActive: true,
+    });
     if (!page) {
-      return res.status(404).json({ message: "এই পেজটি খুঁজে পাওয়া যায়নি বা বন্ধ আছে।" });
+      return res
+        .status(404)
+        .json({ message: "এই পেজটি খুঁজে পাওয়া যায়নি বা বন্ধ আছে।" });
     }
     return res.status(200).json({ page });
   } catch (error) {
@@ -48,13 +51,20 @@ exports.submitPublicOrder = async (req, res) => {
     }
 
     if (!name || !phone || !address) {
-      return res.status(400).json({ message: "নাম, ফোন নম্বর ও ঠিকানা আবশ্যক।" });
+      return res
+        .status(400)
+        .json({ message: "নাম, ফোন নম্বর ও ঠিকানা আবশ্যক।" });
     }
     if (!PHONE_REGEX.test(phone)) {
-      return res.status(400).json({ message: "সঠিক ফোন নম্বর দিন (উদাহরণ: 01XXXXXXXXX)।" });
+      return res
+        .status(400)
+        .json({ message: "সঠিক ফোন নম্বর দিন (উদাহরণ: 01XXXXXXXXX)।" });
     }
 
-    const page = await LandingPage.findOne({ slug: req.params.slug, isActive: true });
+    const page = await LandingPage.findOne({
+      slug: req.params.slug,
+      isActive: true,
+    });
     if (!page) {
       return res.status(404).json({ message: "এই পেজটি এখন সক্রিয় নেই।" });
     }
@@ -82,106 +92,38 @@ exports.submitPublicOrder = async (req, res) => {
     }
 
     const qty = Math.max(1, parseInt(quantity, 10) || 1);
-
-    // --- ইউনিট প্রাইস ও ডেলিভারি রুল কোথা থেকে নেওয়া হবে ঠিক করা হচ্ছে — page.productTypes
-    // এ এন্ট্রি থাকলে (নতুন "টাইপ/প্যাকেজ" ফিচার) কাস্টমারের সিলেক্ট করা productTypeId
-    // অনুযায়ী সেই টাইপের নিজস্ব price/freeDelivery/charge ব্যবহার হবে; productTypes খালি
-    // থাকলে (পুরনো পেজ) আগের মতোই page-এর top-level price/freeDelivery/charge ব্যবহার হবে।
-    // frontend থেকে আসা কোনো price/charge/total কখনোই trust করা হয় না — সবসময় DB-তে
-    // সেভ থাকা ভ্যালু দিয়েই backend-এ authoritative-ভাবে হিসাব হয়। ---
-    let unitPrice = page.price;
-    let productTypeLabel = null;
-    let freeDeliveryRule = page.freeDelivery;
-    let insideChargeRule = page.deliveryChargeInsideDhaka;
-    let outsideChargeRule = page.deliveryChargeOutsideDhaka;
-
-    if (page.productTypes && page.productTypes.length > 0) {
-      const selectedType = page.productTypes.id(productTypeId);
-      if (!selectedType) {
-        return res.status(400).json({ message: "সঠিক প্রোডাক্ট টাইপ/প্যাকেজ নির্বাচন করুন।" });
-      }
-      unitPrice = selectedType.price;
-      productTypeLabel = selectedType.label;
-      freeDeliveryRule = selectedType.freeDelivery;
-      insideChargeRule = selectedType.deliveryChargeInsideDhaka;
-      outsideChargeRule = selectedType.deliveryChargeOutsideDhaka;
-    }
-
-    // --- ডেলিভারি চার্জ backend-এ authoritative-ভাবে হিসাব করা হয় — শুধু "inside"/"outside"
-    // এলাকা-নির্বাচন নেওয়া হয়। freeDeliveryRule === true হলে চার্জ সবসময় 0। ---
-    const area = deliveryArea === "outside" ? "outside" : "inside";
-    let deliveryCharge = 0;
-    if (!freeDeliveryRule) {
-      const rawCharge = area === "outside" ? outsideChargeRule : insideChargeRule;
-      deliveryCharge = Math.max(0, Number(rawCharge) || 0); // negative charge কখনো accept হবে না
-    }
-
-    const totalCOD = unitPrice * qty + deliveryCharge;
-    const productLabelSuffix = productTypeLabel ? ` (${productTypeLabel})` : "";
-
-    const order = await Order.create({
-      rawInputText: `${name}\n${phone}\n${address}\nProduct: ${page.productName}${productLabelSuffix} x${qty}\nDelivery: ৳${deliveryCharge} (${area === "outside" ? "ঢাকার বাইরে" : "ঢাকার ভেতরে"})`,
-      castomerName: name,
-      castomerPhone: [phone],
-      productCode: page.productCode,
-      totalCOD,
-      orderSource: page.productCode,
-      origin: "landing_page", // ✅ শুধু এই ফ্ল্যাগ থাকলেই Confirm করার সময় Purchase CAPI ইভেন্ট যাবে
-      createdBy: null, // ল্যান্ডিং পেজের অর্ডার কোনো নির্দিষ্ট মডারেটরের না — সবার শেয়ার্ড পেন্ডিং কিউতে যাবে
-      activities: [
-        {
-          type: "Order Created",
-          description: `ল্যান্ডিং পেজ থেকে অর্ডার এসেছে — "${page.productName}${productLabelSuffix}" (${qty}টি)`,
-        },
-      ],
-      // --- Meta Pixel/CAPI-এর জন্য অ্যাট্রিবিউশন ডেটা সংরক্ষণ (এখনই Purchase পাঠানো হচ্ছে না,
-      // শুধু ডেটা সেভ রাখা হচ্ছে — এডমিন "Confirmed" করলে তখন এই ডেটা দিয়ে Purchase পাঠানো হবে) ---
-      tracking: {
-        sessionId: tracking.sessionId || null,
-        landingPageSlug: page.slug,
-        fbp: tracking.fbp || null,
-        fbc: tracking.fbc || null,
-        fbclid: tracking.fbclid || null,
-        gclid: tracking.gclid || null,
-        utmSource: tracking.utmSource || null,
-        utmMedium: tracking.utmMedium || null,
-        utmCampaign: tracking.utmCampaign || null,
-        utmTerm: tracking.utmTerm || null,
-        utmContent: tracking.utmContent || null,
-        referrer: tracking.referrer || null,
-        ip: clientIp,
-        userAgent: req.headers["user-agent"] || null,
-        fingerprintHash: tracking.fingerprintHash || null,
-      },
-    });
-
-    // 🔍 ফ্রড/ডুপ্লিকেট ডিটেকশন: আগের কোনো Order-এর সাথে Phone/Fingerprint/IP/Facebook
-    // ম্যাচ করে কিনা খুঁজে বের করে অর্ডারের সাথে সেভ করে রাখা হয় — কাউকে অটোমেটিক
-    // ব্লক করা হয় না, শুধু ড্যাশবোর্ডে Badge/Modal-এ দেখানোর জন্য ফ্ল্যাগ করা হয়।
-    try {
-      const fraudResult = await checkFraudSignals({
-        phone,
-        fingerprintHash: order.tracking.fingerprintHash,
-        ip: order.tracking.ip,
-        fbp: order.tracking.fbp,
-        fbc: order.tracking.fbc,
-        fbclid: order.tracking.fbclid,
-        excludeOrderId: order._id,
-      });
-      if (fraudResult.isSuspicious) {
-        order.fraudCheck = {
-          isSuspicious: true,
-          reasons: fraudResult.reasons,
-          reviewStatus: "pending",
-        };
-        await order.save();
-      }
-    } catch (fraudErr) {
-      console.error("Fraud detection error:", fraudErr);
-    }
-
     const io = req.app.get("io");
-    if (io) emitOrderUpdate(io, order);
+
+    // --- pricing/order-creation/fraud-flag/notification/Lead-CAPI — সব লজিক এখন
+    // শেয়ার্ড ফাংশনে (server/utils/landingOrderCreation.js), যেটা draft-to-order
+    // কনভার্শনেও (draftOrderController.js) একই রকমভাবে ব্যবহার হয় ---
+    let order, totalCOD;
+    try {
+      const result = await createLandingOrder({
+        page,
+        name,
+        phone,
+        address,
+        quantity: qty,
+        deliveryArea,
+        productTypeId,
+        tracking,
+        clientIp,
+        userAgent: req.headers["user-agent"],
+        createdBy: null, // ল্যান্ডিং পেজের অর্ডার কোনো নির্দিষ্ট মডারেটরের না — সবার শেয়ার্ড পেন্ডিং কিউতে যাবে
+        sourceLabel: "ল্যান্ডিং পেজ থেকে অর্ডার এসেছে",
+        io,
+      });
+      order = result.order;
+      totalCOD = result.totalCOD;
+    } catch (creationError) {
+      if (creationError.statusCode) {
+        return res
+          .status(creationError.statusCode)
+          .json({ message: creationError.message });
+      }
+      throw creationError;
+    }
 
     // --- একই সেশনের draft (যদি থাকে) সরাসরি ডিলিট করা — অর্ডার তো এতক্ষণে আসল Order
     // হিসেবে তৈরি হয়ে গেছে, তাই DraftOrder-এ আলাদা করে "completed" রেকর্ড রাখার দরকার
@@ -198,40 +140,16 @@ exports.submitPublicOrder = async (req, res) => {
         .catch((err) => console.error("Draft delete error:", err));
     }
 
-    sendNotificationToApprovedUsers({
-      title: "🛒 নতুন অর্ডার (ল্যান্ডিং পেজ)",
-      body: `${name} - "${page.productName}" x${qty} - ৳${totalCOD}`,
-      url: "/",
-    }).catch((err) => console.error("Landing order notification error:", err));
-
-    // --- এই মুহূর্তে শুধু "Lead" ইভেন্ট পাঠানো হয় (ফর্ম সাবমিট করেছে) —
-    // "Purchase" ইভেন্ট পাঠানো হবে না, সেটা এডমিন ম্যানুয়ালি "Confirmed" করলেই পাঠানো হবে ---
-    sendCapiEvent({
-      eventName: "Lead",
-      orderId: order._id,
-      sessionId: order.tracking.sessionId,
-      userData: {
-        phone,
-        ip: order.tracking.ip,
-        userAgent: order.tracking.userAgent,
-        fbc: order.tracking.fbc,
-        fbp: order.tracking.fbp,
-      },
-      customData: {
-        value: totalCOD,
-        contentName: page.productName,
-        contentIds: [page.productCode],
-        numItems: qty,
-      },
-    }).catch((err) => console.error("Meta CAPI Lead event error:", err));
-
     return res.status(201).json({
       success: true,
-      message: "অর্ডার সফলভাবে সম্পন্ন হয়েছে! শীঘ্রই আপনার সাথে যোগাযোগ করা হবে।",
+      message:
+        "অর্ডার সফলভাবে সম্পন্ন হয়েছে! শীঘ্রই আপনার সাথে যোগাযোগ করা হবে।",
       orderId: order._id,
     });
   } catch (error) {
     console.error("Public landing order error:", error);
-    return res.status(500).json({ message: "অর্ডার করতে ব্যর্থ হয়েছে, আবার চেষ্টা করুন।" });
+    return res
+      .status(500)
+      .json({ message: "অর্ডার করতে ব্যর্থ হয়েছে, আবার চেষ্টা করুন।" });
   }
 };

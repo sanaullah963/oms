@@ -212,22 +212,29 @@ let draftDebounceTimer = null;
 
 /**
  * ফর্মে টাইপ করার সময় কল করুন — ৮০০ms debounce করে সার্ভারে ড্রাফট সেভ করে।
+ * ⚠️ কল করার আগে ফোন নম্বর ভ্যালিড কিনা নিজে চেক করে নেওয়া উচিত (OrderSection.jsx-এ
+ * সেটাই করা হয়) — এই ফাংশন নিজে থেকে ভ্যালিডেশন করে না, কারণ নাম/ঠিকানার আংশিক
+ * পরিবর্তনেও (ফোন অপরিবর্তিত/ইতিমধ্যে ভ্যালিড থাকা অবস্থায়) draft আপডেট করা দরকার হতে পারে।
  * @param {string} slug
  * @param {{name: string, phone: string, address: string, quantity: number}} formData
  */
-export function saveDraftOrder(slug, formData) {
+export async function saveDraftOrder(slug, formData) {
   if (typeof window === "undefined") return;
-  
   clearTimeout(draftDebounceTimer);
-  draftDebounceTimer = setTimeout(() => {
+  draftDebounceTimer = setTimeout(async () => {
+    // --- ফিঙ্গারপ্রিন্ট হ্যাশ গণনা কিছুটা ভারী, তাই আগে প্রতিটা কিস্ট্রোকেই এটা বাদ
+    // দেওয়া হতো। এখন যেহেতু কলটাই শুধু ভ্যালিড ফোন নম্বরে (কম ঘন ঘন) হচ্ছে, সব
+    // available তথ্য (fingerprintHash সহ) পাঠানো নিরাপদ ---
+    const tracking = await getTrackingPayloadWithFingerprint(slug);
     fetch(`${API_URL}/api/public/tracking/draft`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sessionId: getOrCreateSessionId(),
+        visitorId: getOrCreateVisitorId(),
         landingPageSlug: slug,
         ...formData,
-        tracking: getTrackingPayload(slug),
+        tracking,
       }),
     }).catch(() => {});
   }, 800);
