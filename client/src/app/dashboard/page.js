@@ -133,6 +133,12 @@ function DashboardPageContent() {
                 >
                   📈 event log
                 </Link>
+                <Link
+                  href="/search"
+                  className="px-3 py-1.5 text-sm rounded-md font-medium bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                >
+                  🔍 মাস্টার সার্চ
+                </Link>
                 <ModeratorSelector selectedModeratorId={moderatorId} onChange={setModeratorId} />
               </>
             )}

@@ -9,10 +9,52 @@ const {
 } = require("../utils/socketBroadcast");
 const { withLandingPageMeta } = require("../utils/draftOrderView");
 const { checkFraudSignals } = require("../utils/fraudDetection");
+const mongoose = require("mongoose");
 
 // প্যাটার্ন: একাধিক অর্ডার আলাদা করার জন্য (WhatsApp/Messenger টাইমস্ট্যাম্প ট্যাগ)
 const MULTIPLE_ORDERS_PATTERN =
   /\[\d{1,2}\/\d{1,2},\s\d{1,2}:\d{2}\s(?:AM|PM|am|pm)\]\s[^:]+:\s?/g;
+
+// --- GET /api/orders/master-search?q=... - পার্সেল ID (_id), courier.trackingId, বা ফোন
+// নম্বর দিয়ে সরাসরি খুঁজে সব ম্যাচিং অর্ডার একসাথে রিটার্ন করে (মাস্টার সার্চ পেজের জন্য) ---
+exports.masterSearchOrders = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) {
+      return res.status(200).json({ orders: [] });
+    }
+
+    const ownershipFilter =
+      req.user.role === "moderator"
+        ? { $or: [{ createdBy: req.user._id }, { createdBy: null }] }
+        : {};
+
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+
+    const orConditions = [
+      { "courier.trackingId": { $regex: regex } },
+      { castomerPhone: { $regex: regex } },
+    ];
+
+    // q যদি বৈধ MongoDB ObjectId হয়, তাহলে _id দিয়েও (পার্সেল/অর্ডার ID) খোঁজা হবে
+    if (mongoose.Types.ObjectId.isValid(q)) {
+      orConditions.push({ _id: q });
+    }
+
+    const orders = await Order.find({
+      $and: [ownershipFilter, { $or: orConditions }],
+    })
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    return res.status(200).json({ orders });
+  } catch (error) {
+    console.error("Master search error:", error);
+    return res
+      .status(500)
+      .json({ message: "সার্চ করতে ব্যর্থ হয়েছে।" });
+  }
+};
 
 // --- GET /api/orders - সব অর্ডার লিস্ট করা (মডারেটর শুধু নিজের তৈরি অর্ডার দেখবে) ---
 exports.getOrders = async (req, res) => {

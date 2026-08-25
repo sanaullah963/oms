@@ -13,6 +13,7 @@ function SearchAndMenu() {
   const pathname = usePathname()
   const menueItems = [
     { title: "Home", link: "/" },
+    { title: "🔍 মাস্টার সার্চ", link: "/search" },
     { title: "📊 Dashboard", link: "/dashboard" },
     { title: "Note", link: "/note" },
     { title: "Comment", link: "/comment" },
@@ -126,4 +127,4 @@ function SearchAndMenu() {
   );
 }
 
-export default SearchAndMenu; 
+export default SearchAndMenu;

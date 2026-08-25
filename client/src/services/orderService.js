@@ -5,6 +5,9 @@ const BASE = "/api/orders";
 export const orderService = {
   getAll: () => api.get(BASE),
 
+  // মাস্টার সার্চ — parcel/order ID, courier.trackingId, বা ফোন নম্বর দিয়ে
+  masterSearch: (q) => api.get(`${BASE}/master-search`, { params: { q } }),
+
   createManual: (rawInputText) => api.post(`${BASE}/manual-single`, { rawInputText }),
 
   update: (orderId, formData) => api.put(`${BASE}/update-order/${orderId}`, formData),

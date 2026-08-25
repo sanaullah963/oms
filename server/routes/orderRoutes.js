@@ -11,6 +11,9 @@ const {
 
 router.get("/", orderController.getOrders);
 
+// মাস্টার সার্চ — parcel/order ID, courier.trackingId, অথবা ফোন নম্বর দিয়ে খোঁজা (একাধিক থাকলে সবগুলো)
+router.get("/master-search", orderController.masterSearchOrders);
+
 // ইনকমপ্লিট/ড্রাফট অর্ডার (কাস্টমার সাবমিট করার আগেই ফর্মে যা পূরণ করেছে)
 router.get("/drafts", orderController.getDraftOrders);
 router.patch("/drafts/:id", updateDraftOrder); // এডিট করে সেভ (কনভার্ট না করেই)
