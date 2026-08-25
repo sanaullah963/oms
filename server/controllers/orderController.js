@@ -408,8 +408,11 @@ exports.steadfastBookingWebhook = async (req, res) => {
       },
     };
 
+    // if (status) {
+    //   updateData.$set = { "courier.bookingStatus": status };
+    // }
     if (status) {
-      updateData.$set = { "courier.bookingStatus": status };
+      updateData.$set = { "courier.courierStatus": status };
     }
 
     const updatedOrder = await Order.findOneAndUpdate(
@@ -571,8 +574,13 @@ exports.getFraudMatches = async (req, res) => {
     ];
 
     const matchedOrders = await Order.find({ _id: { $in: allIds } })
+      // .select(
+      //   "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus courier.bookingStatus createdAt",
+      // )
+      // .sort({ createdAt: -1 })
+      // .lean();
       .select(
-        "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus courier.bookingStatus createdAt",
+        "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus courier.courierStatus createdAt",
       )
       .sort({ createdAt: -1 })
       .lean();

@@ -75,6 +75,7 @@ const OrderSchema = new mongoose.Schema({
       "Cancelled",
       "Booked",
       "Scheduled",
+      "Booking Failed"
     ],
   },
   scheduledDate: {
@@ -90,11 +91,11 @@ const OrderSchema = new mongoose.Schema({
     trackingId: { type: String, default: null },
     responseData: { type: mongoose.Schema.Types.Mixed, default: null },
     bookedAt: { type: Date, default: null },
-    bookingStatus: {
-      type: String,
-      enum: ["N/A", "Booked", "Failed", "Pending", "Shipping", "Delivered"],
-      default: "Pending",
-    },
+    // bookingStatus: {
+    //   type: String,
+    //   enum: ["N/A", "Booked", "Failed", "Pending", "Shipping", "Delivered"],
+    //   default: "Pending",
+    // },
     courierStatus: {
       type: String,
       enum: ["Unknown", "Review", "Pending", "Assigned", "Delivered", "Cancelled"],

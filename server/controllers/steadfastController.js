@@ -61,8 +61,9 @@ exports.bookSteadfast = async (req, res) => {
 
     // ৬) রেসপন্স চেক এবং ডাটাবেজ আপডেট
     if (response?.data?.status !== 200) {
+      order.orderStatus = "Booking Failed"
       order.courier = {
-        bookingStatus: "Failed",
+        // bookingStatus: "Failed",
         responseData: response?.data?.message || "Unknown Error",
       };
       await order.save();
@@ -77,7 +78,7 @@ exports.bookSteadfast = async (req, res) => {
     order.courier = {
       trackingId: response?.data?.consignment?.consignment_id,
       bookedAt: new Date(),
-      bookingStatus: "Booked",
+      // bookingStatus: "Booked",
       courierStatus: "Review",
     };
 

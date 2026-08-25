@@ -70,7 +70,7 @@ exports.bookSteadfastBulk = async (req, res) => {
       existingOrder.courier = {
         trackingId: newOrder?.consignment_id,
         bookedAt: new Date(),
-        bookingStatus: "Booked",
+        // bookingStatus: "Booked",
         courierStatus: "Review",
       };
       existingOrder.activities.push({

@@ -42,7 +42,7 @@ export default function OrderList({ orders, onOrderUpdate, activeStatus, setSear
 
   const duplicatePhones = multupleOrderCheck(orders);
   const sortedDates = Object.keys(groupedOrders);
-console.log(orders)
+// console.log(orders)
   return (
     <div className="flex flex-col space-y-4 mb-16">
       {/* একই ফোন নম্বরে একাধিক পেন্ডিং অর্ডার থাকলে দেখানো */}

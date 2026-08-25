@@ -95,7 +95,7 @@ exports.handleSteadfastWebhook = async (req, res) => {
 
   if (isFinalDeliveryEvent) {
     setFields["courier.statusUpdatedAt"] = new Date();
-    setFields.orderStatus = courierLabel; // "Delivered" | "Cancelled" (Order মডেলের enum-এ আগে থেকেই আছে)
+    // setFields.orderStatus = courierLabel; // "Delivered" | "Cancelled" (Order মডেলের enum-এ আগে থেকেই আছে)
 
     if (typeof data.delivery_charge !== "undefined") {
       setFields["courier.deliveryCharge"] = Number(data.delivery_charge);
