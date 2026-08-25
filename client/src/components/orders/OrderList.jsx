@@ -9,7 +9,6 @@ import { orderService } from "@/services/orderService";
 export default function OrderList({ orders, onOrderUpdate, activeStatus, setSearchQuery }) {
   const [sortByLast, setSortByLast] = useState(false);
   const [loading, setLoading] = useState(false);
-console.log(orders);
   const groupedOrders = React.useMemo(() => {
     if (!orders) return {};
     return sortByLast ? groupOrdersByLastUpdatedDate(orders) : groupOrdersByDate(orders);
@@ -43,7 +42,7 @@ console.log(orders);
 
   const duplicatePhones = multupleOrderCheck(orders);
   const sortedDates = Object.keys(groupedOrders);
-
+console.log(orders)
   return (
     <div className="flex flex-col space-y-4 mb-16">
       {/* একই ফোন নম্বরে একাধিক পেন্ডিং অর্ডার থাকলে দেখানো */}

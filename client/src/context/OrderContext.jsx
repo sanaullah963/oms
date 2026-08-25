@@ -34,6 +34,7 @@ export function OrderProvider({ children }) {
     setLoading(true);
     try {
       const res = await orderService.getAll();
+      console.log(res.data);
       if (Array.isArray(res.data)) {
         setOrders(res.data);
       }

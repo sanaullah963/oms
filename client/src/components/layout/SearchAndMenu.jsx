@@ -24,6 +24,8 @@ function SearchAndMenu() {
         ]
       : []),
   ];
+
+
   return (
     <div>
       <div className="flex justify-between ">
