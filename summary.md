@@ -1,6 +1,6 @@
 # প্রজেক্ট সামারি — OMS (oms-main) + Anardana Landing (lanidgUi)
 
-*পুরো কোডবেস (client + server + lanidgUi, তিনটা প্রজেক্ট) শুরু থেকে শেষ পর্যন্ত পড়ে তৈরি করা হয়েছে, এবং তারপর একাধিক আপডেটে (ফ্রড ডিটেকশন সিস্টেম, সেশন অ্যানালিটিক্স ড্যাশবোর্ড, Meta CAPI/Pixel ফিক্স, কয়েকটা বাগ ফিক্স) সবসময় সিঙ্ক রাখা হয়েছে। সর্বশেষ আপডেট §৯–§১১-এ।*
+*পুরো কোডবেস (client + server + lanidgUi, তিনটা প্রজেক্ট) শুরু থেকে শেষ পর্যন্ত পড়ে তৈরি করা হয়েছে, এবং তারপর একাধিক আপডেটে (ফ্রড ডিটেকশন সিস্টেম, সেশন অ্যানালিটিক্স ড্যাশবোর্ড, Meta CAPI/Pixel ফিক্স, ইনকমপ্লিট অর্ডার → Pending কনভার্সন, কয়েকটা বাগ ফিক্স) সবসময় সিঙ্ক রাখা হয়েছে। সর্বশেষ আপডেট §১২–§১৩-এ (§১৩-তে এই সেশনের কোড-রিভিউয়ে পাওয়া এখনো-ফিক্স-না-হওয়া বাগের তালিকা আছে)।*
 
 ---
 
@@ -377,5 +377,51 @@
 | `Purchase` | অ্যাডমিন "Confirmed" করলে, শুধু `origin === "landing_page"` | সার্ভার CAPI | ✅ (§৮.৪) |
 | `ViewContent` | প্রোডাক্ট পেজ দেখলে | — | ❌ এখনো নেই |
 | `InitiateCheckout` | ফর্মে টাইপ শুরু করলে | — | ❌ এখনো নেই |
+
+---
+
+## ১২. নতুন ফিচার — ইনকমপ্লিট অর্ডার পারফরম্যান্স ফিক্স + Pending-এ কনভার্ট
+
+*(লক্ষ্য: প্রতিটা কিস্ট্রোকে draft-save API কল কমানো, এবং ম্যানুয়ালি ফোন করে কনফার্ম করা অর্ডারও যেন Meta Pixel attribution (fbp/fbc) না হারায়।)*
+
+**ক্লায়েন্ট-সাইড (landing page):**
+- `OrderSection.jsx`: draft-save `useEffect`-এ এখন ফোন নম্বর `/^01[3-9]\d{8}$/` ম্যাচ না করলে API কলই হয় না (আগে প্রতিটা কিস্ট্রোকেই কল হতো)।
+- `tracking.js`-এর `saveDraftOrder()`: এখন `visitorId` ও ফিঙ্গারপ্রিন্ট হ্যাশ সহ (`getTrackingPayloadWithFingerprint`) সব তথ্য পাঠায় — কল কম হওয়ায় fingerprint গণনার খরচ আর সমস্যা না।
+
+**সার্ভার-সাইড:**
+- `DraftOrder.js` মডেলে নতুন ফিল্ড: `visitorId`, `productTypeId`, `productTypeLabel`, `deliveryArea`, `lastActivityAt` (এই শেষেরটা আগে schema-তে declare করা ছিল না বলে সাইলেন্টলি ড্রপ হয়ে sort ভুল হচ্ছিল — এখন ফিক্সড)।
+- `publicTrackingController.saveDraftOrder`: আগে client `productTypeId` পাঠালেও সার্ভার এটা ড্রপ করত (বাগ, ফিক্সড) — এখন `productTypeLabel` ক্যাশ করে রাখে, সাথে `utmTerm`/`utmContent`/`fingerprintHash`ও persist হয়।
+- **`server/utils/landingOrderCreation.js` (নতুন, শেয়ার্ড ফাংশন)**: `createLandingOrder()` — pricing/tracking/fraud-flag/notification/Lead-CAPI লজিক একবারই লেখা, `submitPublicOrder` (কাস্টমার সাবমিট) ও `draftOrderController.convertDraftToOrder` (অ্যাডমিন কনভার্ট) দুই জায়গাতেই রিইউজ হয় — কোড ডুপ্লিকেশন এড়ানো।
+- **`server/controllers/draftOrderController.js` (নতুন)**:
+  - `updateDraftOrder` (`PATCH /api/orders/drafts/:id`) — অ্যাডমিন ড্রাফট এডিট করে সেভ করে, ভ্যালিডেশন সহ (ফোন রেজেক্স, quantity integer চেক, productType/deliveryArea সঠিকতা), সেভের পর `emitDraftUpdate` দিয়ে রিয়েল-টাইম broadcast।
+  - `convertDraftToOrder` (`POST /api/orders/drafts/:id/convert`) — draft-এর (বা body-তে এডিট করা) তথ্য দিয়ে `createLandingOrder()` কল করে `origin: "landing_page"` সহ আসল Order বানায়, tracking ডেটা (fbp/fbc/fbclid ইত্যাদি) পুরোপুরি carry করে, তারপর draft ডিলিট করে দেয়। ফলে পরে অ্যাডমিন "Confirmed" করলে Purchase CAPI ইভেন্ট ঠিকভাবে পাঠানো যায় — আগে ম্যানুয়ালি নতুন করে অর্ডার লিখলে এই attribution ডেটা হারিয়ে যেত।
+- **`server/utils/draftOrderView.js` (নতুন)**: `withLandingPageMeta(draft, page)` — draft অবজেক্টে সেই মুহূর্তের ল্যান্ডিং পেজের প্রাইসিং/প্যাকেজ কনফিগারেশন (productTypes, deliveryCharge ইত্যাদি) সংযুক্ত করে পাঠায় (duplicate না করে), `getDraftOrders` (batch, N+1 এড়িয়ে), `updateDraftOrder`, ও নতুন-ড্রাফট সকেট ইভেন্ট — সব জায়গায় consistently ব্যবহৃত হয়।
+
+**অ্যাডমিন UI (`DraftOrderCard.jsx`, পুরোপুরি নতুন ডিজাইনে রিরাইট করা হয়েছে):**
+- এডিট মোড: নাম/ফোন/ঠিকানা + প্যাকেজ ড্রপডাউন (productTypes থাকলে) + quantity স্টেপার + ডেলিভারি এলাকা সিলেক্টর + লাইভ প্রাইস প্রিভিউ (ইউনিট দাম/ডেলিভারি চার্জ/মোট COD)।
+- ফ্রন্টএন্ড ভ্যালিডেশন (`validate()`) ব্যাকএন্ডের ভ্যালিডেশনের সাথে হুবহু মিলিয়ে লেখা — ব্যর্থ API কল কমায়।
+- "Pending-এ পাঠান" বাটন — কনফার্মেশন মোডাল, কনভার্ট চলাকালীন ফুল-স্ক্রিন লোডিং ওভারলে।
+- `OrderContext.jsx`-এ `updateDraftOrder`/`convertDraftOrder` context ফাংশন যোগ হয়েছে (`deleteDraftOrder`-এর প্যাটার্নে)।
+
+**অন্যান্য (এই সেশনে সম্পর্কহীন কিন্তু একসাথে যোগ হওয়া পরিবর্তন):**
+- নতুন "In-Review" স্ট্যাটাস ট্যাব — Steadfast bulk-booking-এর পর `courier.courierStatus: "Review"` সেট হয়ে যাওয়া অর্ডারদের জন্য (`orderConstants.js`, `OrderContext.jsx`, `app/page.js`)।
+- `steadfastBulkController.js`-এ একটা রেস-কন্ডিশন ফিক্স — আগে নেস্টেড `.map(async...)` ব্যবহার করে `await` ছাড়া রাখা হয়েছিল, response পাঠানোর আগে সব অর্ডার আপডেট শেষ হওয়ার নিশ্চয়তা ছিল না।
+- `toast.js`/`CopyToast.jsx`-এ `position` প্যারামিটার (top/bottom) যোগ হয়েছিল, এখন `OrderCard.jsx`-এ কপি ছাড়া অন্য জায়গাতেও (validation/success মেসেজ) ব্যবহার শুরু হয়েছে।
+- Facebook angry/haha অটো-ব্লক ফিচার (এক পর্যায়ে বানানো হয়েছিল) **সরিয়ে ফেলা হয়েছে** — মডেল/কন্ট্রোলার/রুট/UI সব ক্লিনভাবে রিমুভড, কোনো dangling reference নেই।
+
+---
+
+## ১৩. এই রিভিউতে পাওয়া সমস্যা (Bugs/Cleanup — এখনো ফিক্স করা হয়নি)
+
+| # | ফাইল | সমস্যা | গুরুত্ব |
+|---|---|---|---|
+| 1 | `server/app.js`, `server/config/env.js` | CORS আগে নির্দিষ্ট origin allow-list (`CLIENT_URL` + `ALLOWED_LANDING_ORIGINS`)-এ restrict করা হয়েছিল, এখন আবার `app.use(cors())` (wildcard `*`, সব origin থেকে API কল সম্ভব) — সম্পূর্ণ revert হয়ে গেছে। যদি কোনো ডিপ্লয়মেন্ট সমস্যার কারণে revert করা হয়ে থাকে, root cause (সম্ভবত `.env`-এ `ALLOWED_LANDING_ORIGINS` ভুল/অনুপস্থিত ছিল) ঠিক করে আবার restrict করাই ভালো — production API সম্পূর্ণ ওপেন থাকা নিরাপত্তা ঝুঁকি। | 🔴 সিকিউরিটি |
+| 2 | `client/src/components/orders/OrderList.jsx` | মডিউল-লেভেলে (component ফাংশনের ভেতরে, কিন্তু কোনো condition/effect ছাড়া) `console.log(orders)` রয়ে গেছে — প্রতিটা রি-রেন্ডারে পুরো অর্ডার লিস্ট (কাস্টমার নাম/ফোন/ঠিকানা — PII) ব্রাউজার কনসোলে লগ হচ্ছে। Production-এ deploy করার আগে সরানো দরকার। | 🟡 প্রাইভেসি + পারফরম্যান্স |
+| 3 | `server/utils/metaCapi.js` | `sendCapiEvent()`-এ `console.log("respons-----------", response);` রয়ে গেছে — প্রতিটা CAPI কলে (PageView/Lead/Purchase, অর্থাৎ ঘন ঘন) সার্ভার লগে পুরো Meta API রেসপন্স স্প্যাম হচ্ছে। | 🟡 লগ ক্লাটার |
+| 4 | `server/controllers/draftOrderController.js` (`convertDraftToOrder`) | quantity ভ্যালিডেশন `if (qty < 1)` — কিন্তু `qty = parseInt(quantity, 10)` অবৈধ ইনপুটে `NaN` হয়, আর `NaN < 1` সবসময় `false`। ফলে এই লাইনটা NaN ধরতে পারে না (সঠিক প্যাটার্ন `updateDraftOrder`-এ আছে: `!Number.isInteger(qty) || qty < 1`)। **তবে** এটা আপাতত ক্র্যাশ করে না কারণ পরের ধাপে `createLandingOrder()`-এর নিজস্ব `!Number.isInteger(qty)` চেক সেটা ধরে ফেলে (এখন সেটাও strict করা হয়েছে) — তাই practical impact কম, কিন্তু কোডটা এখনো নিজে থেকে ভুল/misleading। | 🟢 মাইনর/কসমেটিক |
+| 5 | `draftOrderController.updateDraftOrder` (এবং ফ্রন্টএন্ডের `validate()`) | ল্যান্ডিং পেজ `isActive: false` হয়ে গেলে সংশ্লিষ্ট draft-এর **যেকোনো এডিট** (এমনকি শুধু ফোন নম্বরের টাইপো ঠিক করাও) ব্লক হয়ে যায় — কারণ পুরো ফাংশনটাই শুরুতে `LandingPage.findOne({..., isActive: true})` না পেলে 404 রিটার্ন করে। ফ্রন্টএন্ডেও একই কারণে `price` না পেয়ে "বৈধ প্রোডাক্ট মূল্য পাওয়া যায়নি" এরর দেখাবে — যেটা কাস্টমারের নাম/ফোন ঠিক করতে চাওয়া অ্যাডমিনের জন্য confusing। ক্যাম্পেইন শেষে পেজ বন্ধ করে দিলে সেই পেজের পুরনো draft-গুলো (delete ছাড়া) স্থায়ীভাবে অ-এডিটযোগ্য হয়ে থাকবে। সমাধান: প্লেইন কনট্যাক্ট-ইনফো এডিট (নাম/ফোন/ঠিকানা, প্রাইসিং জড়িত না) আর প্যাকেজ/প্রাইসিং-নির্ভর এডিট আলাদা করে হ্যান্ডেল করা যেতে পারে। | 🟡 UX/ফাংশনাল |
+| 6 | `client/src/components/orders/DraftOrderCard.jsx` | `FaTruck` ইম্পোর্ট করা হয়েছে কিন্তু কোথাও ব্যবহার হয়নি (dead import)। | 🟢 কসমেটিক |
+
+
 
 `EventLog` মডেল/কন্ট্রোলার/`/dashboard/event-logs` পেজ — সব আগে থেকেই সম্পূর্ণ তৈরি ছিল, শুধু নেভিগেশন মেনুতে লিংক নেই (§৭ আইটেম ৯)।
