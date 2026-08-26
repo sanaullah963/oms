@@ -69,7 +69,7 @@ function HomePageContent() {
                     ? allPendingOrder.length
                     : tab.key === "Review"
                       ? orders.filter(
-                          (o) => o?.courier?.courierStatus === "Review",
+                          (o) => o?.courier?.courierStatus === "review",
                         ).length
                       : orders.filter((o) => o?.orderStatus === tab.key).length
               }`}

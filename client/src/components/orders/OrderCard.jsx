@@ -276,7 +276,7 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
                   </div>
 
                   {order?.courier?.courierStatus &&
-                    order.courier.courierStatus !== "Unknown" && (
+                    order.courier.courierStatus !== "unknown" && (
                       <div className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-amber-300 text-blue-900">
                         {order.courier.courierStatus}
                       </div>

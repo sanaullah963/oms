@@ -182,7 +182,7 @@ export default function FraudDetectionModal({ order, onClose, onUpdate }) {
                       >
                         অর্ডার: {m.orderStatus}
                       </span>
-                      {m.courier?.courierStatus && m.courier.courierStatus !== "Unknown" && (
+                      {m.courier?.courierStatus && m.courier.courierStatus !== "unknown" && (
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
                           কুরিয়ার: {m.courier.courierStatus}
                         </span>

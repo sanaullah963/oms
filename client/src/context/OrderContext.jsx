@@ -266,7 +266,7 @@ export function OrderProvider({ children }) {
     // কুরিয়ারে বুক করার পর courier status "Review" হলে এই ট্যাবে অর্ডারটি দেখাবে।
     if (activeStatus === "Review") {
       return safeOrders.filter(
-        (o) => o?.courier?.courierStatus === "Review",
+        (o) => o?.courier?.courierStatus === "review",
       );
     }
 

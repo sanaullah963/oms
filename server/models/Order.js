@@ -98,7 +98,21 @@ const OrderSchema = new mongoose.Schema({
     // },
     courierStatus: {
       type: String,
-      enum: ["unknown", "review", "pending", "assigned","delivered", "cancelled"],
+      // note: এই enum-এর ভ্যালুগুলো lowercase — webhookController.js
+      // (STATUS_FIELD_MAP, COURIER_STATUS_PATTERNS), steadfastController.js/
+      // steadfastBulkController.js (বুকিং-এর সময়), orderController.js এবং
+      // client (OrderContext.jsx, page.js, OrderCard.jsx, FraudDetectionModal.jsx)
+      // সবাই এখন এই lowercase কনভেনশন মেনে চলে। নতুন ভ্যালু যোগ করলে ওই
+      // ফাইলগুলোতেও lowercase-এই মেলাতে হবে।
+      enum: [
+        "unknown",
+        "review",
+        "pending",
+        "assigned",
+        "delivered",
+        "partial_delivered",
+        "cancelled",
+      ],
       default: "unknown",
     },
     // --- ড্যাশবোর্ড/ফাইন্যান্সিয়াল ট্র্যাকিং-এর জন্য (delivery_status webhook থেকে আসে) ---

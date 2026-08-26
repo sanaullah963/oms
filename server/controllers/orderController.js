@@ -85,7 +85,9 @@ exports.getOrders = async (req, res) => {
           $nor: [
             {
               orderStatus: { $in: ["Cancelled", "Delivered"] },
-              "courier.courierStatus": { $in: ["Cancelled", "Delivered"] },
+              "courier.courierStatus": {
+                $in: ["cancelled", "delivered", "partial_delivered"],
+              },
             },
           ],
         },

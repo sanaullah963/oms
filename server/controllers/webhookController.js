@@ -20,12 +20,15 @@ const IGNORE_PATTERNS = [
 ];
 
 // ----------- Steadfast-এর অফিসিয়াল status ফিল্ড (delivery_status webhook-এ আসে) -> আমাদের courierStatus লেবেল ম্যাপিং
+// note: সব ভ্যালু lowercase — Order.js স্কিমার enum, steadfastController.js/
+// steadfastBulkController.js এবং client (OrderContext.jsx, page.js,
+// OrderCard.jsx, FraudDetectionModal.jsx)-এর সাথে মিলিয়ে রাখা।
 const STATUS_FIELD_MAP = {
-  pending: "Pending",
-  delivered: "Delivered",
-  partial_delivered: "Partial Delivered",
-  cancelled: "Cancelled",
-  unknown: "Unknown",
+  pending: "pending",
+  delivered: "delivered",
+  partial_delivered: "partial_delivered",
+  cancelled: "cancelled",
+  unknown: "unknown",
 };
 // ----------- note গুরুত্বপূর্ণ কিনা যাচাই -> সবসময় true/false রিটার্ন করে
 function classifyNote(text) {
@@ -36,11 +39,37 @@ function classifyNote(text) {
 
 // ----------- tracking_message-এর উপর ভিত্তি করে courier status বের করার fallback প্যাটার্ন
 const COURIER_STATUS_PATTERNS = [
-  { label: "Pending", pattern: /(Pending|processing for delivery)/i },
-  { label: "Assigned", pattern: /Assigned to rider/i },
-  { label: "Cancelled", pattern: /(Cancelled|cancelled by system)/i },
-  { label: "Delivered", pattern: /Delivered/i },
+  { label: "pending", pattern: /(Pending|processing for delivery)/i },
+  // Steadfast-এর অফিসিয়াল status ফিল্ডে কখনো "assigned" আসে না — শুধু
+  // tracking_update মেসেজের টেক্সট থেকে অনুমান করা হয়, তাই একাধিক সম্ভাব্য
+  // ওয়ার্ডিং রাখা হলো (তবুও এটা Steadfast-এর ডকুমেন্টেড কন্ট্র্যাক্ট না,
+  // ওরা মেসেজ বদলালে এই প্যাটার্নও আপডেট করতে হবে)
+  { label: "assigned", pattern: /(assigned to rider|rider assigned|assigned for delivery)/i },
+  { label: "cancelled", pattern: /(Cancelled|cancelled by system)/i },
+  // "delivered" প্যাটার্নের আগে চেক করতে হবে, কারণ "partially delivered"
+  // টেক্সটেও "Delivered" শব্দটা থাকে
+  { label: "partial_delivered", pattern: /partial(ly)?[\s-]?deliver(ed)?/i },
+  { label: "delivered", pattern: /Delivered/i },
 ];
+
+// ----------- courierStatus regression প্রতিরোধের জন্য rank ম্যাপ
+// Steadfast-এর webhook সবসময় পাঠানো ক্রমেই পৌঁছায় তার গ্যারান্টি নেই।
+// দেরিতে আসা একটা পুরনো tracking_update (যেমন "pending") একটা ইতিমধ্যে
+// delivered/cancelled হয়ে যাওয়া অর্ডারকে আবার pending-এ ফিরিয়ে দিতে পারে —
+// এটা ঠেকাতেই rank ব্যবহার করা হচ্ছে। rank কম হলে courierStatus স্কিপ হবে,
+// কিন্তু activity/note সবসময়ই সেভ হবে (নিচে দেখুন)।
+// delivered/partial_delivered/cancelled সবাইকে একই (৪) rank দেওয়া হয়েছে,
+// যাতে কুরিয়ার নিজে একটা final status থেকে আরেকটা final status-এ সংশোধন
+// করলে (যেমন delivered -> partial_delivered) সেটা এখনও গ্রহণ করা যায়।
+const STATUS_RANK = {
+  unknown: 0,
+  review: 1,
+  pending: 2,
+  assigned: 3,
+  delivered: 4,
+  partial_delivered: 4,
+  cancelled: 4,
+};
 
 // ----------- courier status বের করার মূল ফাংশন
 // প্রায়োরিটি: delivery_status webhook-এর অফিসিয়াল `status` ফিল্ড > tracking_message প্যাটার্ন ম্যাচিং
@@ -52,11 +81,11 @@ function getCourierStatus(data) {
     if (mapped) return mapped;
   }
 
-  if (!text) return "Unknown";
+  if (!text) return "unknown";
   const matchedStatus = COURIER_STATUS_PATTERNS.find((item) =>
     item.pattern.test(text),
   );
-  return matchedStatus ? matchedStatus.label : "Unknown";
+  return matchedStatus ? matchedStatus.label : "unknown";
 }
 
 // --- POST /api/webhook/steadfast ---
@@ -73,7 +102,7 @@ exports.handleSteadfastWebhook = async (req, res) => {
       message: "Unauthorized: Invalid Token",
     });
   }
-  
+
   const noteText = data.tracking_message || "null set by our server";
   const isImportant = classifyNote(noteText);
   const courierLabel = getCourierStatus(data);
@@ -87,23 +116,48 @@ exports.handleSteadfastWebhook = async (req, res) => {
 
   const setFields = {
     needsAttention: isImportant,
-    "courier.courierStatus": courierLabel,
   };
 
-  // --- ফাইন্যান্সিয়াল ড্যাশবোর্ডের জন্য: delivery_status webhook-এ cod_amount ও delivery_charge আসে ---
-  const isFinalDeliveryEvent =
-    data.notification_type === "delivery_status" &&
-    (courierLabel === "Delivered" || courierLabel === "Cancelled");
+  try {
+    // বর্তমান courierStatus আগে থেকে জেনে নেওয়া হচ্ছে, যাতে একটা দেরিতে আসা/
+    // out-of-order webhook ইতিমধ্যে সেট হওয়া উঁচু-rank স্ট্যাটাসকে ডাউনগ্রেড
+    // করে দিতে না পারে
+    const existingOrder = await Order.findOne(
+      { "courier.trackingId": data.consignment_id },
+      { "courier.courierStatus": 1 },
+    ).lean();
 
-  if (isFinalDeliveryEvent) {
+    const currentLabel = existingOrder?.courier?.courierStatus || "unknown";
+    const currentRank = STATUS_RANK[currentLabel] ?? 0;
+    const newRank = STATUS_RANK[courierLabel] ?? 0;
+    const isDowngrade = newRank < currentRank;
+
+    if (!isDowngrade) {
+      setFields["courier.courierStatus"] = courierLabel;
+    } else {
+      console.log(
+        `Steadfast webhook: ignoring status downgrade for consignment ${data.consignment_id} (${currentLabel} -> ${courierLabel})`,
+      );
+    }
+
+    // --- ফাইন্যান্সিয়াল ড্যাশবোর্ডের জন্য: delivery_status webhook-এ cod_amount ও delivery_charge আসে ---
+    // (isDowngrade true হলে courierLabel কখনোই delivered/cancelled/partial_delivered
+    // হতে পারে না, কারণ ওগুলো সর্বোচ্চ rank — তাই আলাদা করে isDowngrade চেক লাগছে না)
+    const isFinalDeliveryEvent =
+      data.notification_type === "delivery_status" &&
+      (courierLabel === "delivered" ||
+        courierLabel === "cancelled" ||
+        courierLabel === "partial_delivered");
+
+    if (isFinalDeliveryEvent) {
       setFields["courier.statusUpdatedAt"] = new Date();
-      // setFields.orderStatus = courierLabel; // "Delivered" | "Cancelled" (Order মডেলের enum-এ আগে থেকেই আছে)
+      // setFields.orderStatus = courierLabel; // Order মডেলের orderStatus enum আলাদা (Capitalized) — একসাথে সিঙ্ক করতে চাইলে ম্যাপিং লাগবে
 
       if (typeof data.delivery_charge !== "undefined") {
         setFields["courier.deliveryCharge"] = Number(data.delivery_charge);
       }
 
-      if (courierLabel === "Delivered") {
+      if (courierLabel === "delivered" || courierLabel === "partial_delivered") {
         const deliveredCodAmount = Number(data.cod_amount || 0);
         setFields["courier.deliveredCodAmount"] = deliveredCodAmount;
         setFields["courier.codChargeAmount"] = calculateCodCharge(
@@ -111,14 +165,13 @@ exports.handleSteadfastWebhook = async (req, res) => {
           data.delivery_charge,
         );
       }
-  }
+    }
 
-  const updateObj = {
-    $push: { activities: newActivity },
-    $set: setFields,
-  };
+    const updateObj = {
+      $push: { activities: newActivity },
+      $set: setFields,
+    };
 
-  try {
     const updatedOrder = await Order.findOneAndUpdate(
       { "courier.trackingId": data.consignment_id },
       updateObj,
