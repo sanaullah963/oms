@@ -98,8 +98,8 @@ const OrderSchema = new mongoose.Schema({
     // },
     courierStatus: {
       type: String,
-      enum: ["Unknown", "Review", "Pending", "Assigned", "Delivered", "Cancelled"],
-      default: "Unknown",
+      enum: ["unknown", "review", "pending", "assigned","delivered", "cancelled"],
+      default: "unknown",
     },
     // --- ড্যাশবোর্ড/ফাইন্যান্সিয়াল ট্র্যাকিং-এর জন্য (delivery_status webhook থেকে আসে) ---
     deliveredCodAmount: { type: Number, default: null }, // কুরিয়ার কনফার্ম করা প্রকৃত COD এমাউন্ট

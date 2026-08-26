@@ -47,12 +47,14 @@ exports.getDashboardSummary = async (req, res) => {
     };
     const deliveredFilter = {
       ...ownershipFilter,
-      orderStatus: "Delivered",
+      // orderStatus: "Delivered",
+      "courier.courierStatus": "delivered",
       "courier.statusUpdatedAt": { $gte: fromDate, $lte: toDate },
     };
     const cancelledFilter = {
       ...ownershipFilter,
-      orderStatus: "Cancelled",
+      // orderStatus: "Cancelled",
+      "courier.courierStatus": "cancelled",
       "courier.statusUpdatedAt": { $gte: fromDate, $lte: toDate },
     };
 
@@ -92,14 +94,14 @@ exports.getDashboardSummary = async (req, res) => {
           $match: {
             ...ownershipFilter,
             "courier.statusUpdatedAt": { $gte: fromDate, $lte: toDate },
-            orderStatus: { $in: ["Delivered", "Cancelled"] },
+            orderStatus: { $in: ["delivered", "cancelled"] },
           },
         },
         {
           $group: {
             _id: {
               date: { $dateToString: { format: "%Y-%m-%d", date: "$courier.statusUpdatedAt" } },
-              status: "$orderStatus",
+              status: "courier.courierStatus",
             },
             count: { $sum: 1 },
             amount: { $sum: "$courier.deliveredCodAmount" },
@@ -110,7 +112,7 @@ exports.getDashboardSummary = async (req, res) => {
       // COD mismatch: ডেলিভারড কিন্তু কুরিয়ারের cod_amount আর আমাদের totalCOD না মেলা
       Order.find({
         ...ownershipFilter,
-        orderStatus: "Delivered",
+        "courier.courierStatus": "delivered",
         "courier.statusUpdatedAt": { $gte: fromDate, $lte: toDate },
         $expr: { $ne: ["$totalCOD", "$courier.deliveredCodAmount"] },
       }).select(

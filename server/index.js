@@ -9,6 +9,7 @@ const startScheduledOrderReleaserJob = require("./jobs/scheduledOrderReleaser");
 const { seedFromEnvIfEmpty } = require("./utils/facebookPages");
 const { verifyToken } = require("./utils/jwt");
 const User = require("./models/User");
+const Order = require("./models/Order");
 
 const httpServer = http.createServer(app);
 
@@ -59,7 +60,9 @@ io.on("connection", (socket) => {
 
 // ------ MongoDB Connection ---
 connectToMongoDB().then(() => {
-  seedFromEnvIfEmpty().catch((err) => console.error("Facebook page seed error:", err));
+  seedFromEnvIfEmpty().catch((err) =>
+    console.error("Facebook page seed error:", err),
+  );
 });
 
 // ------ Cron Job: প্রতিদিন শিডিউলড অর্ডার রিলিজ ---
@@ -70,3 +73,12 @@ httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
+
+
+const cc = async () => {
+  try {} catch (error) {
+    console.log(error);
+  }
+};
+
+cc();

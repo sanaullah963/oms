@@ -50,9 +50,7 @@ exports.masterSearchOrders = async (req, res) => {
     return res.status(200).json({ orders });
   } catch (error) {
     console.error("Master search error:", error);
-    return res
-      .status(500)
-      .json({ message: "সার্চ করতে ব্যর্থ হয়েছে।" });
+    return res.status(500).json({ message: "সার্চ করতে ব্যর্থ হয়েছে।" });
   }
 };
 
@@ -72,53 +70,29 @@ exports.getOrders = async (req, res) => {
         ? { $or: [{ createdBy: req.user._id }, { createdBy: null }] }
         : {};
 
-    // const orders = await Order.aggregate([
-    //   { $match: ownershipFilter },
-    //   // ১. last activity বের করা
-    //   {
-    //     $addFields: {
-    //       lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
-    //     },
-    //   },
-    //   // ২. filter: Cancelled/Booked শুধু সাম্প্রতিক ২ দিনের, বাকি সব status-এর সবগুলো
-    //   {
-    //     $match: {
-    //       $or: [
-    //         {
-    //           orderStatus: { $in: ["Booked"] },
-    //           lastActivityTime: { $gte: twoDaysAgo },
-    //         },
-    //         { orderStatus: { $nin: ["Cancelled", "Booked"] } },
-    //       ],
-    //     },
-    //   },
-    //   // ৩. সর্বশেষ activity অনুযায়ী সর্ট
-    //   { $sort: { lastActivityTime: -1 } },
-    // ]);
-
     const orders = await Order.aggregate([
-  { $match: ownershipFilter },
-  // ১. last activity বের করা
-  {
-    $addFields: {
-      lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
-    },
-  },
-  // ২. filter: শেষ ২ দিনের activity, কিন্তু fully-finalized অর্ডার বাদ
-  {
-    $match: {
-      lastActivityTime: { $gte: twoDaysAgo },
-      $nor: [
-        {
-          orderStatus: { $in: ["Cancelled", "Delivered"] },
-          "courier.courierStatus": { $in: ["Cancelled", "Delivered"] },
+      { $match: ownershipFilter },
+      // ১. last activity বের করা
+      {
+        $addFields: {
+          lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
         },
-      ],
-    },
-  },
-  // ৩. সর্বশেষ activity অনুযায়ী সর্ট
-  { $sort: { lastActivityTime: -1 } },
-]);
+      },
+      // ২. filter: শেষ ২ দিনের activity, কিন্তু fully-finalized অর্ডার বাদ
+      {
+        $match: {
+          lastActivityTime: { $gte: twoDaysAgo },
+          $nor: [
+            {
+              orderStatus: { $in: ["Cancelled", "Delivered"] },
+              "courier.courierStatus": { $in: ["Cancelled", "Delivered"] },
+            },
+          ],
+        },
+      },
+      // ৩. সর্বশেষ activity অনুযায়ী সর্ট
+      { $sort: { lastActivityTime: -1 } },
+    ]);
     console.log("Orders fetched successfully:", orders.length);
     return res.status(200).json(orders || []);
   } catch (error) {

@@ -27,6 +27,12 @@ const STATUS_FIELD_MAP = {
   cancelled: "Cancelled",
   unknown: "Unknown",
 };
+// ----------- note গুরুত্বপূর্ণ কিনা যাচাই -> সবসময় true/false রিটার্ন করে
+function classifyNote(text) {
+  if (!text) return false;
+  const shouldIgnore = IGNORE_PATTERNS.some((p) => p.test(text));
+  return !shouldIgnore; // true = গুরুত্বপূর্ণ, false = ignorable
+}
 
 // ----------- tracking_message-এর উপর ভিত্তি করে courier status বের করার fallback প্যাটার্ন
 const COURIER_STATUS_PATTERNS = [
@@ -35,13 +41,6 @@ const COURIER_STATUS_PATTERNS = [
   { label: "Cancelled", pattern: /(Cancelled|cancelled by system)/i },
   { label: "Delivered", pattern: /Delivered/i },
 ];
-
-// ----------- note গুরুত্বপূর্ণ কিনা যাচাই -> সবসময় true/false রিটার্ন করে
-function classifyNote(text) {
-  if (!text) return false;
-  const shouldIgnore = IGNORE_PATTERNS.some((p) => p.test(text));
-  return !shouldIgnore; // true = গুরুত্বপূর্ণ, false = ignorable
-}
 
 // ----------- courier status বের করার মূল ফাংশন
 // প্রায়োরিটি: delivery_status webhook-এর অফিসিয়াল `status` ফিল্ড > tracking_message প্যাটার্ন ম্যাচিং
@@ -54,7 +53,9 @@ function getCourierStatus(data) {
   }
 
   if (!text) return "Unknown";
-  const matchedStatus = COURIER_STATUS_PATTERNS.find((item) => item.pattern.test(text));
+  const matchedStatus = COURIER_STATUS_PATTERNS.find((item) =>
+    item.pattern.test(text),
+  );
   return matchedStatus ? matchedStatus.label : "Unknown";
 }
 
@@ -72,11 +73,12 @@ exports.handleSteadfastWebhook = async (req, res) => {
       message: "Unauthorized: Invalid Token",
     });
   }
-
+  
   const noteText = data.tracking_message || "null set by our server";
   const isImportant = classifyNote(noteText);
   const courierLabel = getCourierStatus(data);
 
+  // create new activity
   const newActivity = {
     author: "Steadfast",
     description: data.tracking_message,
@@ -94,21 +96,21 @@ exports.handleSteadfastWebhook = async (req, res) => {
     (courierLabel === "Delivered" || courierLabel === "Cancelled");
 
   if (isFinalDeliveryEvent) {
-    setFields["courier.statusUpdatedAt"] = new Date();
-    // setFields.orderStatus = courierLabel; // "Delivered" | "Cancelled" (Order মডেলের enum-এ আগে থেকেই আছে)
+      setFields["courier.statusUpdatedAt"] = new Date();
+      // setFields.orderStatus = courierLabel; // "Delivered" | "Cancelled" (Order মডেলের enum-এ আগে থেকেই আছে)
 
-    if (typeof data.delivery_charge !== "undefined") {
-      setFields["courier.deliveryCharge"] = Number(data.delivery_charge);
-    }
+      if (typeof data.delivery_charge !== "undefined") {
+        setFields["courier.deliveryCharge"] = Number(data.delivery_charge);
+      }
 
-    if (courierLabel === "Delivered") {
-      const deliveredCodAmount = Number(data.cod_amount || 0);
-      setFields["courier.deliveredCodAmount"] = deliveredCodAmount;
-      setFields["courier.codChargeAmount"] = calculateCodCharge(
-        deliveredCodAmount,
-        data.delivery_charge,
-      );
-    }
+      if (courierLabel === "Delivered") {
+        const deliveredCodAmount = Number(data.cod_amount || 0);
+        setFields["courier.deliveredCodAmount"] = deliveredCodAmount;
+        setFields["courier.codChargeAmount"] = calculateCodCharge(
+          deliveredCodAmount,
+          data.delivery_charge,
+        );
+      }
   }
 
   const updateObj = {
@@ -122,7 +124,7 @@ exports.handleSteadfastWebhook = async (req, res) => {
       updateObj,
       { new: true },
     );
-    
+
     if (updatedOrder && io) {
       emitOrderUpdate(io, updatedOrder);
     }
