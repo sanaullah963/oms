@@ -1,5 +1,3 @@
-
-
 const mongoose = require("mongoose");
 const Order = require("../models/Order");
 
@@ -188,10 +186,16 @@ exports.getDashboardOrders = async (req, res) => {
     if (status === "sent") {
       filter["courier.bookedAt"] = { $gte: fromDate, $lte: toDate };
     } else if (status === "delivered") {
-      filter.orderStatus = "Delivered";
+      // note: আগে এখানে orderStatus === "Delivered" চেক করা হতো, কিন্তু
+      // orderStatus কখনো "Delivered"-এ সেট হয় না (webhookController.js-এ ওই
+      // sync লাইনটা কমেন্ট করা আছে) — তাই সামারি কাউন্টের সাথে মিলিয়ে এখন
+      // courier.courierStatus দিয়েই ফিল্টার করা হচ্ছে (getDashboardSummary-এর
+      // deliveredFilter-এর সাথে হুবহু এক থাকতে হবে, নাহলে কাউন্ট আর লিস্ট
+      // আবার আলাদা হয়ে যাবে)
+      filter["courier.courierStatus"] = "delivered";
       filter["courier.statusUpdatedAt"] = { $gte: fromDate, $lte: toDate };
     } else if (status === "cancelled") {
-      filter.orderStatus = "Cancelled";
+      filter["courier.courierStatus"] = "cancelled";
       filter["courier.statusUpdatedAt"] = { $gte: fromDate, $lte: toDate };
     } else {
       return res

@@ -75,6 +75,7 @@ export default function DashboardOrderListModal({
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-gray-50">
                 <tr className="text-left text-gray-500 border-b">
+                  <th className="py-2 px-4">#</th>
                   <th className="py-2 px-4">নাম</th>
                   <th className="py-2 px-4">ফোন</th>
                   <th className="py-2 px-4">COD</th>
@@ -83,8 +84,9 @@ export default function DashboardOrderListModal({
                 </tr>
               </thead>
               <tbody>
-                {orders.map((o) => (
+                {orders.map((o, index) => (
                   <tr key={o._id} className="border-b last:border-0">
+                    <td className="py-2 px-4 text-gray-400">{index + 1}</td>
                     <td className="py-2 px-4 font-medium">{o.castomerName}</td>
                     <td
                       className="py-2 px-4 text-blue-600 cursor-pointer"

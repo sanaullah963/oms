@@ -1,32 +1,3 @@
-// const CARD_CONFIG = [
-//   { key: "sentCount", label: "মোট পাঠানো পার্সেল", color: "bg-blue-50 text-blue-700", icon: "📦" },
-//   { key: "deliveredCount", label: "ডেলিভারড", color: "bg-green-50 text-green-700", icon: "✅" },
-//   { key: "cancelledCount", label: "ক্যান্সেলড", color: "bg-red-50 text-red-700", icon: "❌" },
-//   {
-//     key: "sentAmount",
-//     label: "মোট COD এমাউন্ট (পাঠানো)",
-//     color: "bg-purple-50 text-purple-700",
-//     icon: "৳",
-//     isAmount: true,
-//   },
-// ];
-
-// export default function StatsCards({ totals }) {
-//   return (
-//     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-//       {CARD_CONFIG.map((c) => (
-//         <div key={c.key} className={`rounded-xl p-4 shadow-sm ${c.color}`}>
-//           <div className="text-2xl mb-1">{c.icon}</div>
-//           <div className="text-xl font-bold">
-//             {c.isAmount ? `৳${(totals[c.key] || 0).toLocaleString("bn-BD")}` : (totals[c.key] || 0).toLocaleString("bn-BD")}
-//           </div>
-//           <div className="text-xs font-medium mt-1">{c.label}</div>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }
-
 export default function StatsCards({ totals, onCardClick }) {
   const netAfterDeliveryCharge =
     (totals.deliveredAmount || 0) - (totals.deliveredDeliveryCharge || 0);
@@ -36,13 +7,24 @@ export default function StatsCards({ totals, onCardClick }) {
       {/* --- মোট পাঠানো পার্সেল --- */}
       <button
         onClick={() => onCardClick?.("sent")}
-        className="text-left rounded-xl p-4 shadow-sm bg-blue-100 text-blue-700 hover:shadow-md transition cursor-pointer"
+        className="text-left rounded-xl p-4 shadow-sm bg-blue-100 text-green-700 hover:shadow-md transition cursor-pointer flex justify-center items-center flex-col "
       >
-        <div className="text-2xl mb-1">📦</div>
-        <div className="text-xl font-bold">
-          {(totals.sentCount || 0).toLocaleString("bn-BD")}
+        {/* show total parcel count */}
+        <div className="flex gap-2 items-center">
+          <div className="text-xs font-medium mt-1">মোট </div>
+          <div className="text-xl font-bold">
+            {(totals.sentCount || 0).toLocaleString("bn-BD")}
+          </div>
+          <div className="text-xs font-medium mt-1"> টি পার্সেল পাঠানো হয়েছে</div>
         </div>
-        <div className="text-xs font-medium mt-1">মোট পাঠানো পার্সেল</div>
+        {/* show total parcel cod amount */}
+        <div className="flex gap-2 items-center">
+          
+          <div className="text-xl font-bold">
+            ৳{(totals.sentAmount || 0).toLocaleString("bn-BD")}
+          </div>
+          <div className="text-xs font-medium mt-1"> মোট COD এমাউন্ট (পাঠানো)</div>
+        </div>
       </button>
 
       {/* --- ডেলিভারড (৩টা এমাউন্ট সহ) --- */}
@@ -98,7 +80,7 @@ export default function StatsCards({ totals, onCardClick }) {
         </div>
       </button>
 
-{/* --- ক্যান্সেলড (ক্যান্সেল চার্জ সহ) --- */}  
+      {/* --- ক্যান্সেলড (ক্যান্সেল চার্জ সহ) --- */}
       <div
         // onClick={() => onCardClick?.("delivered")}
         className="text-left rounded-xl p-4 shadow-sm bg-red-100 text-red-700 hover:shadow-md transition cursor-pointer"
@@ -137,9 +119,7 @@ export default function StatsCards({ totals, onCardClick }) {
         </div>
       </div>
 
-
-
-         {/* --- মোট টাকা --- */}
+      {/* --- মোট টাকা --- */}
       <div
         // onClick={() => onCardClick?.("delivered")}
         className="text-left rounded-xl p-4 shadow-sm bg-red-100 text-red-700 hover:shadow-md transition cursor-pointer"
@@ -160,7 +140,7 @@ export default function StatsCards({ totals, onCardClick }) {
           <div className="flex justify-between  border-b ">
             <span>মোট খরচ</span>
             <span className="font-semibold">
-               ৳{(totals.netDeduction || 0).toLocaleString("bn-BD")}
+              ৳{(totals.netDeduction || 0).toLocaleString("bn-BD")}
             </span>
           </div>
           <div className="flex justify-between">
@@ -173,18 +153,7 @@ export default function StatsCards({ totals, onCardClick }) {
         </div>
       </div>
 
-
-
-
-
-      {/* --- মোট COD এমাউন্ট (পাঠানো) --- */}
-      <div className="rounded-xl p-4 shadow-sm bg-purple-50 text-purple-700">
-        <div className="text-2xl mb-1">৳</div>
-        <div className="text-xl font-bold">
-          ৳{(totals.sentAmount || 0).toLocaleString("bn-BD")}
-        </div>
-        <div className="text-xs font-medium mt-1">মোট COD এমাউন্ট (পাঠানো)</div>
-      </div>
+      
     </div>
   );
 }
