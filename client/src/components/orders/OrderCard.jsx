@@ -14,6 +14,7 @@ import OrderPhoneList from "./OrderPhoneList";
 import FraudDetectionModal from "./FraudDetectionModal";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import { showToast } from "@/lib/toast";
+import DisplayAgoTime from "../common/DisplayAgoTime";
 
 const STATUS_COLOR_MAP = {
   Pending: "text-yellow-600 bg-yellow-100",
@@ -134,14 +135,14 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
       !formData.totalCOD ||
       !formData.productCode
     ) {
-      showToast("সবগুলি ফিল্ড পূরণ করুন",{ position : "top" });
+      showToast("সবগুলি ফিল্ড পূরণ করুন", { position: "top" });
       toast.error("সবগুলি ফিল্ড পূরণ করুন");
       return;
     }
 
     const result = await updateOrder(formData);
     if (result.success) {
-      showToast("Updated",{ position : "top" })
+      showToast("Updated", { position: "top" });
       setIsEditing(false);
     } else {
       showMessage("alert", `ত্রুটি: ${result.message}`, null);
@@ -304,6 +305,7 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
                 </div>
                 <div className="text-xs font-medium flex flex-col">
                   <DisplayTime timeStamp={order.activities[0]?.timestamp} />
+                  <DisplayAgoTime timeStamp={order.activities[0]?.timestamp} />
                 </div>
               </div>
 
@@ -369,7 +371,10 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
             {lastActivity && (
               <div className="flex justify-between items-start">
                 <span className="text-sm">{lastActivity.description}</span>
-                <DisplayTime timeStamp={lastActivity.timestamp} />
+                <div className="fflex flex-col">
+                  <DisplayTime timeStamp={lastActivity.timestamp} />
+                  <DisplayAgoTime timeStamp={lastActivity.timestamp} />
+                </div>
               </div>
             )}
 

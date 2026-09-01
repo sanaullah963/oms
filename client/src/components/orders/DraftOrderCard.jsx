@@ -26,6 +26,7 @@ import {
   DRAFT_CALL_STATUS_META,
 } from "@/constants/orderConstants";
 import { formatDate, formatTime } from "@/utils/dateUtils";
+import DisplayAgoTime from "../common/DisplayAgoTime";
 
 const PHONE_REGEX = /^01[3-9]\d{8}$/;
 
@@ -607,6 +608,9 @@ export default function DraftOrderCard({ draft }) {
                   <DisplayTime
                     timeStamp={draft?.lastActivityAt || draft?.updatedAt}
                   />
+                  <DisplayAgoTime
+                    timeStamp={draft?.lastActivityAt || draft?.updatedAt}
+                  />
                 </div>
               </div>
 
@@ -703,6 +707,7 @@ export default function DraftOrderCard({ draft }) {
                   সর্বশেষ নোট: {draft.callNote}
                 </span>
                 <DisplayTime timeStamp={draft?.lastCallAt} />
+                <DisplayAgoTime timeStamp={draft?.lastCallAt} />
               </div>
             )}
 

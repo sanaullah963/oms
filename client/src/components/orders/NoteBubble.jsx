@@ -8,6 +8,7 @@ import DisplayTime from "@/components/common/DisplayTime";
 import OrderActivityTimeline from "@/components/orders/OrderActivityTimeline";
 import OrderPhoneList from "@/components/orders/OrderPhoneList";
 import { copyToClipboard } from "@/utils/copyToClipboard";
+import DisplayAgoTime from "../common/DisplayAgoTime";
 
 function NoteBubble({ order, onUpdate }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -110,6 +111,7 @@ function NoteBubble({ order, onUpdate }) {
           <OrderPhoneList castomerPhone={order.castomerPhone} onCopy={handleCopy} />
           <div className="text-sm font-medium text-purple-500">
             <DisplayTime timeStamp={lastActivity?.timestamp} />
+            <DisplayAgoTime timeStamp={lastActivity?.timestamp} />
           </div>
         </div>
       </div>
