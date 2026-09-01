@@ -74,11 +74,3 @@ httpServer.listen(PORT, () => {
 });
 
 
-
-const cc = async () => {
-  try {} catch (error) {
-    console.log(error);
-  }
-};
-
-cc();

@@ -8,13 +8,23 @@ const BASE = "/api/orders/drafts";
 // সরাসরি convert() কল করে Pending queue-তে পাঠাতেও পারে (কাস্টমারকে কল করে
 // কনফার্ম করার পর) — এতে Meta Pixel attribution ডেটা (fbp/fbc ইত্যাদি) বজায় থাকে।
 export const draftOrderService = {
-  getAll: () => api.get(BASE),
+  // includeCancelled: true দিলে callStatus "cancelled" (বাতিল করা) ড্রাফটগুলোও
+  // রেসপন্সে ফেরত আসবে (ডিফল্টে বাদ যায়)
+  getAll: (includeCancelled = false) =>
+    api.get(BASE, {
+      params: includeCancelled ? { includeCancelled: "1" } : undefined,
+    }),
 
   // ড্রাফটটা ডাটাবেজ থেকে সম্পূর্ণ ডিলিট করে দেয় (ম্যানুয়ালি লিস্ট থেকে বাদ দেওয়ার জন্য)
   remove: (draftId) => api.delete(`${BASE}/${draftId}`),
 
   // এডমিন ড্রাফটের তথ্য এডিট করে সেভ করে (কনভার্ট না করেই)
   update: (draftId, data) => api.patch(`${BASE}/${draftId}`, data),
+
+  // কাস্টমারকে কল করার পর কী হলো তা লগ করা — callStatus:
+  // "no_answer" | "phone_off" | "talked" (note আবশ্যক) | "cancelled" | "reopen"
+  updateCallStatus: (draftId, callStatus, note = "") =>
+    api.patch(`${BASE}/${draftId}/call-status`, { callStatus, note }),
 
   // এই ড্রাফটকে আসল Order-এ (Pending queue) কনভার্ট করে — চাইলে body-তে এডিট করা
   // ভ্যালু দেওয়া যায়, না দিলে draft-এ যা সেভ আছে তাই ব্যবহার হবে

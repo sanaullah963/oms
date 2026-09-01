@@ -7,6 +7,7 @@ const { bookSteadfastBulk } = require("../controllers/steadfastBulkController");
 const {
   updateDraftOrder,
   convertDraftToOrder,
+  updateDraftCallStatus,
 } = require("../controllers/draftOrderController");
 
 router.get("/", orderController.getOrders);
@@ -17,6 +18,7 @@ router.get("/master-search", orderController.masterSearchOrders);
 // ইনকমপ্লিট/ড্রাফট অর্ডার (কাস্টমার সাবমিট করার আগেই ফর্মে যা পূরণ করেছে)
 router.get("/drafts", orderController.getDraftOrders);
 router.patch("/drafts/:id", updateDraftOrder); // এডিট করে সেভ (কনভার্ট না করেই)
+router.patch("/drafts/:id/call-status", updateDraftCallStatus); // কল ধরেনি/ফোন বন্ধ/কথা হয়েছে/বাতিল
 router.post("/drafts/:id/convert", convertDraftToOrder); // Pending queue-তে কনভার্ট
 router.delete("/drafts/:id", orderController.dismissDraftOrder); // সম্পূর্ণ ডিলিট করে
 router.post("/manual-single", orderController.createManualOrder);

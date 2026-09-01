@@ -55,8 +55,16 @@ exports.getDashboardSummary = async (req, res) => {
       "courier.courierStatus": "cancelled",
       "courier.statusUpdatedAt": { $gte: fromDate, $lte: toDate },
     };
+    // --- এই রেঞ্জে বুক হয়েছে কিন্তু এখনো ডেলিভারড/ক্যান্সেলড হয়নি এমন পার্সেল ---
+    const pendingFilter = {
+      ...ownershipFilter,
+      "courier.trackingId": { $ne: null },
+      "courier.bookedAt": { $gte: fromDate, $lte: toDate },
+      "courier.courierStatus": { $nin: ["delivered", "cancelled"] },
+    };
 
-    const [sentAgg, deliveredAgg, cancelledAgg, dailyTrendRaw, mismatches] = await Promise.all([
+    const [sentAgg, deliveredAgg, cancelledAgg, pendingAgg, dailyTrendRaw, mismatches] =
+      await Promise.all([
       // মোট পাঠানো (বুকড) পার্সেল
       Order.aggregate([
         { $match: sentFilter },
@@ -85,6 +93,11 @@ exports.getDashboardSummary = async (req, res) => {
             deliveryCharge: { $sum: "$courier.deliveryCharge" },
           },
         },
+      ]),
+      // মোট পেন্ডিং পার্সেল (বুক হয়েছে, এখনো ডেলিভারড/ক্যান্সেলড হয়নি) ও তার COD এমাউন্ট
+      Order.aggregate([
+        { $match: pendingFilter },
+        { $group: { _id: null, count: { $sum: 1 }, totalCOD: { $sum: "$totalCOD" } } },
       ]),
       // চার্টের জন্য দৈনিক ট্রেন্ড (delivered/cancelled)
       Order.aggregate([
@@ -126,6 +139,7 @@ exports.getDashboardSummary = async (req, res) => {
       codCharge: 0,
     };
     const cancelled = cancelledAgg[0] || { count: 0, deliveryCharge: 0 };
+    const pending = pendingAgg[0] || { count: 0, totalCOD: 0 };
 
     const totalDeliveryCharge = (delivered.deliveryCharge || 0) + (cancelled.deliveryCharge || 0);
     const netDeduction = totalDeliveryCharge + (delivered.codCharge || 0);
@@ -157,6 +171,8 @@ exports.getDashboardSummary = async (req, res) => {
         deliveredCount: delivered.count,
         deliveredAmount: delivered.deliveredAmount || 0,
         cancelledCount: cancelled.count,
+        pendingCount: pending.count,
+        pendingAmount: pending.totalCOD,
         totalDeliveryCharge,
         deliveredDeliveryCharge: delivered.deliveryCharge || 0,
         cancelledDeliveryCharge: cancelled.deliveryCharge || 0,
@@ -174,11 +190,12 @@ exports.getDashboardSummary = async (req, res) => {
   }
 };
 
-// --- GET /api/dashboard/orders?status=sent|delivered|cancelled&from=&to=&moderatorId= ---
-// কার্ডে ক্লিক করলে সংশ্লিষ্ট পার্সেলগুলোর লিস্ট দেখানোর জন্য
+// --- GET /api/dashboard/orders?status=sent|delivered|cancelled|pending&from=&to=&moderatorId=&productCode= ---
+// কার্ডে ক্লিক করলে সংশ্লিষ্ট পার্সেলগুলোর লিস্ট দেখানোর জন্য (প্রোডাক্ট এনালিটিক্স কার্ড থেকেও
+// একই এন্ডপয়েন্ট ব্যবহার হয়, শুধু ঐচ্ছিক productCode ফিল্টার যোগ হয়)
 exports.getDashboardOrders = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, productCode } = req.query;
     const { fromDate, toDate } = getDateRange(req);
     const ownershipFilter = getOwnershipFilter(req);
 
@@ -197,14 +214,25 @@ exports.getDashboardOrders = async (req, res) => {
     } else if (status === "cancelled") {
       filter["courier.courierStatus"] = "cancelled";
       filter["courier.statusUpdatedAt"] = { $gte: fromDate, $lte: toDate };
+    } else if (status === "pending") {
+      // getDashboardSummary-এর pendingFilter-এর সাথে হুবহু এক থাকতে হবে
+      filter["courier.trackingId"] = { $ne: null };
+      filter["courier.bookedAt"] = { $gte: fromDate, $lte: toDate };
+      filter["courier.courierStatus"] = { $nin: ["delivered", "cancelled"] };
     } else {
       return res
         .status(400)
-        .json({ message: "status প্যারামিটার সঠিক নয় (sent/delivered/cancelled)।" });
+        .json({ message: "status প্যারামিটার সঠিক নয় (sent/delivered/cancelled/pending)।" });
+    }
+
+    if (productCode) {
+      filter.productCode = productCode;
     }
 
     const orders = await Order.find(filter)
-      .select("castomerName castomerPhone totalCOD orderStatus courier createdByName createdAt")
+      .select(
+        "castomerName castomerPhone totalCOD productCode orderStatus courier activities rawInputText note permanentNote createdByName createdAt",
+      )
       .sort({ "courier.statusUpdatedAt": -1, "courier.bookedAt": -1 })
       .limit(500);
 
@@ -212,5 +240,101 @@ exports.getDashboardOrders = async (req, res) => {
   } catch (error) {
     console.error("Dashboard orders list error:", error);
     return res.status(500).json({ message: "লিস্ট আনতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- GET /api/dashboard/product-summary?from=&to=&moderatorId= ---
+// নির্দিষ্ট তারিখ-রেঞ্জে প্রতিটা productCode অনুযায়ী কয়টা পাঠানো/ডেলিভারড/ক্যান্সেলড/পেন্ডিং
+// হয়েছে ও তার টাকার এমাউন্ট — নতুন প্রোডাক্ট-ভিত্তিক এনালিটিক্স সেকশনের জন্য
+exports.getProductSummary = async (req, res) => {
+  try {
+    const { fromDate, toDate } = getDateRange(req);
+    const ownershipFilter = getOwnershipFilter(req);
+
+    const sentFilter = {
+      ...ownershipFilter,
+      "courier.bookedAt": { $gte: fromDate, $lte: toDate },
+    };
+    const deliveredFilter = {
+      ...ownershipFilter,
+      "courier.courierStatus": "delivered",
+      "courier.statusUpdatedAt": { $gte: fromDate, $lte: toDate },
+    };
+    const cancelledFilter = {
+      ...ownershipFilter,
+      "courier.courierStatus": "cancelled",
+      "courier.statusUpdatedAt": { $gte: fromDate, $lte: toDate },
+    };
+    const pendingFilter = {
+      ...ownershipFilter,
+      "courier.trackingId": { $ne: null },
+      "courier.bookedAt": { $gte: fromDate, $lte: toDate },
+      "courier.courierStatus": { $nin: ["delivered", "cancelled"] },
+    };
+
+    const groupByProduct = (amountField) => [
+      { $group: { _id: "$productCode", count: { $sum: 1 }, amount: { $sum: amountField } } },
+    ];
+
+    const [sentAgg, deliveredAgg, cancelledAgg, pendingAgg] = await Promise.all([
+      Order.aggregate([{ $match: sentFilter }, ...groupByProduct("$totalCOD")]),
+      Order.aggregate([
+        { $match: deliveredFilter },
+        ...groupByProduct("$courier.deliveredCodAmount"),
+      ]),
+      Order.aggregate([{ $match: cancelledFilter }, ...groupByProduct("$totalCOD")]),
+      Order.aggregate([{ $match: pendingFilter }, ...groupByProduct("$totalCOD")]),
+    ]);
+
+    // --- সব agg থেকে productCode-ভিত্তিক ম্যাপে একসাথে জোড়া লাগানো ---
+    const productMap = {};
+    const ensure = (code) => {
+      const key = code || "N/A";
+      if (!productMap[key]) {
+        productMap[key] = {
+          productCode: key,
+          sentCount: 0,
+          sentAmount: 0,
+          deliveredCount: 0,
+          deliveredAmount: 0,
+          cancelledCount: 0,
+          cancelledAmount: 0,
+          pendingCount: 0,
+          pendingAmount: 0,
+        };
+      }
+      return productMap[key];
+    };
+
+    sentAgg.forEach((row) => {
+      const p = ensure(row._id);
+      p.sentCount = row.count;
+      p.sentAmount = row.amount || 0;
+    });
+    deliveredAgg.forEach((row) => {
+      const p = ensure(row._id);
+      p.deliveredCount = row.count;
+      p.deliveredAmount = row.amount || 0;
+    });
+    cancelledAgg.forEach((row) => {
+      const p = ensure(row._id);
+      p.cancelledCount = row.count;
+      p.cancelledAmount = row.amount || 0;
+    });
+    pendingAgg.forEach((row) => {
+      const p = ensure(row._id);
+      p.pendingCount = row.count;
+      p.pendingAmount = row.amount || 0;
+    });
+
+    const products = Object.values(productMap).sort((a, b) => b.sentCount - a.sentCount);
+
+    return res.status(200).json({
+      range: { from: fromDate, to: toDate },
+      products,
+    });
+  } catch (error) {
+    console.error("Product summary error:", error);
+    return res.status(500).json({ message: "প্রোডাক্ট এনালিটিক্স আনতে ব্যর্থ হয়েছে।" });
   }
 };

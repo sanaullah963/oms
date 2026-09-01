@@ -15,6 +15,7 @@ function SearchAndMenu() {
     { title: "Home", link: "/" },
     { title: "🔍 মাস্টার সার্চ", link: "/search" },
     { title: "📊 Dashboard", link: "/dashboard" },
+    { title: "🚚 ট্র্যাকিং পার্সেল", link: "/dashboard/tracking-parcels" },
     { title: "Note", link: "/note" },
     { title: "Comment", link: "/comment" },
     ...(user?.role === "admin"

@@ -9,6 +9,17 @@ const { createLandingOrder } = require("../utils/landingOrderCreation");
 
 const PHONE_REGEX = /^01[3-9]\d{8}$/;
 
+// callStatus এর জন্য বৈধ ইনপুট ভ্যালু — "reopen" স্কিমাতে নেই, এটা শুধু
+// callStatus-কে আবার "none"-এ ফিরিয়ে নেওয়ার একটা বিশেষ নির্দেশ (ভুল করে
+// cancel/talked করে ফেললে বা কাস্টমার আবার যোগাযোগ করলে ব্যবহার করার জন্য)
+const CALL_STATUS_INPUTS = [
+  "no_answer",
+  "phone_off",
+  "talked",
+  "cancelled",
+  "reopen",
+];
+
 // --- PATCH /api/orders/drafts/:id — এডমিন ড্রাফট এডিট করে সেভ করে (কনভার্ট না করেই,
 // শুধু তথ্য ঠিক করার জন্য — যেমন কাস্টমার ফোনে ঠিকানা বদলাতে বললে) ---
 exports.updateDraftOrder = async (req, res) => {
@@ -246,5 +257,78 @@ exports.convertDraftToOrder = async (req, res) => {
   } catch (error) {
     console.error("Convert draft to order error:", error);
     return res.status(500).json({ message: "কনভার্ট করতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- PATCH /api/orders/drafts/:id/call-status — কাস্টমারকে কল করার পর কী হলো তা
+// লগ করার জন্য (কল ধরেনি / ফোন বন্ধ / কথা হয়েছে-কাস্টম নোট / বাতিল)। "cancelled"
+// সেট হলে draft-টা ডিলিট হয় না, শুধু getDraftOrders-এর ডিফল্ট লিস্ট থেকে বাদ পড়ে
+// যায় (দেখুন orderController.getDraftOrders)। "reopen" পাঠালে callStatus আবার
+// "none"-এ ফিরে যায় (ভুল করে বাতিল হয়ে গেলে বা কাস্টমার আবার যোগাযোগ করলে)। ---
+exports.updateDraftCallStatus = async (req, res) => {
+  try {
+    const { callStatus, note } = req.body;
+
+    if (!CALL_STATUS_INPUTS.includes(callStatus)) {
+      return res
+        .status(400)
+        .json({ message: "সঠিক কল স্ট্যাটাস নির্বাচন করুন।" });
+    }
+
+    // "কথা হয়েছে" স্ট্যাটাসের মূল উদ্দেশ্যই হলো কী কথা হয়েছে সেটা কাস্টমভাবে
+    // লিখে রাখা, তাই নোট ছাড়া এই স্ট্যাটাস সেভ হতে দেওয়া হয় না।
+    if (callStatus === "talked" && !note?.trim()) {
+      return res
+        .status(400)
+        .json({ message: "কাস্টমারের সাথে কী কথা হয়েছে তা লিখুন।" });
+    }
+
+    const draft = await DraftOrder.findById(req.params.id);
+    if (!draft) {
+      return res.status(404).json({ message: "ড্রাফট খুঁজে পাওয়া যায়নি।" });
+    }
+
+    const isReopen = callStatus === "reopen";
+    const nextStatus = isReopen ? "none" : callStatus;
+
+    draft.callStatus = nextStatus;
+    draft.lastCallAt = new Date();
+
+    if (isReopen) {
+      draft.callNote = null;
+    } else {
+      draft.callNote = note?.trim() || null;
+      draft.callAttempts = (draft.callAttempts || 0) + 1;
+      draft.callLogs.push({
+        status: callStatus,
+        note: note?.trim() || null,
+        by: req.user?.name || null,
+        at: new Date(),
+      });
+    }
+
+    await draft.save();
+
+    const page = await LandingPage.findOne({
+      slug: draft.landingPageSlug,
+    });
+    const enrichedDraft = withLandingPageMeta(draft, page);
+
+    const io = req.app.get("io");
+    if (io) {
+      if (nextStatus === "cancelled") {
+        // বাতিল হলে "ইনকমপ্লিট" লিস্ট থেকে সরে যাবে (ডিলিট হয় না, রিওপেন করা যায়)
+        emitDraftRemove(io, draft._id);
+      } else {
+        emitDraftUpdate(io, enrichedDraft);
+      }
+    }
+
+    return res.status(200).json({ success: true, draft: enrichedDraft });
+  } catch (error) {
+    console.error("Update draft call status error:", error);
+    return res
+      .status(500)
+      .json({ message: "কল স্ট্যাটাস আপডেট করতে ব্যর্থ হয়েছে।" });
   }
 };

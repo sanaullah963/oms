@@ -125,6 +125,31 @@ export function OrderProvider({ children }) {
     return res;
   }, []);
 
+  // --- কাস্টমারকে কল করার পর কী হলো তা লগ করা (কল ধরেনি/ফোন বন্ধ/কথা হয়েছে/বাতিল) ---
+  // "cancelled" হলে ব্যাকএন্ড draftOrderRemove ইভেন্ট পাঠায় (ডিলিট করে না), তাই
+  // socket থেকে এমনিতেই লিস্ট থেকে বাদ পড়বে — তারপরও fallback হিসেবে এখানে
+  // optimistic-ভাবে সরিয়ে দেওয়া হচ্ছে যাতে socket দেরি করলেও UI সাথে সাথে আপডেট হয়।
+  const updateDraftCallStatus = useCallback(
+    async (draftId, callStatus, note = "") => {
+      const res = await draftOrderService.updateCallStatus(
+        draftId,
+        callStatus,
+        note,
+      );
+      if (callStatus === "cancelled") {
+        setDraftOrders((prev) => prev.filter((d) => d?._id !== draftId));
+      } else if (res?.data?.draft) {
+        setDraftOrders((prev) =>
+          prev.map((draft) =>
+            draft?._id === draftId ? res.data.draft : draft,
+          ),
+        );
+      }
+      return res;
+    },
+    [],
+  );
+
   // --- ড্রাফটকে Pending queue-তে কনভার্ট ---
   const convertDraftOrder = useCallback(async (draftId, data = {}) => {
     const res = await draftOrderService.convert(draftId, data);
@@ -297,6 +322,7 @@ export function OrderProvider({ children }) {
     draftLoading,
     deleteDraftOrder,
     updateDraftOrder,
+    updateDraftCallStatus,
     convertDraftOrder,
   };
 

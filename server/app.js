@@ -6,6 +6,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
 const facebookRoutes = require("./routes/facebookRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const trackingParcelRoutes = require("./routes/trackingParcelRoutes");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const pushRoutes = require("./routes/pushRoutes");
@@ -38,6 +39,8 @@ app.use("/api/orders", protect, orderRoutes);
 app.use("/api/facebook", facebookRoutes);
 // dashboard: মডারেটর নিজের অর্ডারের এনালাইসিস দেখবে, এডমিন সব/নির্দিষ্ট মডারেটরের দেখবে (কন্ট্রোলারে স্কোপ করা হয়)
 app.use("/api/dashboard", protect, dashboardRoutes);
+// tracking-parcels: কুরিয়ারে বুক হওয়া পার্সেলের courier.courierStatus অনুযায়ী কার্ড + লিস্ট (dashboard-এর মতোই স্কোপড)
+app.use("/api/tracking-parcels", protect, trackingParcelRoutes);
 
 // ------ শুধুমাত্র এডমিন অ্যাক্সেস করতে পারবে ---
 app.use("/api/users", userRoutes); // ভিতরেই protect+adminOnly প্রয়োগ করা আছে

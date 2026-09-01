@@ -62,6 +62,51 @@ const draftOrderSchema = new Schema(
       index: true,
     },
 
+    // --- এডমিন কাস্টমারকে কল করার পর কী হয়েছে তার স্ট্যাটাস (status ফিল্ড থেকে
+    // আলাদা — status বলে draft-টা এখনো "active" কিনা, callStatus বলে সর্বশেষ কল
+    // করার ফলাফল কী):
+    //   none      → এখনো কল করা হয়নি
+    //   no_answer → কল দেওয়া হয়েছে, কাস্টমার ধরেনি
+    //   phone_off → কল দেওয়া হয়েছে, নাম্বার বন্ধ পাওয়া গেছে
+    //   talked    → কাস্টমারের সাথে কথা হয়েছে (কী কথা হয়েছে তা callNote-এ থাকে)
+    //   cancelled → অনেকবার চেষ্টা করেও কনফার্ম/পেন্ডিং করা যায়নি, তাই বাতিল করা
+    //               হয়েছে — এই স্ট্যাটাস হলে getDraftOrders আর এটা ফ্রন্টএন্ডে
+    //               লোড করে না (ডাটাবেজ থেকে ডিলিট হয় না, চাইলে রিওপেন করা যায়)
+    callStatus: {
+      type: String,
+      enum: ["none", "no_answer", "phone_off", "talked", "cancelled"],
+      default: "none",
+      index: true,
+    },
+
+    // --- সর্বশেষ কল-স্ট্যাটাসের সাথে সংশ্লিষ্ট কাস্টম নোট (talked হলে কি কথা
+    // হয়েছে, cancelled হলে কেন বাতিল করা হলো — এডমিন নিজে লিখে সেভ করে) ---
+    callNote: { type: String, default: null },
+
+    // --- মোট কতবার কল করার ফলাফল লগ করা হয়েছে (no_answer/phone_off/talked/
+    // cancelled প্রতিবার গণনা হয়) — বারবার চেষ্টার পর cancel করার সিদ্ধান্ত নিতে
+    // সাহায্য করে ---
+    callAttempts: { type: Number, default: 0 },
+
+    // --- সর্বশেষ কবে কল-স্ট্যাটাস আপডেট হয়েছে ---
+    lastCallAt: { type: Date, default: null },
+
+    // --- প্রতিটা কল-স্ট্যাটাস পরিবর্তনের ইতিহাস (UI-তে টাইমলাইন হিসেবে দেখানোর জন্য) ---
+    callLogs: {
+      type: [
+        {
+          status: {
+            type: String,
+            enum: ["no_answer", "phone_off", "talked", "cancelled"],
+          },
+          note: { type: String, default: null },
+          by: { type: String, default: null }, // কোন এডমিন/মডারেটর করেছে (নাম)
+          at: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
+
     // --- সাবমিট সম্পন্ন হলে আসল Order-এর রেফারেন্স ---
     completedOrder: {
       type: Schema.Types.ObjectId,

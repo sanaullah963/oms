@@ -13,36 +13,8 @@ import FinancialSummary from "@/components/dashboard/FinancialSummary";
 import TrendChart from "@/components/dashboard/TrendChart";
 import StatusPieChart from "@/components/dashboard/StatusPieChart";
 import MismatchTable from "@/components/dashboard/MismatchTable";
-
-function toISODate(date) {
-  return date.toISOString().split("T")[0];
-}
-
-// --- প্রিসেট (আজ/গতকাল/৭দিন/৩০দিন/১বছর) থেকে from-to ডেট বের করা ---
-function getPresetRange(preset) {
-  const to = new Date();
-  const from = new Date();
-  switch (preset) {
-    case "today":
-      break;
-    case "yesterday":
-      from.setDate(from.getDate() - 1);
-      to.setDate(to.getDate() - 1);
-      break;
-    case "7d":
-      from.setDate(from.getDate() - 6);
-      break;
-    case "30d":
-      from.setDate(from.getDate() - 29);
-      break;
-    case "1y":
-      from.setFullYear(from.getFullYear() - 1);
-      break;
-    default:
-      break;
-  }
-  return { from: toISODate(from), to: toISODate(to) };
-}
+import ProductAnalytics from "@/components/dashboard/ProductAnalytics";
+import { getPresetRange } from "@/utils/dateRangeUtils";
 
 function DashboardPageContent() {
   const { isAdmin } = useAuth();
@@ -101,6 +73,12 @@ function DashboardPageContent() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/dashboard/tracking-parcels"
+              className="px-3 py-1.5 text-sm rounded-md font-medium bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+            >
+              🚚 ট্র্যাকিং পার্সেল
+            </Link>
             {isAdmin && (
               <>
                 <Link
@@ -177,6 +155,8 @@ function DashboardPageContent() {
             </>
           )
         )}
+
+        <ProductAnalytics moderatorId={moderatorId} isAdmin={isAdmin} />
       </div>
 
       {drillDownStatus && (

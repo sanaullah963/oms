@@ -27,6 +27,23 @@ export default function StatsCards({ totals, onCardClick }) {
         </div>
       </button>
 
+      {/* --- পেন্ডিং পার্সেল (বুক হয়েছে, এখনো ডেলিভারড/ক্যান্সেলড হয়নি) --- */}
+      <button
+        onClick={() => onCardClick?.("pending")}
+        className="text-left rounded-xl p-4 shadow-sm bg-amber-100 text-amber-700 hover:shadow-md transition cursor-pointer flex justify-center items-center flex-col"
+      >
+        <div className="flex gap-2 items-center">
+          <div className="text-2xl">⏳</div>
+          <div className="text-xl font-bold">
+            {(totals.pendingCount || 0).toLocaleString("bn-BD")}
+          </div>
+        </div>
+        <div className="text-xs font-medium mt-1">পেন্ডিং পার্সেল (ডেলিভারি বাকি)</div>
+        <div className="text-sm font-semibold mt-1">
+          ৳{(totals.pendingAmount || 0).toLocaleString("bn-BD")}
+        </div>
+      </button>
+
       {/* --- ডেলিভারড (৩টা এমাউন্ট সহ) --- */}
       <button
         onClick={() => onCardClick?.("delivered")}

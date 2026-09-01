@@ -1,12 +1,25 @@
 "use client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { dashboardService } from "@/services/dashboardService";
 import { copyToClipboard } from "@/utils/copyToClipboard";
+import { formatDate, formatTime } from "@/utils/dateUtils";
+import TrackingActivityTimeline from "@/components/orders/TrackingActivityTimeline";
 
 const TITLE_MAP = {
   sent: "📦 পাঠানো পার্সেল",
   delivered: "✅ ডেলিভারড পার্সেল",
   cancelled: "❌ ক্যান্সেলড পার্সেল",
+  pending: "⏳ পেন্ডিং পার্সেল",
+};
+
+const COURIER_STATUS_COLOR_MAP = {
+  pending: "bg-amber-300 text-blue-900",
+  assigned: "bg-blue-300 text-blue-900",
+  review: "bg-purple-300 text-purple-900",
+  partial_delivered: "bg-orange-300 text-orange-900",
+  delivered: "bg-green-300 text-green-900",
+  cancelled: "bg-red-300 text-red-900",
+  unknown: "bg-gray-200 text-gray-700",
 };
 
 export default function DashboardOrderListModal({
@@ -14,18 +27,21 @@ export default function DashboardOrderListModal({
   from,
   to,
   moderatorId,
+  productCode,
   onClose,
 }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError("");
+    setExpandedId(null);
     dashboardService
-      .getOrders(status, from, to, moderatorId)
+      .getOrders(status, from, to, moderatorId, productCode)
       .then((res) => {
         if (!cancelled) setOrders(res.data.orders);
       })
@@ -39,7 +55,9 @@ export default function DashboardOrderListModal({
     return () => {
       cancelled = true;
     };
-  }, [status, from, to, moderatorId]);
+  }, [status, from, to, moderatorId, productCode]);
+
+  const title = TITLE_MAP[status] || "পার্সেল";
 
   return (
     <div
@@ -52,7 +70,8 @@ export default function DashboardOrderListModal({
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
           <h3 className="font-bold text-gray-800">
-            {TITLE_MAP[status] || "পার্সেল"} — {orders.length}টি
+            {title}
+            {productCode ? ` — ${productCode}` : ""} — {orders.length}টি
           </h3>
           <button
             onClick={onClose}
@@ -84,27 +103,96 @@ export default function DashboardOrderListModal({
                 </tr>
               </thead>
               <tbody>
-                {orders.map((o, index) => (
-                  <tr key={o._id} className="border-b last:border-0">
-                    <td className="py-2 px-4 text-gray-400">{index + 1}</td>
-                    <td className="py-2 px-4 font-medium">{o.castomerName}</td>
-                    <td
-                      className="py-2 px-4 text-blue-600 cursor-pointer"
-                      onClick={() => copyToClipboard(o.castomerPhone[0])}
-                    >
-                      {Array.isArray(o.castomerPhone)
-                        ? o.castomerPhone[0]
-                        : o.castomerPhone}
-                    </td>
-                    <td className="py-2 px-4">৳{o.totalCOD}</td>
-                    <td className="py-2 px-4 text-blue-600 cursor-pointer" onClick={() => copyToClipboard(o.courier?.trackingId)}>
-                      {o.courier?.trackingId || "-"}
-                    </td>
-                    <td className="py-2 px-4 text-gray-500">
-                      {o.createdByName || "-"}
-                    </td>
-                  </tr>
-                ))}
+                {orders.map((o, index) => {
+                  const isExpanded = expandedId === o._id;
+                  return (
+                    <React.Fragment key={o._id}>
+                      <tr
+                        onClick={() => setExpandedId(isExpanded ? null : o._id)}
+                        className={`border-b last:border-0 cursor-pointer hover:bg-gray-50 ${
+                          isExpanded ? "bg-indigo-50" : ""
+                        }`}
+                      >
+                        <td className="py-2 px-4 text-gray-400">
+                          <span className="inline-block w-3 text-gray-400">
+                            {isExpanded ? "▾" : "▸"}
+                          </span>{" "}
+                          {index + 1}
+                        </td>
+                        <td className="py-2 px-4 font-medium">{o.castomerName}</td>
+                        <td
+                          className="py-2 px-4 text-blue-600 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(
+                              Array.isArray(o.castomerPhone) ? o.castomerPhone[0] : o.castomerPhone,
+                            );
+                          }}
+                        >
+                          {Array.isArray(o.castomerPhone) ? o.castomerPhone[0] : o.castomerPhone}
+                        </td>
+                        <td className="py-2 px-4">৳{o.totalCOD}</td>
+                        <td
+                          className="py-2 px-4 text-blue-600 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(o.courier?.trackingId);
+                          }}
+                        >
+                          {o.courier?.trackingId || "-"}
+                        </td>
+                        <td className="py-2 px-4 text-gray-500">{o.createdByName || "-"}</td>
+                      </tr>
+
+                      {isExpanded && (
+                        <tr className="border-b last:border-0 bg-gray-50">
+                          <td colSpan={6} className="px-4 py-3">
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-indigo-100 text-indigo-700">
+                                {o.orderStatus}
+                              </span>
+                              {o.productCode && (
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-100 text-purple-700">
+                                  {o.productCode}
+                                </span>
+                              )}
+                              {o.courier?.courierStatus && (
+                                <span
+                                  className={`text-xs font-semibold px-2 py-0.5 rounded-sm ${
+                                    COURIER_STATUS_COLOR_MAP[o.courier.courierStatus] ||
+                                    COURIER_STATUS_COLOR_MAP.unknown
+                                  }`}
+                                >
+                                  {o.courier.courierStatus}
+                                </span>
+                              )}
+                              {o.courier?.statusUpdatedAt && (
+                                <span className="text-xs text-gray-500">
+                                  আপডেট: {formatDate(o.courier.statusUpdatedAt)}{" "}
+                                  {formatTime(o.courier.statusUpdatedAt)}
+                                </span>
+                              )}
+                            </div>
+
+                            {o.rawInputText && (
+                              <p className="text-xs text-gray-600 mb-1 whitespace-pre-wrap">
+                                {o.rawInputText}
+                              </p>
+                            )}
+                            {o.permanentNote && (
+                              <p className="text-sm text-red-700 mb-1">{o.permanentNote}</p>
+                            )}
+                            {o.note && (
+                              <p className="text-xs text-gray-600 mb-1">নোট: {o.note}</p>
+                            )}
+
+                            <TrackingActivityTimeline activities={o.activities} />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           )}

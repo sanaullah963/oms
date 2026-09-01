@@ -461,7 +461,16 @@ exports.steadfastBookingWebhook = async (req, res) => {
 // মডারেটরের না, তাই admin/moderator সবাই একই লিস্ট দেখে।
 exports.getDraftOrders = async (req, res) => {
   try {
-    const drafts = await DraftOrder.find({ status: "active" })
+    // callStatus "cancelled" মানে অনেকবার চেষ্টা করেও কাস্টমারকে ধরা/কনফার্ম করা
+    // যায়নি বলে এডমিন নিজে বাতিল করেছে — এগুলো ডাটাবেজে থেকে যায় (ডিলিট হয় না)
+    // কিন্তু ডিফল্টভাবে "ইনকমপ্লিট" লিস্টে আর লোড হয় না। ?includeCancelled=1
+    // দিলে সেগুলোও দেখা যায় (রিভিউ/রিওপেন করার জন্য)।
+    const includeCancelled = req.query.includeCancelled === "1";
+    const filter = includeCancelled
+      ? { status: "active" }
+      : { status: "active", callStatus: { $ne: "cancelled" } };
+
+    const drafts = await DraftOrder.find(filter)
       .sort({ lastActivityAt: -1, updatedAt: -1 })
       .limit(200);
 

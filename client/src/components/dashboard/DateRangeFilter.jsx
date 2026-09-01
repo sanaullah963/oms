@@ -158,6 +158,7 @@ import { useState } from "react";
 const PRESETS = [
   { key: "today", label: "আজ" },
   { key: "yesterday", label: "গতকাল" },
+  { key: "3d", label: "৩ দিন" },
   { key: "7d", label: "৭ দিন" },
   { key: "30d", label: "৩০ দিন" },
   { key: "1y", label: "১ বছর" },
