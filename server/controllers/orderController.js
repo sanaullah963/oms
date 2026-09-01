@@ -70,31 +70,102 @@ exports.getOrders = async (req, res) => {
         ? { $or: [{ createdBy: req.user._id }, { createdBy: null }] }
         : {};
 
-    const orders = await Order.aggregate([
+    // const orders = await Order.aggregate([
+    //   { $match: ownershipFilter },
+    //   // ১. last activity বের করা
+    //   {
+    //     $addFields: {
+    //       lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
+    //     },
+    //   },
+    //   // ২. filter: শেষ ২ দিনের activity, কিন্তু fully-finalized অর্ডার বাদ
+    //   {
+    //     $match: {
+    //       lastActivityTime: { $gte: twoDaysAgo },
+    //       $nor: [
+    //         {
+    //           orderStatus: { $in: ["Cancelled", "Delivered"] },
+    //           "courier.courierStatus": {
+    //             $in: ["cancelled", "delivered", "partial_delivered"],
+    //           },
+    //         },
+    //       ],
+    //     },
+    //   },
+    //   // ৩. সর্বশেষ activity অনুযায়ী সর্ট
+    //   { $sort: { lastActivityTime: -1 } },
+    // ]);
+    
+//  const orders = await Order.aggregate([
+//       { $match: ownershipFilter },
+//       {
+//         $match: {
+//           "courier.courierStatus": {
+//             $nin: ["cancelled", "delivered", "partial_delivered"],
+//           },
+//         },
+//       },
+//       // ২. last activity বের করা
+//       {
+//         $addFields: {
+//           lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
+//         },
+//       },
+//       // ৩. orderStatus "Cancelled"/"Delivered" হলে শুধু শেষ ২ দিনের মধ্যে activity
+//       // থাকলেই পাঠানো হবে (পুরোনো হয়ে গেলে ড্যাশবোর্ড থেকে সরে যাবে)। এর বাইরে বাকি
+//       // সব orderStatus-এর অর্ডার কোনো টাইম-লিমিট ছাড়াই সবসময় পাঠানো হবে।
+//       {
+//         $match: {
+//           $or: [
+//             { orderStatus: { $nin: ["Cancelled", "Delivered"] } },
+//             {
+//               orderStatus: { $in: ["Cancelled", "Delivered"] },
+//               lastActivityTime: { $gte: twoDaysAgo },
+//             },
+//           ],
+//         },
+//       },
+//       // ৪. সর্বশেষ activity অনুযায়ী সর্ট
+//       { $sort: { lastActivityTime: -1 } },
+//     ]);
+
+const orders = await Order.aggregate([
       { $match: ownershipFilter },
-      // ১. last activity বের করা
+      // ১. courier.courierStatus চূড়ান্তভাবে শেষ (cancelled/delivered/partial_delivered)
+      // হলে সেই অর্ডার আর ফ্রন্টএন্ডে পাঠানো হবে না — orderStatus যাই থাকুক না কেন,
+      // কুরিয়ারের ফাইনাল স্ট্যাটাসই এখানে সিদ্ধান্ত নেয়।
+      {
+        $match: {
+          "courier.courierStatus": {
+            $nin: ["cancelled", "delivered", "partial_delivered"],
+          },
+        },
+      },
+      // ২. last activity বের করা
       {
         $addFields: {
           lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
         },
       },
-      // ২. filter: শেষ ২ দিনের activity, কিন্তু fully-finalized অর্ডার বাদ
+      // ৩. orderStatus "Cancelled"/"Delivered"/"Booked" হলে শুধু শেষ ২ দিনের মধ্যে
+      // activity থাকলেই পাঠানো হবে (পুরোনো হয়ে গেলে ড্যাশবোর্ড থেকে সরে যাবে)। এর
+      // বাইরে বাকি সব orderStatus-এর অর্ডার কোনো টাইম-লিমিট ছাড়াই সবসময় পাঠানো হবে।
       {
         $match: {
-          lastActivityTime: { $gte: twoDaysAgo },
-          $nor: [
+          $or: [
+            { orderStatus: { $nin: ["Cancelled", "Delivered", "Booked"] } },
             {
-              orderStatus: { $in: ["Cancelled", "Delivered"] },
-              "courier.courierStatus": {
-                $in: ["cancelled", "delivered", "partial_delivered"],
-              },
+              orderStatus: { $in: ["Cancelled", "Delivered", "Booked"] },
+              lastActivityTime: { $gte: twoDaysAgo },
             },
           ],
         },
       },
-      // ৩. সর্বশেষ activity অনুযায়ী সর্ট
+      // ৪. সর্বশেষ activity অনুযায়ী সর্ট
       { $sort: { lastActivityTime: -1 } },
     ]);
+
+
     console.log("Orders fetched successfully:", orders.length);
     return res.status(200).json(orders || []);
   } catch (error) {
