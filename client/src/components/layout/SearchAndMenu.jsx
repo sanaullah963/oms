@@ -2,15 +2,31 @@
 import { useOrders } from "@/context/OrderContext";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname } from 'next/navigation'
 
-function SearchAndMenu() {
-  const { searchQuery, setSearchQuery, inportantNotes } = useOrders();
+// scope অনুযায়ী প্লেসহোল্ডার বদলায়, যাতে ইউজার বুঝতে পারে এখন কোথায় সার্চ হচ্ছে
+const SCOPE_PLACEHOLDER = {
+  orders: "নাম, ফোন, বা অর্ডার ID দিয়ে খুঁজুন...",
+  drafts: "ইনকমপ্লিট অর্ডারে নাম, ফোন বা ঠিকানা দিয়ে খুঁজুন...",
+  notes: "নোটের মধ্যে নাম, ফোন বা অর্ডার ID দিয়ে খুঁজুন...",
+};
+
+// scope: "orders" (ডিফল্ট) | "drafts" | "notes" — কোন পেজ/ট্যাবে সার্চবক্সটা বসানো
+// হয়েছে তার উপর ভিত্তি করে সার্চ কোন কালেকশনে/লিস্টে হবে সেটা ঠিক হয়
+// (দেখুন OrderContext.jsx-এর searchScope)।
+function SearchAndMenu({ scope = "orders" }) {
+  const { searchQuery, setSearchQuery, setSearchScope, inportantNotes } = useOrders();
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const countAttention = inportantNotes.length;
   const pathname = usePathname()
+
+  // এই সার্চবক্স যে পেজ/ট্যাবে মাউন্ট হয়েছে সেটা কনটেক্সটকে জানিয়ে দেওয়া, যাতে
+  // OrderContext ঠিক করতে পারে সার্চ কোথায় (orders/drafts/notes) চালাতে হবে
+  useEffect(() => {
+    setSearchScope(scope);
+  }, [scope, setSearchScope]);
   const menueItems = [
     { title: "Home", link: "/" },
     { title: "🔍 মাস্টার সার্চ", link: "/search" },
@@ -36,7 +52,7 @@ function SearchAndMenu() {
           <div className="relative">
             <input
               type="text"
-              placeholder="নাম, ফোন, বা অর্ডার ID দিয়ে খুঁজুন..."
+              placeholder={SCOPE_PLACEHOLDER[scope] || SCOPE_PLACEHOLDER.orders}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-200 focus:border-indigo-200 transition duration-11 text-sm"

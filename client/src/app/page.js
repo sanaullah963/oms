@@ -23,8 +23,13 @@ function HomePageContent() {
     setSearchQuery,
     searchWaiting,
     draftOrders,
+    filteredDraftOrders,
     draftLoading,
   } = useOrders();
+
+  // "Incomplete" ট্যাবে থাকলে সার্চবক্স ড্রাফট অর্ডারের মধ্যে খুঁজবে, নাহলে আগের মতোই
+  // মূল অর্ডার লিস্টে
+  const searchScope = activeStatus === "Incomplete" ? "drafts" : "orders";
 
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -53,7 +58,7 @@ function HomePageContent() {
           <span className="text-purple-700 text-xs md:text-sm">{day}</span>
           <span className=" text-xs md:text-sm">{formatDate(date)}</span>
         </div>
-        <SearchAndMenu />
+        <SearchAndMenu scope={searchScope} />
 
         <div className="flex overflow-x-auto w-auto gap-0.5 md:gap-2 whitespace-nowrap mt-2">
           {STATUS_TABS.map((tab) => (
@@ -78,8 +83,12 @@ function HomePageContent() {
         </div>
 
         <div className="ms-2 text-purple-500 font-bold mt-1">
-          {searchWaiting && <p>Searching...</p>}
-          {searchQuery && <p>{filteredOrders.length} Result </p>}
+          {searchScope === "orders" && searchWaiting && <p>Searching...</p>}
+          {searchQuery && (
+            <p>
+              {searchScope === "drafts" ? filteredDraftOrders.length : filteredOrders.length} Result{" "}
+            </p>
+          )}
         </div>
       </header>
 
@@ -89,7 +98,10 @@ function HomePageContent() {
         `}
       >
         {activeStatus === "Incomplete" ? (
-          <DraftOrderList drafts={draftOrders} loading={draftLoading} />
+          <DraftOrderList
+            drafts={searchQuery ? filteredDraftOrders : draftOrders}
+            loading={draftLoading}
+          />
         ) : loading ? (
           <div className="text-center py-10 text-gray-500">
             অর্ডার লোড হচ্ছে...

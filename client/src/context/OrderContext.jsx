@@ -29,6 +29,14 @@ export function OrderProvider({ children }) {
   const [draftLoading, setDraftLoading] = useState(true);
   const query = searchQuery.toLowerCase().trim();
 
+  // ---------------- সার্চ স্কোপ ----------------
+  // সার্চবক্স একটাই (SearchAndMenu), কিন্তু কোন পেজ/ট্যাবে আছি তার উপর ভিত্তি করে
+  // কোন কালেকশনে সার্চ হবে সেটা এখান থেকে ঠিক হয়:
+  //   "orders" -> মূল অর্ডার লিস্ট (লোকাল ফিল্টার + DB ফলব্যাক সার্চ, আগের মতোই)
+  //   "drafts" -> ইনকমপ্লিট/ড্রাফট অর্ডার লিস্ট (draftOrders-এর মধ্যেই ফিল্টার)
+  //   "notes"  -> "নোট"/গুরুত্বপূর্ণ (needsAttention) অর্ডার লিস্ট (inportantNotes-এর মধ্যেই ফিল্টার)
+  const [searchScope, setSearchScope] = useState("orders");
+
   // ---------------- FETCH ALL ORDERS ----------------
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -208,7 +216,16 @@ export function OrderProvider({ children }) {
   );
 
   // ---------------- DEBOUNCE SEARCH ----------------
+  // ✅ শুধু "orders" স্কোপে থাকলেই Order কালেকশনে DB সার্চ হবে (ব্যাকএন্ডে রাউন্ড-ট্রিপ)।
+  // "drafts"/"notes" স্কোপে থাকলে এই DB সার্চের দরকার নেই — সেগুলো নিচে আলাদাভাবে
+  // ইতিমধ্যে-লোড-করা draftOrders/inportantNotes-এর মধ্যেই লোকালি ফিল্টার হয়।
   useEffect(() => {
+    if (searchScope !== "orders") {
+      setDbOrders([]);
+      setSearchWaiting(false);
+      return;
+    }
+
     const timer = setTimeout(() => {
       if (query) {
         fetchSearchFromDB(query);
@@ -219,7 +236,7 @@ export function OrderProvider({ children }) {
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [query, fetchSearchFromDB]);
+  }, [query, fetchSearchFromDB, searchScope]);
 
   // ---------------- REAL-TIME WEBHOOK/STATUS CHANGE LISTENER ----------------
   useEffect(() => {
@@ -304,8 +321,47 @@ export function OrderProvider({ children }) {
     return orders.filter((order) => order.needsAttention === true);
   }, [orders]);
 
+  // ---------------- ড্রাফট/ইনকমপ্লিট অর্ডার সার্চ (draftOrders-এর মধ্যেই লোকাল ফিল্টার) ----------------
+  const filteredDraftOrders = useMemo(() => {
+    const safeDrafts = Array.isArray(draftOrders) ? draftOrders.filter(Boolean) : [];
+    if (!query) return safeDrafts;
+
+    return safeDrafts.filter((draft) => {
+      const enPhone = convertNumber(draft?.phone);
+      const fields = [
+        draft?.name,
+        enPhone,
+        draft?.address,
+        draft?.productName,
+        draft?.productTypeLabel,
+        draft?.landingPageSlug,
+      ];
+      return fields.some((f) => f && String(f).toLowerCase().includes(query));
+    });
+  }, [draftOrders, query]);
+
+  // ---------------- নোট সেকশন সার্চ (inportantNotes-এর মধ্যেই লোকাল ফিল্টার) ----------------
+  const filteredImportantNotes = useMemo(() => {
+    if (!query) return inportantNotes;
+
+    return inportantNotes.filter((order) => {
+      const enNumber = convertNumber(order?.castomerPhone);
+      const fields = [
+        order?._id,
+        order?.castomerName,
+        enNumber,
+        order?.productCode,
+        order?.note,
+        order?.rawInputText,
+        order?.courier?.trackingId,
+      ];
+      return fields.some((f) => f && String(f).toLowerCase().includes(query));
+    });
+  }, [inportantNotes, query]);
+
   const value = {
     inportantNotes,
+    filteredImportantNotes,
     orders,
     activeStatus,
     setActiveStatus,
@@ -313,12 +369,15 @@ export function OrderProvider({ children }) {
     dbLoading,
     searchQuery,
     setSearchQuery,
+    searchScope,
+    setSearchScope,
     filteredOrders,
     allPendingOrder,
     handleOrderUpdate,
     fetchOrders,
     searchWaiting,
     draftOrders,
+    filteredDraftOrders,
     draftLoading,
     deleteDraftOrder,
     updateDraftOrder,
