@@ -31,17 +31,39 @@ function getOwnershipFilter(req) {
 
 // --- ঐচ্ছিক তারিখ-রেঞ্জ (আজ/গতকাল/৩দিন/নির্দিষ্ট তারিখ ইত্যাদি) — ?from=&to= না দিলে
 // কোনো তারিখ-সীমাবদ্ধতা ছাড়াই সব পার্সেল দেখাবে (ডিফল্টে "সব সময়") ---
+//
+// bug fix: আগে `new Date(dateStr).setHours(...)` ব্যবহার হতো, যেটা সার্ভারের লোকাল
+// টাইমজোন (সাধারণত UTC, যেমন Vercel-এ) দিয়ে দিনের শুরু/শেষ ঠিক করত। কিন্তু ক্লায়েন্ট
+// (dateRangeUtils.js -> toISODate) তারিখটা toISOString() দিয়ে UTC-তে বানায়। ফলাফলে
+// বাংলাদেশ (UTC+6) থেকে রাত ১২টা-ভোর ৬টার মধ্যে "আজ" প্রিসেট বাছলে ভুল দিন
+// (UTC-তে তখনও "গতকাল") ব্যাকএন্ডে চলে যেত, আর ব্যাকএন্ড সেই তারিখটাকেও ভুল সময়ে
+// (UTC মধ্যরাত থেকে) কাউন্ট করত — ফলে বাংলাদেশের সকাল ৬টা পর্যন্ত বুক হওয়া পার্সেল
+// "আজ" ট্যাবে না দেখিয়ে "গতকাল" ট্যাবে দেখাত। এখন YYYY-MM-DD স্ট্রিংটাকে সবসময়
+// বাংলাদেশ সময় (+06:00) অনুযায়ী দিনের শুরু/শেষ হিসেবে পার্স করা হচ্ছে, সার্ভার
+// যেই টাইমজোনেই চলুক না কেন রেজাল্ট একই থাকবে।
+const BD_OFFSET = "+06:00";
+
+function toBDStartOfDay(dateStr) {
+  return new Date(`${dateStr}T00:00:00.000${BD_OFFSET}`);
+}
+
+function toBDEndOfDay(dateStr) {
+  return new Date(`${dateStr}T23:59:59.999${BD_OFFSET}`);
+}
+
+// --- আজকের তারিখ বাংলাদেশ সময় অনুযায়ী YYYY-MM-DD ফরম্যাটে (সার্ভার UTC-তে চললেও ঠিক থাকে) ---
+function todayBD() {
+  return new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString().split("T")[0];
+}
+
 function getOptionalDateRange(req) {
   const { from, to } = req.query;
   if (!from && !to) return null;
 
-  const toDate = to ? new Date(to) : new Date();
-  toDate.setHours(23, 59, 59, 999);
+  const toStr = to || todayBD();
+  const fromStr = from || toStr;
 
-  const fromDate = from ? new Date(from) : new Date(toDate);
-  fromDate.setHours(0, 0, 0, 0);
-
-  return { fromDate, toDate };
+  return { fromDate: toBDStartOfDay(fromStr), toDate: toBDEndOfDay(toStr) };
 }
 
 // --- শুধু কুরিয়ারে বুক হওয়া (trackingId আছে) অর্ডারই "ট্র্যাকিং পার্সেল" —

@@ -262,12 +262,12 @@ const FacebookLiveComments = () => {
                   key={comment._id || comment.commentId}
                   className={`group relative overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:shadow-lg ${
                     isDeleted
-                      ? "border-red-200"
+                      ? "border-red-300"
                       : isBlocked
-                        ? "border-orange-200"
+                        ? "border-orange-300"
                         : isReplied
-                          ? "border-emerald-200"
-                          : "border-indigo-100"
+                          ? "border-emerald-300"
+                          : "border-indigo-300"
                   }`}
                 >
                   {/* Colored left accent */}
@@ -471,7 +471,7 @@ const FacebookLiveComments = () => {
                           isBlocked ||
                           actionLoading[`block_${comment.senderId}`]
                         }
-                        className="h-9 rounded-lg border border-orange-600 bg-orange-50 px-1 text-[9px] font-bold text-orange-700 transition-all hover:bg-orange-200 disabled:opacity-40"
+                        className="h-9 rounded-lg border border-orange-600 bg-orange-50 px-3 text-[9px] font-bold text-orange-700 transition-all hover:bg-orange-200 disabled:opacity-40"
                       >
                         {isBlocked ? "Blocked" : "Block"}
                       </button>

@@ -6,17 +6,8 @@ import SearchAndMenu from "@/components/layout/SearchAndMenu";
 import AuthGuard from "@/components/auth/AuthGuard";
 import ModeratorSelector from "@/components/dashboard/ModeratorSelector";
 import TrackingParcelStatsCards from "@/components/dashboard/TrackingParcelStatsCards";
-import TrackingParcelCard from "@/components/orders/TrackingParcelCard";
+import TrackingParcelOrderListModal from "@/components/orders/TrackingParcelOrderListModal";
 import { getPresetRange } from "@/utils/dateRangeUtils";
-
-const STATUS_LABELS = {
-  pending: "⏳ পেন্ডিং পার্সেল",
-  assigned: "🚚 এসাইন পার্সেল",
-  review: "🔎 ইন-রিভিউ পার্সেল",
-  partial_delivered: "📦 আংশিক ডেলিভারড পার্সেল",
-  delivered: "✅ ডেলিভারড পার্সেল",
-  cancelled: "❌ ক্যান্সেলড পার্সেল",
-};
 
 // --- এই পেজের নিজস্ব তারিখ প্রিসেট (বুক হওয়ার তারিখ অনুযায়ী ফিল্টার করে) ---
 const DATE_PRESETS = [
@@ -26,8 +17,6 @@ const DATE_PRESETS = [
   { key: "3d", label: "৩ দিন" },
   { key: "custom", label: "নির্দিষ্ট তারিখ" },
 ];
-
-const PAGE_SIZE = 20;
 
 function TrackingParcelPageContent() {
   const { isAdmin } = useAuth();
@@ -39,13 +28,8 @@ function TrackingParcelPageContent() {
   const [counts, setCounts] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
 
-  const [activeStatus, setActiveStatus] = useState("pending");
-  const [page, setPage] = useState(1);
-  const [orders, setOrders] = useState([]);
-  const [totalOrders, setTotalOrders] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [ordersLoading, setOrdersLoading] = useState(true);
-  const [error, setError] = useState("");
+  // --- কার্ডে ক্লিক করলে সংশ্লিষ্ট স্ট্যাটাসের টেবিল-মডাল খোলে (ড্যাশবোর্ডের drill-down প্যাটার্নের মতো) ---
+  const [drillDownStatus, setDrillDownStatus] = useState(null);
 
   // --- সিলেক্ট করা প্রিসেট থেকে প্রকৃত from/to বের করা ("সব সময়" হলে undefined,
   // অর্থাৎ ব্যাকএন্ডে কোনো তারিখ-ফিল্টার যাবে না) ---
@@ -73,62 +57,9 @@ function TrackingParcelPageContent() {
     }
   }, [moderatorId, isAdmin, activeRange.from, activeRange.to]);
 
-  // --- সিলেক্ট করা স্ট্যাটাস + পেজের পার্সেল লিস্ট আনা ---
-  const fetchOrders = useCallback(async () => {
-    if (!activeStatus) return;
-    setOrdersLoading(true);
-    setError("");
-    try {
-      const res = await trackingParcelService.getOrders(
-        activeStatus,
-        isAdmin ? moderatorId : undefined,
-        activeRange.from,
-        activeRange.to,
-        page,
-        PAGE_SIZE,
-      );
-      return res.data;
-    } catch (err) {
-      console.error("Tracking parcel orders error:", err);
-      throw err;
-    }
-  }, [activeStatus, moderatorId, isAdmin, activeRange.from, activeRange.to, page]);
-
   useEffect(() => {
     fetchSummary();
   }, [fetchSummary]);
-
-  // ট্যাব বা তারিখ-রেঞ্জ বদলালে পেজ ১-এ রিসেট করা হয়, নাহলে ৩ নম্বর পেজে থেকে অন্য
-  // ট্যাবে গেলে খালি লিস্ট দেখাবে
-  useEffect(() => {
-    setPage(1);
-  }, [activeStatus, activeRange.from, activeRange.to]);
-
-  // --- দ্রুত ট্যাব/পেজ বদলালে পুরনো (দেরিতে আসা) রিকোয়েস্টের রেসপন্স যেন নতুনটাকে
-  // ওভাররাইট করতে না পারে, সেজন্য cancelled flag দিয়ে race-condition গার্ড করা হলো ---
-  useEffect(() => {
-    let cancelled = false;
-    setOrdersLoading(true);
-    setError("");
-
-    fetchOrders()
-      .then((data) => {
-        if (cancelled) return;
-        setOrders(data.orders || []);
-        setTotalOrders(data.total || 0);
-        setTotalPages(data.totalPages || 1);
-      })
-      .catch(() => {
-        if (!cancelled) setError("লিস্ট লোড করা যায়নি।");
-      })
-      .finally(() => {
-        if (!cancelled) setOrdersLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchOrders]);
 
   return (
     <div className="p-2 md:p-6 bg-gray-100 min-h-screen">
@@ -170,55 +101,21 @@ function TrackingParcelPageContent() {
         ) : (
           <TrackingParcelStatsCards
             counts={counts}
-            activeStatus={activeStatus}
-            onCardClick={setActiveStatus}
+            activeStatus={drillDownStatus}
+            onCardClick={setDrillDownStatus}
           />
         )}
-
-        <div>
-          <h2 className="text-sm font-semibold text-gray-600 mb-2">
-            {STATUS_LABELS[activeStatus] || "পার্সেল"} — {totalOrders.toLocaleString("bn-BD")}টি
-          </h2>
-
-          {ordersLoading ? (
-            <div className="text-center py-10 text-gray-500">পার্সেল লোড হচ্ছে...</div>
-          ) : error ? (
-            <div className="text-center py-10 text-red-500">{error}</div>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-10 text-gray-400">এই তালিকায় কোনো পার্সেল নেই।</div>
-          ) : (
-            <>
-              <div className="space-y-2">
-                {orders.map((order) => (
-                  <TrackingParcelCard key={order._id} order={order} />
-                ))}
-              </div>
-
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-3 mt-4">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page <= 1}
-                    className="px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 cursor-pointer"
-                  >
-                    ← আগের
-                  </button>
-                  <span className="text-sm text-gray-600">
-                    পৃষ্ঠা {page.toLocaleString("bn-BD")} / {totalPages.toLocaleString("bn-BD")}
-                  </span>
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page >= totalPages}
-                    className="px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 cursor-pointer"
-                  >
-                    পরের →
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
       </div>
+
+      {drillDownStatus && (
+        <TrackingParcelOrderListModal
+          status={drillDownStatus}
+          moderatorId={isAdmin ? moderatorId : undefined}
+          from={activeRange.from}
+          to={activeRange.to}
+          onClose={() => setDrillDownStatus(null)}
+        />
+      )}
     </div>
   );
 }

@@ -84,9 +84,7 @@ function CallLogTimeline({ logs }) {
                   <span className="ml-2 text-purple-600">— {log.by}</span>
                 )}
               </p>
-              {log?.note && (
-                <p className="mt-0.5 text-gray-600">{log.note}</p>
-              )}
+              {log?.note && <p className="mt-0.5 text-gray-600">{log.note}</p>}
             </div>
           </div>
         );
@@ -706,8 +704,10 @@ export default function DraftOrderCard({ draft }) {
                 <span className="text-xs text-gray-600">
                   সর্বশেষ নোট: {draft.callNote}
                 </span>
-                <DisplayTime timeStamp={draft?.lastCallAt} />
-                <DisplayAgoTime timeStamp={draft?.lastCallAt} />
+                <span className="flex flex-col text-xs">
+                  <DisplayTime timeStamp={draft?.lastCallAt} />
+                  <DisplayAgoTime timeStamp={draft?.lastCallAt} />
+                </span>
               </div>
             )}
 
