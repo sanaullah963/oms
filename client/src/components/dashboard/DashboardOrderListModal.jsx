@@ -99,6 +99,9 @@ export default function DashboardOrderListModal({
                   <th className="py-2 px-4">ফোন</th>
                   <th className="py-2 px-4">COD</th>
                   <th className="py-2 px-4">Tracking ID</th>
+                  <th className="py-2 px-4">Product code</th>
+                  <th className="py-2 px-4">Order Status</th>
+                  <th className="py-2 px-4">Courier Status</th>
                   <th className="py-2 px-4">যোগ করেছেন</th>
                 </tr>
               </thead>
@@ -107,6 +110,7 @@ export default function DashboardOrderListModal({
                   const isExpanded = expandedId === o._id;
                   return (
                     <React.Fragment key={o._id}>
+                      {/* row */}
                       <tr
                         onClick={() => setExpandedId(isExpanded ? null : o._id)}
                         className={`border-b last:border-0 cursor-pointer hover:bg-gray-50 ${
@@ -141,6 +145,9 @@ export default function DashboardOrderListModal({
                         >
                           {o.courier?.trackingId || "-"}
                         </td>
+                        <td className="py-2 px-4 text-gray-500">{o.productCode || "-"}</td>
+                        <td className="py-2 px-4 text-gray-500">{o.orderStatus || "-"}</td>
+                        <td className="py-2 px-4 text-gray-500">{o.courier?.courierStatus || "-"}</td>
                         <td className="py-2 px-4 text-gray-500">{o.createdByName || "-"}</td>
                       </tr>
 

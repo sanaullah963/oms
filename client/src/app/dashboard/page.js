@@ -9,7 +9,6 @@ import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 import ModeratorSelector from "@/components/dashboard/ModeratorSelector";
 import StatsCards from "@/components/dashboard/StatsCards";
 import DashboardOrderListModal from "@/components/dashboard/DashboardOrderListModal";
-import FinancialSummary from "@/components/dashboard/FinancialSummary";
 import TrendChart from "@/components/dashboard/TrendChart";
 import StatusPieChart from "@/components/dashboard/StatusPieChart";
 import MismatchTable from "@/components/dashboard/MismatchTable";
@@ -26,7 +25,7 @@ function DashboardPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [drillDownStatus, setDrillDownStatus] = useState(null);
-
+  console.log(data)
   const activeRange =
     preset === "custom" && customRange
       ? customRange
@@ -144,21 +143,21 @@ function DashboardPageContent() {
           data && (
             <>
               <StatsCards totals={data.totals} onCardClick={setDrillDownStatus} />
-              <FinancialSummary totals={data.totals} />
+              <MismatchTable mismatches={data.mismatches} />
+  
+              
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <TrendChart dailyTrend={data.dailyTrend} />
                 <StatusPieChart totals={data.totals} />
               </div>
 
-              <MismatchTable mismatches={data.mismatches} />
             </>
           )
         )}
 
         <ProductAnalytics moderatorId={moderatorId} isAdmin={isAdmin} />
       </div>
-
       {drillDownStatus && (
         <DashboardOrderListModal
           status={drillDownStatus}

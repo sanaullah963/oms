@@ -8,6 +8,7 @@ import ModeratorSelector from "@/components/dashboard/ModeratorSelector";
 import TrackingParcelStatsCards from "@/components/dashboard/TrackingParcelStatsCards";
 import TrackingParcelOrderListModal from "@/components/orders/TrackingParcelOrderListModal";
 import { getPresetRange } from "@/utils/dateRangeUtils";
+import ProductAnalytics from "@/components/dashboard/ProductAnalytics";
 
 // --- এই পেজের নিজস্ব তারিখ প্রিসেট (বুক হওয়ার তারিখ অনুযায়ী ফিল্টার করে) ---
 const DATE_PRESETS = [
@@ -67,8 +68,15 @@ function TrackingParcelPageContent() {
 
       <div className="max-w-4xl mx-auto mt-3 space-y-4 pb-10">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">🚚 ট্র্যাকিং পার্সেল</h1>
-          {isAdmin && <ModeratorSelector selectedModeratorId={moderatorId} onChange={setModeratorId} />}
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+            🚚 ট্র্যাকিং পার্সেল
+          </h1>
+          {isAdmin && (
+            <ModeratorSelector
+              selectedModeratorId={moderatorId}
+              onChange={setModeratorId}
+            />
+          )}
         </div>
 
         {/* --- তারিখ ফিল্টার --- */}
@@ -106,7 +114,9 @@ function TrackingParcelPageContent() {
           />
         )}
       </div>
-
+      <div className="max-w-4xl mx-auto mt-3 space-y-4 pb-10">
+        <ProductAnalytics moderatorId={moderatorId} isAdmin={isAdmin} />
+      </div>
       {drillDownStatus && (
         <TrackingParcelOrderListModal
           status={drillDownStatus}
