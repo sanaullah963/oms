@@ -116,6 +116,9 @@ export default function TrackingParcelOrderListModal({
                   <th className="py-2 px-4">ফোন</th>
                   <th className="py-2 px-4">COD</th>
                   <th className="py-2 px-4">Tracking ID</th>
+                  <th className="py-2 px-4">Product code</th>
+                  <th className="py-2 px-4">Order status</th>
+                  <th className="py-2 px-4">Courier status</th>
                   <th className="py-2 px-4">যোগ করেছেন</th>
                 </tr>
               </thead>
@@ -159,6 +162,9 @@ export default function TrackingParcelOrderListModal({
                         >
                           {o.courier?.trackingId || "-"}
                         </td>
+                        <td className="py-2 px-4 text-gray-500">{o.productCode || "-"}</td>
+                        <td className="py-2 px-4 text-gray-500">{o.orderStatus || "-"}</td>
+                        <td className="py-2 px-4 text-gray-500">{o.courierStatus || "-"}</td>
                         <td className="py-2 px-4 text-gray-500">{o.createdByName || "-"}</td>
                       </tr>
 
