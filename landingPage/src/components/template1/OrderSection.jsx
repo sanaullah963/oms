@@ -284,28 +284,6 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                 )}
               </div>
 
-              {/* Phone */}
-              <div>
-                <label htmlFor="phoneNumber">মোবাইল নাম্বার</label>
-                <div className="relative">
-                  <FaPhoneAlt className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="tel"
-                    value={phone}
-                    id="phoneNumber"
-                    onChange={(e) => {
-                      setPhone(e.target.value);
-                      setErrors((prev) => ({ ...prev, phone: "" }));
-                    }}
-                    placeholder="01XXXXXXXXX"
-                    className={inputClass(errors.phone)}
-                  />
-                </div>
-                {errors.phone && (
-                  <p className="mt-1.5 text-sm text-red-500">{errors.phone}</p>
-                )}
-              </div>
-
               {/* Address */}
               <div>
                 <label htmlFor="address">সম্পূর্ণ ঠিকানা</label>
@@ -327,6 +305,28 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                   <p className="mt-1.5 text-sm text-red-500">
                     {errors.address}
                   </p>
+                )}
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label htmlFor="phoneNumber">মোবাইল নাম্বার</label>
+                <div className="relative">
+                  <FaPhoneAlt className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="tel"
+                    value={phone}
+                    id="phoneNumber"
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      setErrors((prev) => ({ ...prev, phone: "" }));
+                    }}
+                    placeholder="01XXXXXXXXX"
+                    className={inputClass(errors.phone)}
+                  />
+                </div>
+                {errors.phone && (
+                  <p className="mt-1.5 text-sm text-red-500">{errors.phone}</p>
                 )}
               </div>
 

@@ -46,12 +46,24 @@ exports.updateSession = async (req, res) => {
     // race window ছিল: প্রায় একই সময়ে একই sessionId নিয়ে দুইটা রিকোয়েস্ট এলে দুটোই
     // "existing" কে null পেত, ফলে দুইবার PageView CAPI পাঠানো হতো (Meta-তে ডাবল API কল,
     // আর দ্বিতীয়টা EventLog-এ duplicate-key এরর দিয়ে সাইলেন্টলি ভেঙে যেত)।
-    // এখন findOneAndUpdate({upsert:true, rawResult:true}) দিয়ে একটাই atomic অপারেশনে
-    // "এই sessionId নতুন কিনা" বের করা হচ্ছে — race condition আর সম্ভব না। ---
+    // এখন findOneAndUpdate({upsert:true, includeResultMetadata:true}) দিয়ে একটাই atomic
+    // অপারেশনে "এই sessionId নতুন কিনা" বের করা হচ্ছে — race condition আর সম্ভব না।
+    // ⚠️ ফিক্সড (আবার): এখানে আগে `rawResult: true` লেখা ছিল — এটা Mongoose 7-এর অপশন,
+    // Mongoose 8-এ (এই প্রজেক্ট যেটা ব্যবহার করছে) সম্পূর্ণ সরিয়ে `includeResultMetadata`
+    // নাম দেওয়া হয়েছে; `rawResult` এখন silently ignore হয়। ফলে `upsertResult` কখনো raw
+    // MongoDB result হতো না (`lastErrorObject` সবসময় undefined), তাই isNewSession সবসময়
+    // `true` হয়ে যাচ্ছিল — প্রতিটা heartbeat/exit কলেই সেশন "নতুন" ধরে নিয়ে Facebook-এ
+    // আসল PageView পাঠানো হচ্ছিল আর দ্বিতীয়বার থেকে একই eventId দিয়ে EventLog.create()
+    // duplicate-key এররে পড়ছিল (production লগে যেটা দেখা গেছে)। ---
     const upsertResult = await Session.findOneAndUpdate(
       { sessionId },
       { $setOnInsert: { sessionId, visitorId } },
-      { upsert: true, setDefaultsOnInsert: true, rawResult: true, new: false },
+      {
+        upsert: true,
+        setDefaultsOnInsert: true,
+        includeResultMetadata: true,
+        new: false,
+      },
     );
     const isNewSession = !upsertResult.lastErrorObject?.updatedExisting;
     let isReturnVisitor = upsertResult.value?.isReturnVisitor || false;

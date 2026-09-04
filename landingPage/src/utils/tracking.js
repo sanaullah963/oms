@@ -3,7 +3,6 @@ import { getFingerprintHash } from "@/utils/fingerprint";
 const VISITOR_KEY = "oms_visitor_id";
 const SESSION_KEY = "oms_session_id";
 const ATTRIBUTION_KEY = "oms_attribution";
-const HEARTBEAT_MS = 15000; // প্রতি ১৫ সেকেন্ডে সার্ভারে আপডেট পাঠানো হবে
 
 function generateId(prefix) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -103,9 +102,19 @@ export async function getTrackingPayloadWithFingerprint(slug) {
 // ============================================================
 
 /**
- * পেজে এনগেজমেন্ট মেট্রিক ট্র্যাক করা শুরু করে এবং পর্যায়ক্রমে (heartbeat) ও
- * পেজ ছাড়ার সময় সার্ভারে পাঠায়। useEffect-এর ভেতর কল করে return করা cleanup
- * ফাংশনটা unmount-এ কল করতে হবে।
+ * পেজে এনগেজমেন্ট মেট্রিক ট্র্যাক করা শুরু করে। সার্ভারে ডেটা যায় মোট দুইবার
+ * (Render free tier-এর bandwidth/instance-hour বাঁচানোর জন্য প্রতি ১৫ সেকেন্ডের
+ * heartbeat ইচ্ছাকৃতভাবে বাদ দেওয়া হয়েছে):
+ *   ১. পেজ লোড হওয়ার সাথে সাথেই (entry — PageView সহ)
+ *   ২. পেজ ছাড়ার সময় (exit — beforeunload/pagehide/tab-hidden/component-unmount,
+ *      যেকোনো একটা যেটা আগে ট্রিগার হয় — চূড়ান্ত timeOnPageSeconds/scrollDepth/
+ *      clickCount/isBounce এই কলেই হিসাব হয়ে সেভ হয়)
+ * এর মাঝে কোনো periodic আপডেট নেই, তাই সেশন খুব বেশিক্ষণ (মিনিট দশেকের বেশি) খোলা
+ * থাকলে এবং exit ইভেন্টগুলোর একটাও (ব্রাউজার/ডিভাইসের কোনো কারণে) না ফায়ার করলে,
+ * সেই সেশনের timeOnPageSeconds ড্যাশবোর্ডে ভুলভাবে ~0 দেখাতে পারে — এইটা একটা
+ * সচেতন trade-off (আগে heartbeat এই gap-টা কমিয়ে রাখত)।
+ *
+ * useEffect-এর ভেতর কল করে return করা cleanup ফাংশনটা unmount-এ কল করতে হবে।
  *
  * @param {string} slug
  * @returns {() => void} cleanup ফাংশন
@@ -186,25 +195,41 @@ export function initEngagementTracking(slug) {
     sendUpdate(true);
   };
 
+  // --- heartbeat না থাকায় exit ইভেন্ট মিস হওয়া আগের চেয়ে বেশি গুরুত্বপূর্ণ, তাই
+  // beforeunload/visibilitychange-এর পাশাপাশি pagehide-ও রাখা হচ্ছে — বিশেষত
+  // iOS Safari-তে beforeunload প্রায়ই ফায়ার করে না, কিন্তু pagehide নির্ভরযোগ্য। ---
+  let exitSent = false;
+  const handlePageHide = () => {
+    if (exitSent) return;
+    exitSent = true;
+    sendUpdate(true);
+  };
+
   window.addEventListener("scroll", handleScroll, { passive: true });
   window.addEventListener("click", handleClick);
   window.addEventListener("focus", handleFocus);
   window.addEventListener("blur", handleBlur);
   document.addEventListener("visibilitychange", handleVisibilityChange);
   window.addEventListener("beforeunload", handleBeforeUnload);
+  window.addEventListener("pagehide", handlePageHide);
 
-  sendUpdate(false); // পেজ লোড হওয়ার সাথে সাথেই প্রথম session/PageView কল যাবে, ১৫ সেকেন্ড অপেক্ষা করবে না
-  const heartbeat = setInterval(() => sendUpdate(false), HEARTBEAT_MS);
+  sendUpdate(false); // পেজ লোড হওয়ার সাথে সাথেই একবার session/PageView কল যাবে — এরপর exit না হওয়া পর্যন্ত আর কোনো কল হবে না
 
-  // --- cleanup ---
+  // --- cleanup (component unmount — যেমন client-side রাউট বদল) ---
+  // ব্রাউজার hard-close/reload হলে beforeunload/pagehide নিজেরাই ফায়ার করবে
+  // (React cleanup রান নাও হতে পারে), তাই ওইখানে ডাবল-সেন্ড এড়াতে exitSent flag ব্যবহার হচ্ছে।
   return () => {
-    clearInterval(heartbeat);
+    if (!exitSent) {
+      exitSent = true;
+      sendUpdate(true);
+    }
     window.removeEventListener("scroll", handleScroll);
     window.removeEventListener("click", handleClick);
     window.removeEventListener("focus", handleFocus);
     window.removeEventListener("blur", handleBlur);
     document.removeEventListener("visibilitychange", handleVisibilityChange);
     window.removeEventListener("beforeunload", handleBeforeUnload);
+    window.removeEventListener("pagehide", handlePageHide);
   };
 }
 
