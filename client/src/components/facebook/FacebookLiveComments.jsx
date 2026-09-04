@@ -260,7 +260,7 @@ const FacebookLiveComments = () => {
               return (
                 <div
                   key={comment._id || comment.commentId}
-                  className={`group relative overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:shadow-lg ${
+                  className={`group relative overflow-hidden rounded-2xl border bg-white transition-all duration-200 shadow-lg py-1.5 ${
                     isDeleted
                       ? "border-red-300"
                       : isBlocked
@@ -271,9 +271,7 @@ const FacebookLiveComments = () => {
                   }`}
                 >
                   {/* Colored left accent */}
-                  <div
-                    className={`absolute left-0 top-0 h-md`}
-                  />
+                  <div className={`absolute left-0 top-0 h-md`} />
 
                   {/* ================= HEADER ================= */}
                   <div className="border-b border-slate-100 bg-gradient-to-r from-indigo-50/70 via-white to-blue-50/40 px-1 ">
@@ -340,7 +338,7 @@ const FacebookLiveComments = () => {
                               },
                             )
                           : "Live"} */}
-                          <DisplayAgoTime timeStamp={comment.createdAt} />
+                        <DisplayAgoTime timeStamp={comment.createdAt} />
                       </span>
                     </div>
                   </div>
@@ -432,8 +430,8 @@ const FacebookLiveComments = () => {
                   </div>
 
                   {/* ================= ACTION BAR ================= */}
-                  <div className="border-t border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-2">
-                    <div className="flex flex-wrap gap-0.5 pt-4">
+                  <div className="border-t border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-2 mt-1.5">
+                    <div className="flex flex-wrap gap-0.5 pt">
                       {/* DB Delete */}
                       <button
                         onClick={() =>
@@ -442,9 +440,8 @@ const FacebookLiveComments = () => {
                         disabled={
                           actionLoading[`hard_del_${comment.commentId}`]
                         }
-                        className="h-9 gap-1.5 rounded-lg border border-red-600 cursor-pointer bg-red-50 px-1.5 text-[9px] font-bold text-red-700 transition-all hover:bg-red-200 disabled:opacity-40"
+                        className="h-9 gap-1.5 rounded-lg border border-red-600 cursor-pointer bg-red-50 px-1.5 text-[9px] font-bold text-red-700 transition-all hover:bg-red-200 disabled:opacity-20"
                       >
-                        
                         DB Delete
                       </button>
 
@@ -454,7 +451,7 @@ const FacebookLiveComments = () => {
                         disabled={
                           isDeleted || actionLoading[`del_${comment.commentId}`]
                         }
-                        className="h-9  rounded-lg border border-amber-600 cursor-pointer bg-amber-50 px-1.5 text-[9px] font-bold text-amber-700 transition-all  hover:bg-amber-200 disabled:opacity-40"
+                        className="h-9  rounded-lg border border-amber-600 cursor-pointer bg-amber-50 px-1.5 text-[9px] font-bold text-amber-700 transition-all  hover:bg-amber-200 disabled:opacity-20 disabled:cursor-not-allowed coursor-pointer"
                       >
                         FB Delete
                       </button>
@@ -471,7 +468,7 @@ const FacebookLiveComments = () => {
                           isBlocked ||
                           actionLoading[`block_${comment.senderId}`]
                         }
-                        className="h-9 rounded-lg border border-orange-600 bg-orange-50 px-3 text-[9px] font-bold text-orange-700 transition-all hover:bg-orange-200 disabled:opacity-40"
+                        className="h-9 rounded-lg border border-orange-600 bg-orange-50 px-3 text-[9px] font-bold text-orange-700 transition-all hover:bg-orange-200 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed "
                       >
                         {isBlocked ? "Blocked" : "Block"}
                       </button>
@@ -488,7 +485,7 @@ const FacebookLiveComments = () => {
                           isDeleted ||
                           actionLoading[`block_del_${comment.commentId}`]
                         }
-                        className="h-9 rounded-lg border border-red-600 bg-red-100 px-2 text-[9px] font-bold text-red-700 transition-all hover:bg-red-200 disabled:opacity-40"
+                        className="h-9 rounded-lg border border-red-600 bg-red-100 px-2 text-[9px] font-bold text-red-700 transition-all hover:bg-red-200  disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
                       >
                         Delete & Block
                       </button>
