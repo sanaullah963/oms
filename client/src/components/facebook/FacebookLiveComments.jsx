@@ -123,7 +123,7 @@ const FacebookLiveComments = () => {
         alert("✅ Facebook থেকে কমেন্ট ডিলিট হয়েছে!");
       }
     } catch (err) {
-      const msg = err.response?.data?.message || "ডিলিট করা যায়নি।";
+      const msg = err.response?.data?.message || "Delete : ❌";
       alert(`❌ ${msg}`);
     } finally {
       setLoaderFor(`del_${commentId}`, false);
@@ -151,7 +151,7 @@ const FacebookLiveComments = () => {
 
         const r = res.data.results;
         alert(
-          `✅ ব্লক: ${r.blocked ? "✅" : "❌"}\nডিলিট: ${
+          `ব্লক: ${r.blocked ? "✅" : "❌"}\nডিলিট: ${
             r.commentDeleted ? "✅" : "❌"
           }`,
         );

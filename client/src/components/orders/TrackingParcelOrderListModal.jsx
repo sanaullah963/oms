@@ -4,6 +4,7 @@ import { trackingParcelService } from "@/services/trackingParcelService";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import { formatDate, formatTime } from "@/utils/dateUtils";
 import TrackingActivityTimeline from "@/components/orders/TrackingActivityTimeline";
+import DisplayAgoTime from "../common/DisplayAgoTime";
 
 const TITLE_MAP = {
   pending: "⏳ পেন্ডিং পার্সেল",
@@ -120,6 +121,7 @@ export default function TrackingParcelOrderListModal({
                   <th className="py-2 px-4">Order status</th>
                   <th className="py-2 px-4">Courier status</th>
                   <th className="py-2 px-4">যোগ করেছেন</th>
+                  <th className="py-2 px-4">Last updated</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,8 +166,9 @@ export default function TrackingParcelOrderListModal({
                         </td>
                         <td className="py-2 px-4 text-gray-500">{o.productCode || "-"}</td>
                         <td className="py-2 px-4 text-gray-500">{o.orderStatus || "-"}</td>
-                        <td className="py-2 px-4 text-gray-500">{o.courierStatus || "-"}</td>
-                        <td className="py-2 px-4 text-gray-500">{o.createdByName || "-"}</td>
+                        <td className="py-2 px-4 text-gray-500">{o?.courier?.courierStatus  || "-"}</td>
+                        <td className="py-2 px-4 text-gray-500 text-center">{o.createdByName || "-"}</td>
+                        <td className="py-2 px-4 text-gray-500"><DisplayAgoTime timeStamp={o.activities[o.activities.length-1].timestamp || "-"} /></td>
                       </tr>
 
                       {isExpanded && (
