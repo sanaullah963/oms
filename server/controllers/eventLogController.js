@@ -45,3 +45,36 @@ exports.retryEventLog = async (req, res) => {
     return res.status(500).json({ message: "Retry করতে ব্যর্থ হয়েছে।" });
   }
 };
+
+// --- DELETE /api/event-logs/:id (admin only) — ম্যানুয়ালি একটা ইভেন্ট লগ ডিলিট করা ---
+exports.deleteEventLog = async (req, res) => {
+  try {
+    const deleted = await EventLog.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: "ইভেন্ট লগ খুঁজে পাওয়া যায়নি।" });
+    }
+    return res.status(200).json({ message: "ইভেন্ট লগ ডিলিট হয়েছে।" });
+  } catch (error) {
+    console.error("Delete event log error:", error);
+    return res.status(500).json({ message: "ইভেন্ট লগ ডিলিট করতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- POST /api/event-logs/bulk-delete  body: { ids: string[] } (admin only) —
+// চেকবক্স দিয়ে একসাথে একাধিক ইভেন্ট লগ সিলেক্ট করে ডিলিট করার জন্য ---
+exports.bulkDeleteEventLogs = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "ডিলিট করার জন্য কোনো ID দেওয়া হয়নি।" });
+    }
+    const result = await EventLog.deleteMany({ _id: { $in: ids } });
+    return res.status(200).json({
+      message: `${result.deletedCount}টি ইভেন্ট লগ ডিলিট হয়েছে।`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Bulk delete event logs error:", error);
+    return res.status(500).json({ message: "বাল্ক ডিলিট করতে ব্যর্থ হয়েছে।" });
+  }
+};

@@ -40,4 +40,10 @@ const SessionSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// --- ৭ দিন পর সেশন অটোমেটিক ডিলিট হয়ে যাবে (MongoDB TTL মনিটর প্রতি ~৬০ সেকেন্ডে
+// চেক করে, তাই ডিলিট ঠিক ৭ দিনের কাঁটায় না হয়ে কিছুটা পরে হতে পারে — এটা স্বাভাবিক)।
+// entryAt ভিত্তিক, কারণ এটাই "সেশন কখন শুরু হয়েছে" বোঝায়; শুধু analytics dashboard-এই
+// ব্যবহার হয় (fraud detection/order লজিকের সাথে কোনো সম্পর্ক নেই), তাই মুছে ফেলা নিরাপদ। ---
+SessionSchema.index({ entryAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 7 });
+
 module.exports = mongoose.model("Session", SessionSchema);

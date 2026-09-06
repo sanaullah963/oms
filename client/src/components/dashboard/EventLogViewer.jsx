@@ -17,23 +17,42 @@ export default function EventLogViewer() {
   const [eventNameFilter, setEventNameFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [retryingId, setRetryingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 50;
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await eventLogService.list(statusFilter, eventNameFilter);
+      const res = await eventLogService.list(statusFilter, eventNameFilter, page, limit);
       setLogs(res.data.logs);
       setSummary(res.data.summary);
+      setTotal(res.data.total || 0);
     } catch (err) {
       console.error("Event log fetch error:", err);
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, eventNameFilter]);
+  }, [statusFilter, eventNameFilter, page]);
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  // ফিল্টার বদলালে প্রথম পাতায় ফিরে যাওয়া
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, eventNameFilter]);
+
+  // পাতা/ফিল্টার বদলালে আগের সিলেকশন সাফ হয়ে যাবে
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, statusFilter, eventNameFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const handleRetry = async (id) => {
     setRetryingId(id);
@@ -46,6 +65,95 @@ export default function EventLogViewer() {
     } finally {
       setRetryingId(null);
     }
+  };
+
+  // --- ম্যানুয়ালি একটা ইভেন্ট লগ ডিলিট করা ---
+  const handleDelete = async (id) => {
+    if (!window.confirm("এই ইভেন্ট লগটি স্থায়ীভাবে ডিলিট করতে চান?")) return;
+    setDeletingId(id);
+    try {
+      await eventLogService.remove(id);
+      setSelectedIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      if (logs.length === 1 && page > 1) {
+        setPage((p) => p - 1);
+      } else {
+        await fetchLogs();
+      }
+    } catch (err) {
+      console.error("Event log delete error:", err);
+      alert("ইভেন্ট লগ ডিলিট করা যায়নি। আবার চেষ্টা করুন।");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const toggleOne = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const allOnPageSelected = logs.length > 0 && logs.every((l) => selectedIds.has(l._id));
+
+  const toggleAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allOnPageSelected) {
+        logs.forEach((l) => next.delete(l._id));
+      } else {
+        logs.forEach((l) => next.add(l._id));
+      }
+      return next;
+    });
+  };
+
+  // --- চেকবক্স দিয়ে সিলেক্ট করা একাধিক ইভেন্ট লগ একসাথে ডিলিট করা ---
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!window.confirm(`নির্বাচিত ${ids.length}টি ইভেন্ট লগ স্থায়ীভাবে ডিলিট করতে চান?`)) return;
+    setBulkDeleting(true);
+    try {
+      await eventLogService.removeMany(ids);
+      setSelectedIds(new Set());
+      if (ids.length >= logs.length && page > 1) {
+        setPage((p) => p - 1);
+      } else {
+        await fetchLogs();
+      }
+    } catch (err) {
+      console.error("Bulk delete event logs error:", err);
+      alert("বাল্ক ডিলিট করা যায়নি। আবার চেষ্টা করুন।");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  // --- নাম্বারড পেজিনেশন — বর্তমান পাতার আশেপাশে ২টা করে + শুরু/শেষ, বাকিটা "..." ---
+  const getPageNumbers = () => {
+    const pages = [];
+    const windowSize = 2;
+    const start = Math.max(1, page - windowSize);
+    const end = Math.min(totalPages, page + windowSize);
+
+    if (start > 1) {
+      pages.push(1);
+      if (start > 2) pages.push("...");
+    }
+    for (let p = start; p <= end; p++) pages.push(p);
+    if (end < totalPages) {
+      if (end < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+    return pages;
   };
 
   return (
@@ -66,8 +174,8 @@ export default function EventLogViewer() {
         </div>
       </div>
 
-      {/* --- ফিল্টার --- */}
-      <div className="flex gap-2 flex-wrap">
+      {/* --- ফিল্টার + বাল্ক-ডিলিট --- */}
+      <div className="flex gap-2 flex-wrap items-center">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -90,6 +198,15 @@ export default function EventLogViewer() {
             </option>
           ))}
         </select>
+        {selectedIds.size > 0 && (
+          <button
+            onClick={handleBulkDelete}
+            disabled={bulkDeleting}
+            className="text-xs font-semibold px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            {bulkDeleting ? "ডিলিট হচ্ছে..." : `🗑️ নির্বাচিত ${selectedIds.size}টি ডিলিট করুন`}
+          </button>
+        )}
       </div>
 
       {/* --- লিস্ট --- */}
@@ -102,6 +219,14 @@ export default function EventLogViewer() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-gray-500 border-b bg-gray-50">
+                <th className="py-2 px-3 w-8">
+                  <input
+                    type="checkbox"
+                    checked={allOnPageSelected}
+                    onChange={toggleAllOnPage}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                </th>
                 <th className="py-2 px-3">ইভেন্ট</th>
                 <th className="py-2 px-3">কাস্টমার</th>
                 <th className="py-2 px-3">স্ট্যাটাস</th>
@@ -113,6 +238,14 @@ export default function EventLogViewer() {
             <tbody>
               {logs.map((log) => (
                 <tr key={log._id} className="border-b last:border-0">
+                  <td className="py-2 px-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(log._id)}
+                      onChange={() => toggleOne(log._id)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                  </td>
                   <td className="py-2 px-3 font-medium">{log.eventName}</td>
                   <td className="py-2 px-3 text-gray-600">
                     {log.order?.castomerName || "-"}
@@ -137,15 +270,24 @@ export default function EventLogViewer() {
                     {new Date(log.createdAt).toLocaleString("bn-BD")}
                   </td>
                   <td className="py-2 px-3">
-                    {log.status === "failed" && (
+                    <div className="flex gap-1.5 items-center">
+                      {log.status === "failed" && (
+                        <button
+                          onClick={() => handleRetry(log._id)}
+                          disabled={retryingId === log._id}
+                          className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-medium hover:bg-indigo-200 disabled:opacity-50"
+                        >
+                          {retryingId === log._id ? "..." : "🔄 Retry"}
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleRetry(log._id)}
-                        disabled={retryingId === log._id}
-                        className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md font-medium hover:bg-indigo-200 disabled:opacity-50"
+                        onClick={() => handleDelete(log._id)}
+                        disabled={deletingId === log._id}
+                        className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
-                        {retryingId === log._id ? "..." : "🔄 Retry"}
+                        {deletingId === log._id ? "..." : "🗑️"}
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -153,6 +295,45 @@ export default function EventLogViewer() {
           </table>
         )}
       </div>
+
+      {/* --- নাম্বারড পেজিনেশন --- */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1 flex-wrap">
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="px-2.5 py-1.5 rounded-md bg-gray-100 text-gray-700 text-sm disabled:opacity-40"
+          >
+            ← আগের
+          </button>
+          {getPageNumbers().map((p, idx) =>
+            p === "..." ? (
+              <span key={`dots-${idx}`} className="px-2 text-gray-400 text-sm">
+                ...
+              </span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`min-w-[2rem] px-2.5 py-1.5 rounded-md text-sm font-medium ${
+                  p === page
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {p}
+              </button>
+            ),
+          )}
+          <button
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="px-2.5 py-1.5 rounded-md bg-gray-100 text-gray-700 text-sm disabled:opacity-40"
+          >
+            পরের →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

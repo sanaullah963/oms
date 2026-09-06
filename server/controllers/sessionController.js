@@ -159,3 +159,36 @@ exports.listSessions = async (req, res) => {
     return res.status(500).json({ message: "সেশন লিস্ট আনতে ব্যর্থ হয়েছে।" });
   }
 };
+
+// --- DELETE /api/sessions/:id (admin only) — ম্যানুয়ালি একটা সেশন ডিলিট করা ---
+exports.deleteSession = async (req, res) => {
+  try {
+    const deleted = await Session.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: "সেশনটি খুঁজে পাওয়া যায়নি।" });
+    }
+    return res.status(200).json({ message: "সেশন ডিলিট হয়েছে।" });
+  } catch (error) {
+    console.error("Delete session error:", error);
+    return res.status(500).json({ message: "সেশন ডিলিট করতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- POST /api/sessions/bulk-delete  body: { ids: string[] } (admin only) —
+// চেকবক্স দিয়ে একসাথে একাধিক সেশন সিলেক্ট করে ডিলিট করার জন্য ---
+exports.bulkDeleteSessions = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "ডিলিট করার জন্য কোনো ID দেওয়া হয়নি।" });
+    }
+    const result = await Session.deleteMany({ _id: { $in: ids } });
+    return res.status(200).json({
+      message: `${result.deletedCount}টি সেশন ডিলিট হয়েছে।`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Bulk delete sessions error:", error);
+    return res.status(500).json({ message: "বাল্ক ডিলিট করতে ব্যর্থ হয়েছে।" });
+  }
+};

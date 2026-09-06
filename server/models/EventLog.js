@@ -36,4 +36,17 @@ const EventLogSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// --- ৭ দিন পর শুধু PageView টাইপ ইভেন্ট অটোমেটিক ডিলিট হয়ে যাবে। partialFilterExpression
+// দিয়ে TTL শুধু eventName: "PageView"-এর উপর প্রযোজ্য — Lead/InitiateCheckout/ViewContent
+// এবং সবচেয়ে গুরুত্বপূর্ণ Purchase (যেটা triggerPurchaseEvent-এর ডাবল-সেন্ড ঠেকানোর
+// idempotency-guard হিসেবে ব্যবহার হয়, server/sockets/orderSocket.js দেখুন) এই TTL-এ
+// পড়বে না, তাই সেগুলো অপরিবর্তিত/স্থায়ী থাকবে। ---
+EventLogSchema.index(
+  { createdAt: 1 },
+  {
+    expireAfterSeconds: 60 * 60 * 24 * 7,
+    partialFilterExpression: { eventName: "PageView" },
+  },
+);
+
 module.exports = mongoose.model("EventLog", EventLogSchema);
