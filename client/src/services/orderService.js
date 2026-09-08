@@ -7,6 +7,7 @@ export const orderService = {
 
   // মাস্টার সার্চ — parcel/order ID, courier.trackingId, বা ফোন নম্বর দিয়ে
   masterSearch: (q) => api.get(`${BASE}/master-search`, { params: { q } }),
+  masterEdit: (id, payload) => api.patch(`${BASE}/${id}/master-edit`, payload),
 
   createManual: (rawInputText) => api.post(`${BASE}/manual-single`, { rawInputText }),
 

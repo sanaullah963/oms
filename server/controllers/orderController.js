@@ -95,41 +95,41 @@ exports.getOrders = async (req, res) => {
     //   // ৩. সর্বশেষ activity অনুযায়ী সর্ট
     //   { $sort: { lastActivityTime: -1 } },
     // ]);
-    
-//  const orders = await Order.aggregate([
-//       { $match: ownershipFilter },
-//       {
-//         $match: {
-//           "courier.courierStatus": {
-//             $nin: ["cancelled", "delivered", "partial_delivered"],
-//           },
-//         },
-//       },
-//       // ২. last activity বের করা
-//       {
-//         $addFields: {
-//           lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
-//         },
-//       },
-//       // ৩. orderStatus "Cancelled"/"Delivered" হলে শুধু শেষ ২ দিনের মধ্যে activity
-//       // থাকলেই পাঠানো হবে (পুরোনো হয়ে গেলে ড্যাশবোর্ড থেকে সরে যাবে)। এর বাইরে বাকি
-//       // সব orderStatus-এর অর্ডার কোনো টাইম-লিমিট ছাড়াই সবসময় পাঠানো হবে।
-//       {
-//         $match: {
-//           $or: [
-//             { orderStatus: { $nin: ["Cancelled", "Delivered"] } },
-//             {
-//               orderStatus: { $in: ["Cancelled", "Delivered"] },
-//               lastActivityTime: { $gte: twoDaysAgo },
-//             },
-//           ],
-//         },
-//       },
-//       // ৪. সর্বশেষ activity অনুযায়ী সর্ট
-//       { $sort: { lastActivityTime: -1 } },
-//     ]);
 
-const orders = await Order.aggregate([
+    //  const orders = await Order.aggregate([
+    //       { $match: ownershipFilter },
+    //       {
+    //         $match: {
+    //           "courier.courierStatus": {
+    //             $nin: ["cancelled", "delivered", "partial_delivered"],
+    //           },
+    //         },
+    //       },
+    //       // ২. last activity বের করা
+    //       {
+    //         $addFields: {
+    //           lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
+    //         },
+    //       },
+    //       // ৩. orderStatus "Cancelled"/"Delivered" হলে শুধু শেষ ২ দিনের মধ্যে activity
+    //       // থাকলেই পাঠানো হবে (পুরোনো হয়ে গেলে ড্যাশবোর্ড থেকে সরে যাবে)। এর বাইরে বাকি
+    //       // সব orderStatus-এর অর্ডার কোনো টাইম-লিমিট ছাড়াই সবসময় পাঠানো হবে।
+    //       {
+    //         $match: {
+    //           $or: [
+    //             { orderStatus: { $nin: ["Cancelled", "Delivered"] } },
+    //             {
+    //               orderStatus: { $in: ["Cancelled", "Delivered"] },
+    //               lastActivityTime: { $gte: twoDaysAgo },
+    //             },
+    //           ],
+    //         },
+    //       },
+    //       // ৪. সর্বশেষ activity অনুযায়ী সর্ট
+    //       { $sort: { lastActivityTime: -1 } },
+    //     ]);
+
+    const orders = await Order.aggregate([
       { $match: ownershipFilter },
       // ১. courier.courierStatus চূড়ান্তভাবে শেষ (cancelled/delivered/partial_delivered)
       // হলে সেই অর্ডার আর ফ্রন্টএন্ডে পাঠানো হবে না — orderStatus যাই থাকুক না কেন,
@@ -164,7 +164,6 @@ const orders = await Order.aggregate([
       // ৪. সর্বশেষ activity অনুযায়ী সর্ট
       { $sort: { lastActivityTime: -1 } },
     ]);
-
 
     console.log("Orders fetched successfully:", orders.length);
     return res.status(200).json(orders || []);
@@ -347,6 +346,195 @@ exports.deleteOrder = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Server error while deleting order." });
+  }
+};
+
+// --- PATCH /api/orders/:id/master-edit — মাস্টার সার্চ থেকে সীমিত কিছু ফিল্ড এডিট করা।
+// ⚠️ শুধু নিচের whitelist-এর ফিল্ডগুলোই এডিট হবে — req.body-এর বাকি সব কিছু (fbp/fbc/fbclid/
+// ip/userAgent/fingerprintHash/courier.responseData/fraudCheck ইত্যাদি) সম্পূর্ণ ignore করা হয়,
+// এমনকি কেউ ইচ্ছাকৃতভাবে সেই ফিল্ড পাঠালেও এই ফাংশন সেগুলো পড়েই না — এটা blacklist না,
+// whitelist দিয়ে করা হয়েছে যাতে ভবিষ্যতে Order মডেলে নতুন sensitive ফিল্ড যোগ হলেও সেটা
+// এই এন্ডপয়েন্ট দিয়ে ফাঁক গলে এডিট হয়ে না যায়। প্রতিটা বদলানো ফিল্ডের জন্য আলাদা activity
+// এন্ট্রি (কে/কবে/কোনটা/আগে কী ছিল/এখন কী হলো) — এটাই এডিট-হিস্ট্রি/audit log। ---
+const MASTER_EDIT_ORDER_STATUS = [
+  "Pending",
+  "confirmed",
+  "released",
+  "Delivered",
+  "Cancelled",
+  "Booked",
+  "Scheduled",
+  "Booking Failed",
+];
+const MASTER_EDIT_COURIER_STATUS = [
+  "unknown",
+  "review",
+  "pending",
+  "assigned",
+  "delivered",
+  "partial_delivered",
+  "cancelled",
+];
+
+exports.masterEditOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "অর্ডারটি খুঁজে পাওয়া যায়নি।" });
+    }
+
+    const editorName = req.user?.name || "Unknown";
+    const changes = []; // প্রতিটা আসল পরিবর্তনের রেকর্ড — activities-এ পুশ হবে
+
+    const recordChange = (field, oldValue, newValue) => {
+      changes.push({ field, oldValue, newValue });
+    };
+
+    // --- ১. castomerName ---
+    if (
+      typeof req.body.castomerName === "string" &&
+      req.body.castomerName.trim() &&
+      req.body.castomerName.trim() !== order.castomerName
+    ) {
+      recordChange(
+        "castomerName",
+        order.castomerName,
+        req.body.castomerName.trim(),
+      );
+      order.castomerName = req.body.castomerName.trim();
+    }
+
+    // --- ২. castomerPhone (array) ---
+    if (Array.isArray(req.body.castomerPhone)) {
+      const cleaned = req.body.castomerPhone
+        .map((p) => String(p).trim())
+        .filter(Boolean);
+      const oldJoined = (order.castomerPhone || []).join(",");
+      const newJoined = cleaned.join(",");
+      if (cleaned.length > 0 && oldJoined !== newJoined) {
+        recordChange("castomerPhone", order.castomerPhone, cleaned);
+        order.castomerPhone = cleaned;
+      }
+    }
+
+    // --- ৩. productCode ---
+    if (
+      typeof req.body.productCode === "string" &&
+      req.body.productCode.trim() &&
+      req.body.productCode.trim() !== order.productCode
+    ) {
+      recordChange(
+        "productCode",
+        order.productCode,
+        req.body.productCode.trim(),
+      );
+      order.productCode = req.body.productCode.trim();
+    }
+
+    // --- ৪. rawInputText (ঠিকানাসহ — এখন যেভাবে সেভ থাকে সেভাবেই ফ্রি-টেক্সট) ---
+    if (
+      typeof req.body.rawInputText === "string" &&
+      req.body.rawInputText.trim() &&
+      req.body.rawInputText !== order.rawInputText
+    ) {
+      recordChange("rawInputText", order.rawInputText, req.body.rawInputText);
+      order.rawInputText = req.body.rawInputText;
+    }
+
+    // --- ৫. orderStatus ("প্রোডাক্ট স্ট্যাটাস") — ড্রপডাউন, schema enum অনুযায়ী ---
+    if (
+      req.body.orderStatus !== undefined &&
+      req.body.orderStatus !== order.orderStatus
+    ) {
+      if (!MASTER_EDIT_ORDER_STATUS.includes(req.body.orderStatus)) {
+        return res.status(400).json({ message: "orderStatus-এর মান সঠিক না।" });
+      }
+      recordChange("orderStatus", order.orderStatus, req.body.orderStatus);
+      order.orderStatus = req.body.orderStatus;
+    }
+
+    // --- ৬. courier.courierStatus — ড্রপডাউন, schema enum অনুযায়ী ---
+    if (
+      req.body.courierStatus !== undefined &&
+      req.body.courierStatus !== order.courier?.courierStatus
+    ) {
+      if (!MASTER_EDIT_COURIER_STATUS.includes(req.body.courierStatus)) {
+        return res
+          .status(400)
+          .json({ message: "courierStatus-এর মান সঠিক না।" });
+      }
+      recordChange(
+        "courier.courierStatus",
+        order.courier?.courierStatus,
+        req.body.courierStatus,
+      );
+      order.courier.courierStatus = req.body.courierStatus;
+    }
+
+    // --- ৭. totalCOD ---
+    if (
+      req.body.totalCOD !== undefined &&
+      req.body.totalCOD !== "" &&
+      Number(req.body.totalCOD) !== order.totalCOD
+    ) {
+      const newTotal = Number(req.body.totalCOD);
+      if (Number.isNaN(newTotal) || newTotal < 0) {
+        return res.status(400).json({ message: "totalCOD-এর মান সঠিক না।" });
+      }
+      recordChange("totalCOD", order.totalCOD, newTotal);
+      order.totalCOD = newTotal;
+    }
+
+    // --- ৮. needsAttention (হ্যাঁ/না) ---
+    if (
+      req.body.needsAttention !== undefined &&
+      Boolean(req.body.needsAttention) !== Boolean(order.needsAttention)
+    ) {
+      recordChange(
+        "needsAttention",
+        order.needsAttention,
+        Boolean(req.body.needsAttention),
+      );
+      order.needsAttention = Boolean(req.body.needsAttention);
+    }
+
+    // --- ৯. permanentNote ---
+    if (
+      typeof req.body.permanentNote === "string" &&
+      req.body.permanentNote !== (order.permanentNote || "")
+    ) {
+      recordChange(
+        "permanentNote",
+        order.permanentNote,
+        req.body.permanentNote,
+      );
+      order.permanentNote = req.body.permanentNote;
+    }
+
+    if (changes.length === 0) {
+      return res.status(200).json({ message: "কোনো পরিবর্তন হয়নি।", order });
+    }
+
+    // --- একটাই activity এন্ট্রিতে সব পরিবর্তন — কে করেছে, কী কী বদলেছে (details-এ পুরো ডিফ) ---
+    order.activities.push({
+      author: editorName,
+      type: "Master Search Edit",
+      description: `${editorName} ${changes.map((c) => c.field).join(", ")} পরিবর্তন করেছেন`,
+      details: { changes },
+      timestamp: new Date(),
+    });
+
+    const savedOrder = await order.save();
+
+    const io = req.app.get("io");
+    if (io) emitOrderUpdate(io, savedOrder);
+
+    return res
+      .status(200)
+      .json({ message: "সফলভাবে আপডেট হয়েছে।", order: savedOrder });
+  } catch (error) {
+    console.error("Master edit order error:", error);
+    return res.status(500).json({ message: "এডিট করতে ব্যর্থ হয়েছে।" });
   }
 };
 

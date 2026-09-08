@@ -299,7 +299,7 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
                         }`}
                         title="Multiple Orders Detected — বিস্তারিত দেখতে ক্লিক করুন"
                       >
-                        ⚠️ Multiple Orders
+                        ⚠️Prev
                       </button>
                     )}
                 </div>
