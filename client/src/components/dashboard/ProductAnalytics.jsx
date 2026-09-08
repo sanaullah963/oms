@@ -4,6 +4,7 @@ import { dashboardService } from "@/services/dashboardService";
 import { getPresetRange } from "@/utils/dateRangeUtils";
 import DateRangeFilter from "./DateRangeFilter";
 import DashboardOrderListModal from "./DashboardOrderListModal";
+import ProductFinancialModal from "./ProductFinancialModal";
 
 // --- প্রোডাক্ট কার্ডের ৪টা স্ট্যাটাস চিপ কনফিগ ---
 const METRICS = [
@@ -21,6 +22,7 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [drillDown, setDrillDown] = useState(null); // { status, productCode }
+  const [financialModalProduct, setFinancialModalProduct] = useState(null); // productCode string
 
   const activeRange =
     preset === "custom" && customRange
@@ -98,7 +100,15 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
             <tbody>
               {products.map((p) => (
                 <tr key={p.productCode} className="border-b last:border-0">
-                  <td className="py-2 px-4 font-semibold text-gray-800">{p.productCode}</td>
+                  <td className="py-2 px-4 font-semibold text-gray-800">
+                    <button
+                      onClick={() => setFinancialModalProduct(p.productCode)}
+                      className="text-indigo-600 hover:underline cursor-pointer hover:bg-blue-100 p-2 rounded-md"
+                      title="আর্থিক হিসাব দেখুন"
+                    >
+                      {p.productCode}
+                    </button>
+                  </td>
                   {METRICS.map((m) => {
                     const count = p[`${m.key}Count`] || 0;
                     const amount = p[`${m.key}Amount`] || 0;
@@ -136,6 +146,16 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
           moderatorId={isAdmin ? moderatorId : undefined}
           productCode={drillDown.productCode}
           onClose={() => setDrillDown(null)}
+        />
+      )}
+
+      {financialModalProduct && (
+        <ProductFinancialModal
+          productCode={financialModalProduct}
+          from={activeRange.from}
+          to={activeRange.to}
+          moderatorId={isAdmin ? moderatorId : undefined}
+          onClose={() => setFinancialModalProduct(null)}
         />
       )}
     </div>

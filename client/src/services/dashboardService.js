@@ -14,4 +14,8 @@ export const dashboardService = {
     api.get("/api/dashboard/orders", { params: { status, from, to, moderatorId, productCode } }),
   getProductSummary: (from, to, moderatorId) =>
     api.get("/api/dashboard/product-summary", { params: { from, to, moderatorId } }),
+  getProductFinancialSummary: (productCode, from, to, moderatorId) =>
+    api.get("/api/dashboard/product-financial-summary", {
+      params: { productCode, from, to, moderatorId },
+    }),
 };

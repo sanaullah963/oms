@@ -190,7 +190,122 @@ exports.getDashboardSummary = async (req, res) => {
   }
 };
 
-// --- GET /api/dashboard/orders?status=sent|delivered|cancelled|pending&from=&to=&moderatorId=&productCode= ---
+// --- GET /api/dashboard/product-financial-summary?productCode=&from=&to=&moderatorId= ---
+// একটা নির্দিষ্ট productCode-এর জন্য getDashboardSummary-এর মতোই আর্থিক হিসাব (টোটাল পাঠানো,
+// ডেলিভারি চার্জ, COD চার্জ, ক্যান্সেল চার্জ, নেট ব্যালেন্স) — মূল getDashboardSummary ফাংশনটা
+// অপরিবর্তিত রেখে (ঐটা main dashboard-এ ব্যবহার হয়, রিস্ক এড়াতে টাচ করিনি), এখানে একই
+// অ্যাগ্রিগেশন প্যাটার্ন productCode ফিল্টার যোগ করে আলাদাভাবে লেখা হয়েছে। ---
+exports.getProductFinancialSummary = async (req, res) => {
+  try {
+    const { productCode } = req.query;
+    if (!productCode) {
+      return res.status(400).json({ message: "productCode আবশ্যক।" });
+    }
+
+    const { fromDate, toDate } = getDateRange(req);
+    const ownershipFilter = getOwnershipFilter(req);
+    const productFilter = { productCode };
+
+    const sentFilter = {
+      ...ownershipFilter,
+      ...productFilter,
+      "courier.bookedAt": { $gte: fromDate, $lte: toDate },
+    };
+    const deliveredFilter = {
+      ...ownershipFilter,
+      ...productFilter,
+      "courier.courierStatus": "delivered",
+      "courier.statusUpdatedAt": { $gte: fromDate, $lte: toDate },
+    };
+    const cancelledFilter = {
+      ...ownershipFilter,
+      ...productFilter,
+      "courier.courierStatus": "cancelled",
+      "courier.statusUpdatedAt": { $gte: fromDate, $lte: toDate },
+    };
+    const pendingFilter = {
+      ...ownershipFilter,
+      ...productFilter,
+      "courier.trackingId": { $ne: null },
+      "courier.bookedAt": { $gte: fromDate, $lte: toDate },
+      "courier.courierStatus": { $nin: ["delivered", "cancelled"] },
+    };
+
+    const [sentAgg, deliveredAgg, cancelledAgg, pendingAgg] = await Promise.all([
+      Order.aggregate([
+        { $match: sentFilter },
+        { $group: { _id: null, count: { $sum: 1 }, totalCOD: { $sum: "$totalCOD" } } },
+      ]),
+      Order.aggregate([
+        { $match: deliveredFilter },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            deliveredAmount: { $sum: "$courier.deliveredCodAmount" },
+            deliveryCharge: { $sum: "$courier.deliveryCharge" },
+            codCharge: { $sum: "$courier.codChargeAmount" },
+          },
+        },
+      ]),
+      Order.aggregate([
+        { $match: cancelledFilter },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            deliveryCharge: { $sum: "$courier.deliveryCharge" },
+          },
+        },
+      ]),
+      Order.aggregate([
+        { $match: pendingFilter },
+        { $group: { _id: null, count: { $sum: 1 }, totalCOD: { $sum: "$totalCOD" } } },
+      ]),
+    ]);
+
+    const sent = sentAgg[0] || { count: 0, totalCOD: 0 };
+    const delivered = deliveredAgg[0] || {
+      count: 0,
+      deliveredAmount: 0,
+      deliveryCharge: 0,
+      codCharge: 0,
+    };
+    const cancelled = cancelledAgg[0] || { count: 0, deliveryCharge: 0 };
+    const pending = pendingAgg[0] || { count: 0, totalCOD: 0 };
+
+    const totalDeliveryCharge = (delivered.deliveryCharge || 0) + (cancelled.deliveryCharge || 0);
+    const netDeduction = totalDeliveryCharge + (delivered.codCharge || 0);
+
+    // --- ডেলিভারি+ক্যান্সেল মিলিয়ে (যেসব পার্সেলের ফাইনাল সিদ্ধান্ত হয়ে গেছে) কত % ক্যান্সেল ---
+    const decidedCount = (delivered.count || 0) + (cancelled.count || 0);
+    const cancelRate = decidedCount > 0 ? ((cancelled.count || 0) / decidedCount) * 100 : 0;
+
+    return res.status(200).json({
+      productCode,
+      range: { from: fromDate, to: toDate },
+      totals: {
+        sentCount: sent.count,
+        sentAmount: sent.totalCOD,
+        deliveredCount: delivered.count,
+        deliveredAmount: delivered.deliveredAmount || 0,
+        cancelledCount: cancelled.count,
+        pendingCount: pending.count,
+        pendingAmount: pending.totalCOD,
+        totalDeliveryCharge,
+        deliveredDeliveryCharge: delivered.deliveryCharge || 0,
+        cancelledDeliveryCharge: cancelled.deliveryCharge || 0,
+        totalCodCharge: delivered.codCharge || 0,
+        netDeduction,
+        mainBalanceAfterCosting: (delivered.deliveredAmount || 0) - netDeduction,
+        cancelRate,
+      },
+    });
+  } catch (error) {
+    console.error("Product financial summary error:", error);
+    return res.status(500).json({ message: "প্রোডাক্ট আর্থিক হিসাব আনতে ব্যর্থ হয়েছে।" });
+  }
+};
 // কার্ডে ক্লিক করলে সংশ্লিষ্ট পার্সেলগুলোর লিস্ট দেখানোর জন্য (প্রোডাক্ট এনালিটিক্স কার্ড থেকেও
 // একই এন্ডপয়েন্ট ব্যবহার হয়, শুধু ঐচ্ছিক productCode ফিল্টার যোগ হয়)
 exports.getDashboardOrders = async (req, res) => {
