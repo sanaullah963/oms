@@ -59,13 +59,32 @@ export default function TrackingParcelOrderListModal({
 
   const sortedOrders = React.useMemo(() => {
     if (!sortConfig.key) return orders;
-    const getValue = (o) =>
-      sortConfig.key === "trackingId"
-        ? o.courier?.trackingId || ""
-        : o.productCode || "";
-    const sorted = [...orders].sort((a, b) =>
-      getValue(a).localeCompare(getValue(b), "bn"),
-    );
+
+    const getValue = (o) => {
+      switch (sortConfig.key) {
+        case "trackingId":
+          return o.courier?.trackingId || "";
+        case "productCode":
+          return o.productCode || "";
+        case "totalCOD":
+          return o.totalCOD || 0;
+        case "lastUpdated": {
+          const activities = o.activities || [];
+          const last = activities[activities.length - 1];
+          return last?.timestamp ? new Date(last.timestamp).getTime() : 0;
+        }
+        default:
+          return "";
+      }
+    };
+
+    const isNumeric = sortConfig.key === "totalCOD" || sortConfig.key === "lastUpdated";
+
+    const sorted = [...orders].sort((a, b) => {
+      const va = getValue(a);
+      const vb = getValue(b);
+      return isNumeric ? va - vb : va.localeCompare(vb, "bn");
+    });
     return sortConfig.direction === "asc" ? sorted : sorted.reverse();
   }, [orders, sortConfig]);
 
@@ -138,7 +157,26 @@ export default function TrackingParcelOrderListModal({
                   <th className="py-2 px-4">#</th>
                   <th className="py-2 px-4">নাম</th>
                   <th className="py-2 px-4">ফোন</th>
-                  <th className="py-2 px-4">COD</th>
+                  <th className="py-2 px-4">
+                    <span className="inline-flex items-center gap-1">
+                      COD
+                      <button
+                        onClick={() => toggleSort("totalCOD")}
+                        title="COD এমাউন্ট অনুযায়ী সর্ট করুন"
+                        className={`cursor-pointer rounded-sm px-1 ${
+                          sortConfig.key === "totalCOD"
+                            ? "text-indigo-600 font-bold"
+                            : "text-gray-400 hover:text-gray-600"
+                        }`}
+                      >
+                        {sortConfig.key === "totalCOD"
+                          ? sortConfig.direction === "asc"
+                            ? "▲"
+                            : "▼"
+                          : "⇅"}
+                      </button>
+                    </span>
+                  </th>
                   <th className="py-2 px-4">
                     <span className="inline-flex items-center gap-1">
                       Tracking ID
@@ -182,7 +220,26 @@ export default function TrackingParcelOrderListModal({
                   <th className="py-2 px-4">Order status</th>
                   <th className="py-2 px-4">Courier status</th>
                   <th className="py-2 px-4">যোগ করেছেন</th>
-                  <th className="py-2 px-4">Last updated</th>
+                  <th className="py-2 px-4">
+                    <span className="inline-flex items-center gap-1">
+                      Last updated
+                      <button
+                        onClick={() => toggleSort("lastUpdated")}
+                        title="সময় অনুযায়ী সর্ট করুন"
+                        className={`cursor-pointer rounded-sm px-1 ${
+                          sortConfig.key === "lastUpdated"
+                            ? "text-indigo-600 font-bold"
+                            : "text-gray-400 hover:text-gray-600"
+                        }`}
+                      >
+                        {sortConfig.key === "lastUpdated"
+                          ? sortConfig.direction === "asc"
+                            ? "▲"
+                            : "▼"
+                          : "⇅"}
+                      </button>
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
