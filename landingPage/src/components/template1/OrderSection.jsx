@@ -554,18 +554,29 @@ export default function OrderSection({ page, slug, setIsOrderVisible }) {
                 </div>
               )}
 
-              {/* Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full rounded-2xl py-4 text-lg font-bold text-white shadow-xl transition ${
-                  loading
-                    ? "cursor-not-allowed bg-gray-400"
-                    : "bg-gradient-to-r from-green-600 to-red-500 hover:scale-[1.02]"
-                }`}
-              >
-                {loading ? "অর্ডার প্রসেস হচ্ছে..." : "🛒 অর্ডার কনফার্ম"}
-              </button>
+            {/* Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full rounded-2xl py-4 text-lg font-bold text-white shadow-xl transition ${
+                loading
+                  ? "cursor-not-allowed bg-gray-400"
+                  : "bg-gradient-to-r from-green-600 to-red-500 hover:scale-[1.02]"
+              }`}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Processing...</span>
+                </span>
+              ) : (
+                "🛒 অর্ডার কনফার্ম"
+              )}
+            </button>
+
+
+
+
             </form>
 
             {success && (

@@ -89,10 +89,10 @@ async function createLandingOrder({
   }
 
   const totalCOD = unitPrice * qty + deliveryCharge;
-  const productLabelSuffix = productTypeLabel ? ` (${productTypeLabel})` : "";
+  const productLabelSuffix = productTypeLabel ? ` (${productTypeLabel}` : "";
 
   const order = await Order.create({
-    rawInputText: `${name}\n${phone}\n${address}\nProduct: ${page.productName}${productLabelSuffix} x${qty}\nDelivery: ৳${deliveryCharge} (${area === "outside" ? "ঢাকার বাইরে" : "ঢাকার ভেতরে"})`,
+    rawInputText: `${name}\n${phone}\n${address}\nProduct: ${page.productCode} ${productLabelSuffix}x${qty}) = ৳${totalCOD}`,
     castomerName: name,
     castomerPhone: [phone],
     productCode: page.productCode,
@@ -103,7 +103,7 @@ async function createLandingOrder({
     activities: [
       {
         type: "Order Created",
-        description: `${sourceLabel} — "${page.productName}${productLabelSuffix}" (${qty}টি)`,
+        description: `Order from Landing Page /${page.slug}`,
       },
     ],
     tracking: {
