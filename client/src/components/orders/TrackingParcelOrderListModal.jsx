@@ -45,6 +45,29 @@ export default function TrackingParcelOrderListModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  // --- ট্র্যাকিং আইডি / প্রোডাক্ট কোড অনুযায়ী সর্ট — শুধু বর্তমান পেজের ডেটার উপর,
+  // ক্লায়েন্ট-সাইডেই। একই কলামে আবার ক্লিক করলে asc/desc টগল হয়। ---
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const toggleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" },
+    );
+  };
+
+  const sortedOrders = React.useMemo(() => {
+    if (!sortConfig.key) return orders;
+    const getValue = (o) =>
+      sortConfig.key === "trackingId"
+        ? o.courier?.trackingId || ""
+        : o.productCode || "";
+    const sorted = [...orders].sort((a, b) =>
+      getValue(a).localeCompare(getValue(b), "bn"),
+    );
+    return sortConfig.direction === "asc" ? sorted : sorted.reverse();
+  }, [orders, sortConfig]);
 
   // স্ট্যাটাস/তারিখ/মডারেটর বদলালে পেজ ১-এ রিসেট
   useEffect(() => {
@@ -116,8 +139,46 @@ export default function TrackingParcelOrderListModal({
                   <th className="py-2 px-4">নাম</th>
                   <th className="py-2 px-4">ফোন</th>
                   <th className="py-2 px-4">COD</th>
-                  <th className="py-2 px-4">Tracking ID</th>
-                  <th className="py-2 px-4">Product code</th>
+                  <th className="py-2 px-4">
+                    <span className="inline-flex items-center gap-1">
+                      Tracking ID
+                      <button
+                        onClick={() => toggleSort("trackingId")}
+                        title="Tracking ID অনুযায়ী সর্ট করুন"
+                        className={`cursor-pointer rounded-sm px-1 ${
+                          sortConfig.key === "trackingId"
+                            ? "text-indigo-600 font-bold"
+                            : "text-gray-400 hover:text-gray-600"
+                        }`}
+                      >
+                        {sortConfig.key === "trackingId"
+                          ? sortConfig.direction === "asc"
+                            ? "▲"
+                            : "▼"
+                          : "⇅"}
+                      </button>
+                    </span>
+                  </th>
+                  <th className="py-2 px-4">
+                    <span className="inline-flex items-center gap-1">
+                      Product code
+                      <button
+                        onClick={() => toggleSort("productCode")}
+                        title="একই প্রোডাক্ট কোডের অর্ডারগুলো একত্রে গ্রুপ করুন"
+                        className={`cursor-pointer rounded-sm px-1 ${
+                          sortConfig.key === "productCode"
+                            ? "text-indigo-600 font-bold"
+                            : "text-gray-400 hover:text-gray-600"
+                        }`}
+                      >
+                        {sortConfig.key === "productCode"
+                          ? sortConfig.direction === "asc"
+                            ? "▲"
+                            : "▼"
+                          : "⇅"}
+                      </button>
+                    </span>
+                  </th>
                   <th className="py-2 px-4">Order status</th>
                   <th className="py-2 px-4">Courier status</th>
                   <th className="py-2 px-4">যোগ করেছেন</th>
@@ -125,7 +186,7 @@ export default function TrackingParcelOrderListModal({
                 </tr>
               </thead>
               <tbody>
-                {orders.map((o, index) => {
+                {sortedOrders.map((o, index) => {
                   const isExpanded = expandedId === o._id;
                   const rowNumber = (page - 1) * PAGE_SIZE + index + 1;
                   return (
