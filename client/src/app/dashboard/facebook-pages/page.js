@@ -4,6 +4,7 @@ import Link from "next/link";
 import AuthGuard from "@/components/auth/AuthGuard";
 import SearchAndMenu from "@/components/layout/SearchAndMenu";
 import FacebookPageManager from "@/components/dashboard/FacebookPageManager";
+import BlockedReactorsList from "@/components/dashboard/BlockedReactorsList";
 import { facebookPageService } from "@/services/facebookPageService";
 
 function FacebookPagesContent() {
@@ -47,6 +48,8 @@ function FacebookPagesContent() {
         ) : (
           <FacebookPageManager pages={pages} onRefresh={fetchPages} />
         )}
+
+        <BlockedReactorsList />
       </div>
     </div>
   );

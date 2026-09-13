@@ -308,6 +308,7 @@
 
 const axios = require("axios");
 const FacebookComment = require("../models/FacebookComment");
+const BlockedReactor = require("../models/BlockedReactor");
 const { FB_VERIFY_TOKEN } = require("../config/env");
 const {
   getAllActivePageIds,
@@ -316,6 +317,68 @@ const {
 } = require("../utils/facebookPages");
 
 const GRAPH_API_BASE = "https://graph.facebook.com/v25.0";
+
+// haha/angry রিয়েক্ট এলেই সরাসরি অটো-ব্লক করা হয় (কমেন্টের মতো ডিলিট করার সুযোগ নেই বলে)
+const AUTO_BLOCK_REACTIONS = ["haha", "angry"];
+
+// --- কোনো পোস্টে haha/angry রিয়েক্ট এলে: Facebook Graph API দিয়ে সাথে সাথে পেজ থেকে
+// ব্লক করে দেওয়া হয়, এবং ফলাফল (সফল/ব্যর্থ যাই হোক) BlockedReactor কালেকশনে রাখা হয়
+// যাতে অ্যাডমিন ড্যাশবোর্ড থেকে লিস্টটা দেখতে/ম্যানুয়ালি ডিলিট করতে পারে। ---
+async function handleReactionEvent(change, entry, req, knownPageIds) {
+  if (!AUTO_BLOCK_REACTIONS.includes(change.reaction_type)) return;
+
+  const senderId = change.from?.id;
+  if (!senderId || knownPageIds.includes(senderId)) return; // নিজেদের পেজের রিয়েকশন ইগনোর
+
+  const rawEntryId = entry.id || null;
+  const rawPostId = change.post_id || null;
+  const postIdPrefix = rawPostId ? rawPostId.split("_")[0] : null;
+  const actualPageId = postIdPrefix || rawEntryId;
+
+  const page = await getPageById(actualPageId);
+  if (!page) {
+    console.warn(
+      `⚠️ Reaction auto-block: পেজ ম্যাচ ব্যর্থ — ব্যবহৃত pageId: "${actualPageId}"`,
+    );
+    return;
+  }
+
+  let blockedOnFacebook = false;
+  let blockError = null;
+  try {
+    await axios.post(`${GRAPH_API_BASE}/${page.pageId}/blocked`, {
+      user: senderId,
+      access_token: page.pageAccessToken,
+    });
+    blockedOnFacebook = true;
+  } catch (err) {
+    blockError = err.response?.data?.error?.message || err.message;
+    console.error("❌ Reaction auto-block Facebook API error:", blockError);
+  }
+
+  try {
+    const saved = await BlockedReactor.findOneAndUpdate(
+      { senderId, pageId: page.pageId },
+      {
+        senderId,
+        name: change.from?.name || "Unknown",
+        profileLink: `https://www.facebook.com/${senderId}`,
+        reactionType: change.reaction_type,
+        pageId: page.pageId,
+        pageName: page.pageName,
+        postId: rawPostId,
+        blockedOnFacebook,
+        blockError,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    const io = req.app.get("io");
+    if (io) io.emit("new-blocked-reactor", saved);
+  } catch (dbErr) {
+    console.error("❌ Reaction block DB সেভ এরর:", dbErr.message);
+  }
+}
 
 // --- GET /api/facebook/webhook - Webhook Verification ---
 exports.verifyWebhook = (req, res) => {
@@ -350,9 +413,16 @@ exports.receiveWebhookEvent = async (req, res) => {
 
       for (const changeItem of entry.changes) {
         const change = changeItem.value;
+        if (!change) continue;
+
+        // --- haha/angry রিয়েক্ট এলে সরাসরি অটো-ব্লক (কমেন্ট লজিকের সাথে সাথে চেক করা হয়) ---
+        if (change.item === "reaction" && change.verb === "add") {
+          await handleReactionEvent(change, entry, req, knownPageIds);
+          continue;
+        }
 
         // নতুন কমেন্ট এসেছে কিনা চেক করা
-        if (!(change && change.item === "comment" && change.verb === "add")) continue;
+        if (!(change.item === "comment" && change.verb === "add")) continue;
 
         const rawEntryId = entry.id || null;
         const rawPostId = change.post_id || null;
@@ -614,5 +684,92 @@ exports.hardDeleteComment = async (req, res) => {
     return res.status(200).json({ success: true, message: "DB থেকে চিরতরে ডিলিট হয়েছে" });
   } catch (error) {
     return res.status(500).json({ success: false, error: "DB থেকে delete করা যায়নি" });
+  }
+};
+
+// --- GET /api/facebook/blocked-reactors — haha/angry দিয়ে অটো-ব্লক হওয়া সব ইউজারের লিস্ট ---
+exports.getBlockedReactors = async (req, res) => {
+  try {
+    const reactors = await BlockedReactor.find().sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, data: reactors });
+  } catch (error) {
+    console.error("Get blocked reactors error:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "ব্লক-লিস্ট আনতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- DELETE /api/facebook/blocked-reactors/:id — শুধু আমাদের নিজস্ব রেকর্ড ডিলিট করে,
+// Facebook-এর ব্লক এখান থেকে সরে না (সেটার জন্য পেজের নিজস্ব সেটিংস থেকে আনব্লক করতে হবে) ---
+exports.deleteBlockedReactor = async (req, res) => {
+  try {
+    const deleted = await BlockedReactor.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: "রেকর্ড খুঁজে পাওয়া যায়নি।" });
+    }
+    return res.status(200).json({ success: true, message: "রেকর্ড ডিলিট হয়েছে।" });
+  } catch (error) {
+    console.error("Delete blocked reactor error:", error);
+    return res.status(500).json({ success: false, error: "ডিলিট করা যায়নি।" });
+  }
+};
+
+// --- POST /api/facebook/blocked-reactors/:id/unblock — Facebook Graph API দিয়ে
+// সত্যিকারের আনব্লক করে (DELETE {page-id}/blocked), সফল হলে রেকর্ডে isActive: false মার্ক করে ---
+exports.unblockReactor = async (req, res) => {
+  try {
+    const reactor = await BlockedReactor.findById(req.params.id);
+    if (!reactor) {
+      return res.status(404).json({ success: false, error: "রেকর্ড খুঁজে পাওয়া যায়নি।" });
+    }
+
+    if (!reactor.isActive) {
+      return res.status(400).json({ success: false, error: "এই ইউজার আগে থেকেই আনব্লক করা।" });
+    }
+
+    const page = await getPageById(reactor.pageId);
+    if (!page) {
+      return res.status(400).json({
+        success: false,
+        error: `"${reactor.pageName}" পেজের Access Token খুঁজে পাওয়া যায়নি।`,
+      });
+    }
+
+    try {
+      await axios.delete(`${GRAPH_API_BASE}/${page.pageId}/blocked`, {
+        params: { user: reactor.senderId, access_token: page.pageAccessToken },
+      });
+    } catch (fbError) {
+      const metaError = fbError.response?.data?.error;
+      console.error("❌ Unblock Facebook API error:", metaError || fbError.message);
+
+      if ([190, 210].includes(metaError?.code)) {
+        return res.status(401).json({
+          success: false,
+          message: `"${page.pageName}" পেজের Access Token সমস্যা।`,
+          metaError,
+        });
+      }
+
+      reactor.unblockError = metaError?.message || fbError.message;
+      await reactor.save();
+      return res
+        .status(500)
+        .json({ success: false, error: "Facebook-এ আনব্লক করা যায়নি।", metaError });
+    }
+
+    reactor.isActive = false;
+    reactor.unblockedAt = new Date();
+    reactor.unblockError = null;
+    await reactor.save();
+
+    const io = req.app.get("io");
+    if (io) io.emit("blocked-reactor-updated", reactor);
+
+    return res.status(200).json({ success: true, message: "আনব্লক করা হয়েছে।", data: reactor });
+  } catch (error) {
+    console.error("Unblock reactor error:", error);
+    return res.status(500).json({ success: false, error: "আনব্লক করতে ব্যর্থ হয়েছে।" });
   }
 };
