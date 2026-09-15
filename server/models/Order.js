@@ -75,7 +75,16 @@ const OrderSchema = new mongoose.Schema({
       "Cancelled",
       "Booked",
       "Scheduled",
-      "Booking Failed"
+      "Booking Failed",
+      // --- নিচের ৪টা আগে enum-এ ছিল না, কিন্তু OrderCard.jsx-এর STATUS_SHORTCUTS বাটন
+      // থেকে socket "updateStatus" ইভেন্টের মাধ্যমে (orderSocket.js: handleUpdateStatus)
+      // সরাসরি orderStatus-এ সেট হয় — findByIdAndUpdate-এ runValidators না থাকায়
+      // এতদিন এরর ছাড়াই সেভ হচ্ছিল, কিন্তু enum-এ না থাকায় স্কিমা রিয়েল ডেটার সাথে
+      // মিলছিল না এবং অ্যাডমিন এডিট ড্রপডাউনেও এই স্ট্যাটাসগুলো দেখানো যাচ্ছিল না ---
+      "Confirmed",
+      "Call Not Received",
+      "Phone Off",
+      "Custom",
     ],
   },
   scheduledDate: {

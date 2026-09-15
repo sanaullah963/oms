@@ -366,6 +366,11 @@ const MASTER_EDIT_ORDER_STATUS = [
   "Booked",
   "Scheduled",
   "Booking Failed",
+  // --- STATUS_SHORTCUTS (OrderCard.jsx) থেকে সেট হওয়া স্ট্যাটাসগুলো, যা আগে এখানে ছিল না ---
+  "Confirmed",
+  "Call Not Received",
+  "Phone Off",
+  "Custom",
 ];
 const MASTER_EDIT_COURIER_STATUS = [
   "unknown",
