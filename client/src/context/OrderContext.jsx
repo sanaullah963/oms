@@ -227,11 +227,14 @@ export function OrderProvider({ children }) {
     }
 
     const timer = setTimeout(() => {
-      if (query) {
+      // ৪ ক্যারেক্টারের কম হলে ব্যাকএন্ডে সার্চ রিকোয়েস্ট পাঠানো হবে না — শুধু শুধু
+      // প্রতিটা কি-স্ট্রোকে DB রাউন্ড-ট্রিপ এড়ানোর জন্য
+      if (query && query.length >= 4) {
         fetchSearchFromDB(query);
         setSearchWaiting(true);
       } else {
         setDbOrders([]);
+        setSearchWaiting(false);
       }
     }, 600);
 

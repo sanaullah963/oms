@@ -57,6 +57,7 @@ function SearchAndMenu({ scope = "orders" }) {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-200 focus:border-indigo-200 transition duration-11 text-sm"
             />
+            {/* Clear button */}
             {searchQuery && (
               <button
                 type="button"
