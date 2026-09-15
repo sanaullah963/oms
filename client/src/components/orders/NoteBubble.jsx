@@ -54,17 +54,15 @@ function NoteBubble({ order, onUpdate }) {
     : order.castomerPhone.split(", ")[0];
 
   return (
-    <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 mb-1 border border-gray-300 hover:shadow-xl transition-all duration-300">
+    <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 mb-1 border border-gray-400 hover:shadow-xl transition-all duration-300">
       <div
         className={`cursor-pointer  ${loading ? "opacity-70 pointer-events-none" : ""}`}
         onClick={() => !loading && setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-1">
+          {/* tracking id */}
           <div>
             {order?.courier?.trackingId && (
-
-
-
               <div className="text-sm font-medium flex items-center">
                 <p>ID : </p>
                 <p
@@ -77,19 +75,34 @@ function NoteBubble({ order, onUpdate }) {
                   {order?.courier?.trackingId}
                 </p>
               </div>
-
-
-
             )}
           </div>
+          {/* our previous history */}
           <div>
             {order?.courierHistory?.our > 0 && (
               <span className="text-xs text-black  font-medium bg-green-300 px-2 py-0.5 rounded-md">
-                <span className="text-green-700">{order?.courierHistory?.our}</span>
+                <span className="text-green-700">
+                  {order?.courierHistory?.our}
+                </span>
               </span>
             )}
           </div>
-          <span>-- {order.totalCOD} --</span>
+          {/* all previous history */}
+          <div>
+            {order?.courierHistory?.all && (
+              <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
+                <span> All </span>
+                <span className="text-green-700">
+                  {order?.courierHistory?.all?.success}
+                </span>
+                /
+                <span className="text-red-600">
+                  {order?.courierHistory?.all?.cancel}
+                </span>
+              </span>
+            ) }
+          </div>
+          <span>{order.totalCOD}--</span>
           <span className="text-purple-600 pe-2">{order.productCode}</span>
           <button
             onClick={(e) => {
@@ -104,11 +117,16 @@ function NoteBubble({ order, onUpdate }) {
         </div>
 
         <div className="flex flex-1 gap-2 justify-between items-center my-2">
-          <p className="text-sm font-bold text-gray-600 ">{lastActivity?.description}</p>
+          <p className="text-sm font-bold text-gray-600 ">
+            {lastActivity?.description}
+          </p>
         </div>
 
         <div className="flex justify-between items-center">
-          <OrderPhoneList castomerPhone={order.castomerPhone} onCopy={handleCopy} />
+          <OrderPhoneList
+            castomerPhone={order.castomerPhone}
+            onCopy={handleCopy}
+          />
           <div className="text-sm font-medium text-purple-500">
             <DisplayTime timeStamp={lastActivity?.timestamp} />
             <DisplayAgoTime timeStamp={lastActivity?.timestamp} />
