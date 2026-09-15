@@ -30,4 +30,7 @@ export const orderService = {
   reviewFraud: (orderId, action, reason) =>
     api.patch(`${BASE}/${orderId}/fraud-review`, { action, reason }),
   getFraudMatches: (orderId) => api.get(`${BASE}/${orderId}/fraud-matches`),
+
+  // ড্যাশবোর্ডের COD গরমিল টেবিল — আমাদের totalCOD-কে কুরিয়ারের ডেলিভারড COD দিয়ে সেট করে দেয়
+  fixCodMismatch: (orderId) => api.patch(`${BASE}/${orderId}/fix-cod-mismatch`),
 };

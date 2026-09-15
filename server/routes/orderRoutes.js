@@ -28,6 +28,7 @@ router.post("/manual-single", orderController.createManualOrder);
 router.delete("/delete/:id", orderController.deleteOrder);
 router.put("/update-order/:id", orderController.updateOrder);
 router.patch("/update-need-attention/:id", orderController.updateNeedAttention);
+router.patch("/:id/fix-cod-mismatch", orderController.fixCodMismatch);
 router.patch("/order-schedule/:orderId", orderController.scheduleOrder);
 
 // ফ্রড/ডুপ্লিকেট ডিটেকশন — অ্যাডমিন/মডারেটর একটা অর্ডার Approve/Ignore/Block করে

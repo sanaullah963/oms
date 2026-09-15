@@ -595,6 +595,42 @@ exports.updateNeedAttention = async (req, res) => {
   }
 };
 
+// --- PATCH /api/orders/:id/fix-cod-mismatch — ড্যাশবোর্ডের COD গরমিল টেবিল থেকে,
+// আমাদের totalCOD-কে কুরিয়ারের ডেলিভারড COD amount দিয়ে সেট করে দেয়। এরপর
+// getDashboardSummary-এর mismatch কুয়েরিতে (totalCOD !== courier.deliveredCodAmount)
+// আর ম্যাচ করবে না, তাই অর্ডারটা মিসম্যাচ লিস্ট থেকে নিজে থেকেই বাদ পড়ে যায়। ---
+exports.fixCodMismatch = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "অর্ডার খুঁজে পাওয়া যায়নি।" });
+    }
+
+    const deliveredAmount = order.courier?.deliveredCodAmount;
+    if (deliveredAmount === null || deliveredAmount === undefined) {
+      return res
+        .status(400)
+        .json({ message: "এই অর্ডারে কুরিয়ারের ডেলিভারড COD এমাউন্ট নেই।" });
+    }
+
+    const oldCOD = order.totalCOD;
+    order.totalCOD = deliveredAmount;
+    order.activities.push({
+      type: "COD Updated",
+      description: `COD গরমিল ঠিক করা হয়েছে — ৳${oldCOD} থেকে ৳${deliveredAmount}-তে পরিবর্তন করা হয়েছে (কুরিয়ারের ডেলিভারড COD অনুযায়ী)।`,
+    });
+    await order.save();
+
+    const io = req.app.get("io");
+    if (io) emitOrderUpdate(io, order);
+
+    return res.status(200).json({ message: "COD আপডেট করা হয়েছে।", order });
+  } catch (error) {
+    console.error("Fix COD mismatch error:", error);
+    return res.status(500).json({ message: "COD আপডেট করা যায়নি।" });
+  }
+};
+
 // --- PATCH /api/orders/order-schedule/:orderId ---
 exports.scheduleOrder = async (req, res) => {
   const io = req.app.get("io");
