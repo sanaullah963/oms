@@ -548,6 +548,7 @@ exports.updateOrder = async (req, res) => {
         activities: {
           description: "address updated",
           type: " Updated",
+          author: req.user?.name,
           changedAt: new Date(),
         },
       },
@@ -617,6 +618,7 @@ exports.fixCodMismatch = async (req, res) => {
     order.totalCOD = deliveredAmount;
     order.activities.push({
       type: "COD Updated",
+      author: req.user?.name,
       description: `COD গরমিল ঠিক করা হয়েছে — ৳${oldCOD} থেকে ৳${deliveredAmount}-তে পরিবর্তন করা হয়েছে (কুরিয়ারের ডেলিভারড COD অনুযায়ী)।`,
     });
     await order.save();
@@ -676,7 +678,7 @@ exports.scheduleOrder = async (req, res) => {
         : `অর্ডারটি ${displayDate} তারিখের জন্য শিডিউল করা হয়েছে।`;
 
     order.activities.push({
-      actor: req.user.name,
+      author: req.user.name,
       type: "Status Updated",
       description: activityDescription,
       changedAt: new Date(),

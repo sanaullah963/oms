@@ -43,7 +43,9 @@ async function handleUpdateStatus(io, socket, { orderId, newStatus, note }) {
       orderId,
       {
         orderStatus: newStatus,
-        $push: { activities: { description: note, type: newStatus } },
+        $push: {
+          activities: { description: note, type: newStatus, author: socket.user?.name },
+        },
       },
       { new: true },
     );

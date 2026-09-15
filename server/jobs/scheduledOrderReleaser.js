@@ -28,6 +28,7 @@ async function releaseScheduledOrders(io) {
       order.orderStatus = "Pending";
       order.activities.push({
         type: "Status Updated",
+        author: "System",
         description:
           "অর্ডারটি নির্ধারিত শিডিউল (ভোর ৬:০০ টা) অনুযায়ী স্বয়ংক্রিয়ভাবে রিলিজ করা হয়েছে।",
         timestamp: new Date(),
