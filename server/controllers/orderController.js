@@ -9,6 +9,7 @@ const {
 } = require("../utils/socketBroadcast");
 const { withLandingPageMeta } = require("../utils/draftOrderView");
 const { checkFraudSignals } = require("../utils/fraudDetection");
+const { buildActivity, logActivity } = require("../utils/activityLogger");
 const mongoose = require("mongoose");
 
 // প্যাটার্ন: একাধিক অর্ডার আলাদা করার জন্য (WhatsApp/Messenger টাইমস্ট্যাম্প ট্যাগ)
@@ -205,14 +206,14 @@ function extractOrdersFromRawText(rawInputText, user) {
         productCode,
         totalCOD,
         activities: [
-          {
+          buildActivity({
             author: user.name,
             type: "Order Created",
             description:
               rawOrders.length > 1
                 ? `Bulk created by ${user.name}`
                 : `Manual single created by ${user.name}`,
-          },
+          }),
         ],
       });
     }
@@ -516,13 +517,16 @@ exports.masterEditOrder = async (req, res) => {
     }
 
     // --- একটাই activity এন্ট্রিতে সব পরিবর্তন — কে করেছে, কী কী বদলেছে (details-এ পুরো ডিফ) ---
-    order.activities.push({
-      author: editorName,
-      type: "Master Search Edit",
-      description: `${editorName} ${changes.map((c) => c.field).join(", ")} পরিবর্তন করেছেন`,
-      details: { changes },
-      timestamp: new Date(),
-    });
+    await logActivity(
+      order,
+      {
+        author: editorName,
+        type: "Master Search Edit",
+        description: `${editorName} ${changes.map((c) => c.field).join(", ")} পরিবর্তন করেছেন`,
+        details: { changes },
+      },
+      { save: false },
+    );
 
     const savedOrder = await order.save();
 
@@ -545,12 +549,11 @@ exports.updateOrder = async (req, res) => {
     const data = {
       ...req.body,
       $push: {
-        activities: {
+        activities: buildActivity({
           description: "address updated",
           type: " Updated",
           author: req.user?.name,
-          changedAt: new Date(),
-        },
+        }),
       },
     };
     const updatedOrder = await Order.findByIdAndUpdate(orderId, data, {
@@ -616,11 +619,15 @@ exports.fixCodMismatch = async (req, res) => {
 
     const oldCOD = order.totalCOD;
     order.totalCOD = deliveredAmount;
-    order.activities.push({
-      type: "COD Updated",
-      author: req.user?.name,
-      description: `COD গরমিল ঠিক করা হয়েছে — ৳${oldCOD} থেকে ৳${deliveredAmount}-তে পরিবর্তন করা হয়েছে (কুরিয়ারের ডেলিভারড COD অনুযায়ী)।`,
-    });
+    await logActivity(
+      order,
+      {
+        type: "COD Updated",
+        author: req.user?.name,
+        description: `COD গরমিল ঠিক করা হয়েছে — ৳${oldCOD} থেকে ৳${deliveredAmount}-তে পরিবর্তন করা হয়েছে (কুরিয়ারের ডেলিভারড COD অনুযায়ী)।`,
+      },
+      { save: false },
+    );
     await order.save();
 
     const io = req.app.get("io");
@@ -677,12 +684,15 @@ exports.scheduleOrder = async (req, res) => {
         ? `অর্ডারটি ${displayDate} তারিখের জন্য শিডিউল করা হয়েছে। নোট: ${noteText}`
         : `অর্ডারটি ${displayDate} তারিখের জন্য শিডিউল করা হয়েছে।`;
 
-    order.activities.push({
-      author: req.user.name,
-      type: "Status Updated",
-      description: activityDescription,
-      changedAt: new Date(),
-    });
+    await logActivity(
+      order,
+      {
+        author: req.user.name,
+        type: "Status Updated",
+        description: activityDescription,
+      },
+      { save: false },
+    );
 
     const updatedOrder = await order.save();
 
@@ -715,11 +725,11 @@ exports.steadfastBookingWebhook = async (req, res) => {
   try {
     const updateData = {
       $push: {
-        activities: {
+        activities: buildActivity({
           author: "Steadfast",
           type: notification_type,
           description: tracking_message,
-        },
+        }),
       },
     };
 
@@ -844,11 +854,15 @@ exports.reviewFraudOrder = async (req, res) => {
     order.fraudCheck.reviewedBy = req.user._id;
     order.fraudCheck.reviewedByName = req.user.name;
     order.fraudCheck.reviewedAt = new Date();
-    order.activities.push({
-      author: req.user.name,
-      type: "Fraud Review",
-      description: `ফ্রড ডিটেকশন রিভিউ: ${reviewStatus}${reason ? ` — ${reason}` : ""}`,
-    });
+    await logActivity(
+      order,
+      {
+        author: req.user.name,
+        type: "Fraud Review",
+        description: `ফ্রড ডিটেকশন রিভিউ: ${reviewStatus}${reason ? ` — ${reason}` : ""}`,
+      },
+      { save: false },
+    );
 
     if (action === "block") {
       await BlockedCustomer.create({

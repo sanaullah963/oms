@@ -3,6 +3,7 @@ const { sendNotificationToApprovedUsers } = require("./webPush");
 const { emitOrderUpdate } = require("./socketBroadcast");
 const { sendCapiEvent } = require("./metaCapi");
 const { checkFraudSignals } = require("./fraudDetection");
+const { buildActivity } = require("./activityLogger");
 
 /**
  * একটা লিডিং পেজ (page ডকুমেন্ট) ও কাস্টমার-ইনপুট থেকে আসল Order তৈরি করে —
@@ -27,6 +28,7 @@ async function createLandingOrder({
   userAgent,
   createdBy = null,
   sourceLabel = "ল্যান্ডিং পেজ থেকে",
+  authorName = "Customer",
   io = null,
 }) {
   const PHONE_REGEX = /^01[3-9]\d{8}$/;
@@ -89,10 +91,9 @@ async function createLandingOrder({
   }
 
   const totalCOD = unitPrice * qty + deliveryCharge;
-  const productLabelSuffix = productTypeLabel ? ` (${productTypeLabel}` : "";
 
   const order = await Order.create({
-    rawInputText: `${name}\n${phone}\n${address}\nProduct: ${page.productCode} ${productLabelSuffix}x${qty}) = ৳${totalCOD}`,
+    rawInputText: `${name}\n${phone}\n${address}\nProduct: ${page.productCode} - ৳${totalCOD}\nDelivery: ৳${deliveryCharge} (${area === "outside" ? "ঢাকার বাইরে" : "ঢাকার ভেতরে"})`,
     castomerName: name,
     castomerPhone: [phone],
     productCode: page.productCode,
@@ -101,10 +102,11 @@ async function createLandingOrder({
     origin: "landing_page", // ✅ শুধু এই ফ্ল্যাগ থাকলেই Confirm করার সময় Purchase CAPI ইভেন্ট যাবে
     createdBy,
     activities: [
-      {
+      buildActivity({
         type: "Order Created",
-        description: `Order from Landing Page /${page.slug}`,
-      },
+        author: authorName,
+        description: `Order from / ${page.slug}`,
+      }),
     ],
     tracking: {
       sessionId: tracking.sessionId || null,

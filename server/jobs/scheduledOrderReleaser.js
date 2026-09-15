@@ -1,6 +1,7 @@
 const cron = require("node-cron");
 const Order = require("../models/Order");
 const { emitOrderUpdate } = require("../utils/socketBroadcast");
+const { logActivity } = require("../utils/activityLogger");
 
 // আজকের দিনের শুরুতে (00:00:00) রিলিজ ডেট থাকা 'Scheduled' অর্ডারগুলোকে 'Pending'-এ রিলিজ করে
 async function releaseScheduledOrders(io) {
@@ -26,13 +27,16 @@ async function releaseScheduledOrders(io) {
 
     for (const order of scheduledOrders) {
       order.orderStatus = "Pending";
-      order.activities.push({
-        type: "Status Updated",
-        author: "System",
-        description:
-          "অর্ডারটি নির্ধারিত শিডিউল (ভোর ৬:০০ টা) অনুযায়ী স্বয়ংক্রিয়ভাবে রিলিজ করা হয়েছে।",
-        timestamp: new Date(),
-      });
+      await logActivity(
+        order,
+        {
+          type: "Status Updated",
+          author: "System",
+          description:
+            "অর্ডারটি নির্ধারিত শিডিউল (ভোর ৬:০০ টা) অনুযায়ী স্বয়ংক্রিয়ভাবে রিলিজ করা হয়েছে।",
+        },
+        { save: false },
+      );
       await order.save();
 
       if (io) emitOrderUpdate(io, order);

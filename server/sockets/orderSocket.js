@@ -4,6 +4,7 @@ const EventLog = require("../models/EventLog");
 const convertNumber = require("../utils/convertNumber");
 const { emitOrderUpdate } = require("../utils/socketBroadcast");
 const { sendCapiEvent } = require("../utils/metaCapi");
+const { buildActivity } = require("../utils/activityLogger");
 const { BDCOURIER_SECRET_KEY } = require("../config/env");
 
 // --- "Confirmed" হলে Meta CAPI-তে Purchase ইভেন্ট পাঠানো (একটা অর্ডারে সর্বোচ্চ একবারই) ---
@@ -44,7 +45,11 @@ async function handleUpdateStatus(io, socket, { orderId, newStatus, note }) {
       {
         orderStatus: newStatus,
         $push: {
-          activities: { description: note, type: newStatus, author: socket.user?.name },
+          activities: buildActivity({
+            description: note,
+            type: newStatus,
+            author: socket.user?.name,
+          }),
         },
       },
       { new: true },

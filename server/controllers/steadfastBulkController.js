@@ -1,6 +1,7 @@
 const axios = require("axios");
 const Order = require("../models/Order");
 const { emitOrderUpdate } = require("../utils/socketBroadcast");
+const { buildActivity } = require("../utils/activityLogger");
 const {
   STEADFAST_API_URL,
   STEADFAST_API_KEY,
@@ -73,12 +74,13 @@ exports.bookSteadfastBulk = async (req, res) => {
         // bookingStatus: "Booked",
         courierStatus: "review",
       };
-      existingOrder.activities.push({
-        author: "Steadfast",
-        type: "Bulk Order Booked",
-        description: `অর্ডার বুকিং হয়েছে (Tracking ID: ${newOrder?.consignment_id})`,
-        changedAt: new Date(),
-      });
+      existingOrder.activities.push(
+        buildActivity({
+          author: "Steadfast",
+          type: "Bulk Order Booked",
+          description: `অর্ডার বুকিং হয়েছে (Tracking ID: ${newOrder?.consignment_id})`,
+        }),
+      );
       existingOrder.orderStatus = "Booked";
     }
 

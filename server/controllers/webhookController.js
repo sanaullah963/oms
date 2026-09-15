@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const { STEADFAST_WEBHOOK_TOKEN } = require("../config/env");
 const { calculateCodCharge } = require("../utils/codCharge");
 const { emitOrderUpdate } = require("../utils/socketBroadcast");
+const { buildActivity } = require("../utils/activityLogger");
 
 // ----------- note ignore patterns (noise/অপ্রয়োজনীয় tracking message বাদ দেওয়ার জন্য)
 const IGNORE_PATTERNS = [
@@ -108,11 +109,11 @@ exports.handleSteadfastWebhook = async (req, res) => {
   const courierLabel = getCourierStatus(data);
 
   // create new activity
-  const newActivity = {
+  const newActivity = buildActivity({
     author: "Steadfast",
     description: data.tracking_message,
     type: data.notification_type,
-  };
+  });
 
   const setFields = {
     needsAttention: isImportant,
