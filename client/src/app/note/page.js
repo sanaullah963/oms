@@ -1,5 +1,6 @@
 "use client";
 import NoteBubble from "@/components/orders/NoteBubble";
+import NoteQuickCopyBar from "@/components/orders/NoteQuickCopyBar";
 import React from "react";
 import { useOrders } from "@/context/OrderContext";
 import DashboardHeader from "@/components/layout/DashboardHeader";
@@ -17,6 +18,7 @@ function NotePageContent() {
     <div className="p-1 md:p-4 bg-gray-100 pb-36">
       <SearchAndMenu scope="notes" />
       <DashboardHeader totalItems={visibleNotes.length} />
+      <NoteQuickCopyBar />
       {searchQuery && visibleNotes.length === 0 && (
         <div className="text-center py-10 text-gray-500">
           কোনো নোট পাওয়া যায়নি।

@@ -3,16 +3,21 @@ import React, { useEffect, useState } from "react";
 import { MdAddIcCall } from "react-icons/md";
 import { useSocket } from "@/hooks/useSocket";
 import { orderService } from "@/services/orderService";
-import { dahsbOrderActionButton } from "@/constants/orderConstants";
 import DisplayTime from "@/components/common/DisplayTime";
 import OrderActivityTimeline from "@/components/orders/OrderActivityTimeline";
 import OrderPhoneList from "@/components/orders/OrderPhoneList";
+import PreviousOrderModal from "@/components/orders/PreviousOrderModal";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import DisplayAgoTime from "../common/DisplayAgoTime";
 
+// এই টাইপগুলো Solve/ব্যর্থ/ট্রাই নেক্সট বাটনের নিজস্ব লগ — এগুলো উপরের মূল নোট
+// (lastActivity) হিসেবে দেখানো হবে না, শুধু টাইমলাইনে ও নিচের "সর্বশেষ ট্রাই" লাইনে থাকবে।
+const NOTE_ACTION_TYPES = ["Note Solved", "Note Failed", "Try Next"];
+
 function NoteBubble({ order, onUpdate }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null); // "solve" | "failed" | "try_next" | null
+  const [showPreviousOrders, setShowPreviousOrders] = useState(false);
   const { socket } = useSocket();
 
   useEffect(() => {
@@ -34,30 +39,45 @@ function NoteBubble({ order, onUpdate }) {
     await navigator.clipboard.writeText(text);
   };
 
-  const handleSolve = async () => {
-    setLoading(true);
+  // সমাধান/ব্যর্থ/ট্রাই নেক্সট — তিনটাই এই একটা ফাংশন দিয়ে হ্যান্ডল হয়,
+  // ব্যাকএন্ডে activities-এ কে করেছে তা মিনিমাল টেক্সটে লগ হয়ে যায়।
+  const handleNoteAction = async (action) => {
+    setActionLoading(action);
     try {
-      const res = await orderService.markAttentionResolved(order._id);
-      if (res.data && onUpdate) {
-        onUpdate(res.data);
+      const res = await orderService.noteAction(order._id, action);
+      if (res.data?.order && onUpdate) {
+        onUpdate(res.data.order);
       }
     } catch (error) {
-      console.error("Solve error:", error);
+      console.error("Note action error:", error);
     } finally {
-      setLoading(false);
+      setActionLoading(null);
     }
   };
 
-  const lastActivity = order.activities[order.activities.length - 1];
+  // "Solve/ব্যর্থ/ট্রাই নেক্সট" ক্লিক করলেও উপরের মূল নোট হিসেবে সবসময় সর্বশেষ
+  // ব্যবসায়িক অ্যাক্টিভিটি (যেমন Steadfast থেকে আসা স্ট্যাটাস নোট) দেখানো হবে —
+  // এই তিনটা অ্যাকশনের নিজস্ব লগ এন্ট্রি মূল ডিসপ্লে থেকে বাদ দিয়ে হিসাব করা হচ্ছে।
+  const nonDisplayActivities = order.activities.filter(
+    (a) => !NOTE_ACTION_TYPES.includes(a?.type),
+  );
+  const lastActivity =
+    nonDisplayActivities[nonDisplayActivities.length - 1] ||
+    order.activities[order.activities.length - 1];
+  const lastTryActivity = [...order.activities]
+    .reverse()
+    .find((a) => a?.type === "Try Next");
   const firstPhone = Array.isArray(order.castomerPhone)
     ? order.castomerPhone[0]
     : order.castomerPhone.split(", ")[0];
+  const hasPreviousOrders = Number(order?.courierHistory?.our) > 0;
+  const isLoading = actionLoading !== null;
 
   return (
     <div className="bg-white  rounded-lg shadow-lg p-2 md:p-4 mb-1 border border-gray-400 hover:shadow-xl transition-all duration-300">
       <div
-        className={`cursor-pointer  ${loading ? "opacity-70 pointer-events-none" : ""}`}
-        onClick={() => !loading && setIsExpanded(!isExpanded)}
+        className={`cursor-pointer  ${isLoading ? "opacity-70 pointer-events-none" : ""}`}
+        onClick={() => !isLoading && setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-1">
           {/* tracking id */}
@@ -104,16 +124,6 @@ function NoteBubble({ order, onUpdate }) {
           </div>
           <span>{order.totalCOD}--</span>
           <span className="text-purple-600 pe-2">{order.productCode}</span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSolve();
-            }}
-            className="bg-green-700 text-white px-3 rounded-md flex-1 max-w-48"
-            disabled={loading}
-          >
-            {loading ? "..." : "Solve"}
-          </button>
         </div>
 
         <div className="flex flex-1 gap-2 justify-between items-center my-2">
@@ -134,7 +144,7 @@ function NoteBubble({ order, onUpdate }) {
         </div>
       </div>
 
-      <div className="flex justify-start gap-2 border-t border-gray-100 ">
+      <div className="flex justify-start gap-2 border-t border-gray-100 pt-2">
         <div className="flex space-x-2">
           <a
             href={`tel:${firstPhone}`}
@@ -145,15 +155,49 @@ function NoteBubble({ order, onUpdate }) {
             <MdAddIcCall />
           </a>
         </div>
-        {dahsbOrderActionButton.map((shortcut, index) => (
+        {hasPreviousOrders && (
           <button
-            key={index}
-            onClick={() => handleCopy(shortcut.value)}
-            className="text-gray-700 text-xs font-medium py-1.5 px-2 md:px-3 rounded-lg  md:rounded-sm shadow-md transition duration-200  cursor-pointer bg-yellow-400 hover:bg-gray-300 hover:shadow-lg "
+            onClick={() => setShowPreviousOrders(true)}
+            className="text-gray-700 text-xs font-medium py-1.5 px-2 md:px-3 rounded-lg md:rounded-sm shadow-md transition duration-200 cursor-pointer bg-yellow-400 hover:bg-gray-300 hover:shadow-lg"
           >
-            {shortcut.label}
+            আগের অর্ডার
           </button>
-        ))}
+        )}
+      </div>
+
+      {/* সর্বশেষ কখন "ট্রাই নেক্সট" করা হয়েছিল — মূল নোট টেক্সট আলাদা থাকে, এটা শুধু তথ্য হিসেবে */}
+      {lastTryActivity && (
+        <div className="flex items-center gap-1 text-[11px] text-orange-500 mt-2 mb-0">
+          <span>
+            সর্বশেষ ট্রাই: {lastTryActivity.author || "User"} •
+          </span>
+          <DisplayAgoTime timeStamp={lastTryActivity.timestamp} />
+        </div>
+      )}
+
+      {/* সমাধান / ব্যর্থ / ট্রাই নেক্সট — এখন নিচে, একসাথে */}
+      <div className="flex gap-2 border-t border-gray-100 pt-2 mt-2">
+        <button
+          onClick={() => handleNoteAction("solve")}
+          className="bg-green-700 text-white text-sm px-3 py-1.5 rounded-md flex-1 disabled:opacity-60"
+          disabled={isLoading}
+        >
+          {actionLoading === "solve" ? "..." : "Solve"}
+        </button>
+        <button
+          onClick={() => handleNoteAction("failed")}
+          className="bg-red-600 text-white text-sm px-3 py-1.5 rounded-md flex-1 disabled:opacity-60"
+          disabled={isLoading}
+        >
+          {actionLoading === "failed" ? "..." : "ব্যর্থ"}
+        </button>
+        <button
+          onClick={() => handleNoteAction("try_next")}
+          className="bg-orange-500 text-white text-sm px-3 py-1.5 rounded-md flex-1 disabled:opacity-60"
+          disabled={isLoading}
+        >
+          {actionLoading === "try_next" ? "..." : "ট্রাই নেক্সট"}
+        </button>
       </div>
 
       <div
@@ -166,6 +210,13 @@ function NoteBubble({ order, onUpdate }) {
           <OrderActivityTimeline activities={order.activities} />
         </div>
       </div>
+
+      {showPreviousOrders && (
+        <PreviousOrderModal
+          order={order}
+          onClose={() => setShowPreviousOrders(false)}
+        />
+      )}
     </div>
   );
 }

@@ -28,6 +28,10 @@ router.post("/manual-single", orderController.createManualOrder);
 router.delete("/delete/:id", orderController.deleteOrder);
 router.put("/update-order/:id", orderController.updateOrder);
 router.patch("/update-need-attention/:id", orderController.updateNeedAttention);
+// Note বাবলের সমাধান/ব্যর্থ/ট্রাই নেক্সট অ্যাকশন (activities-এ কে করেছে তা মিনিমাল টেক্সটে লগ হয়)
+router.patch("/:id/note-action", orderController.noteAction);
+// Note বাবলের "আগের অর্ডার" মডেল — একই ফোন নম্বরের আগের অর্ডারগুলোর স্ট্যাটাস
+router.get("/:id/previous-orders", orderController.getPreviousOrders);
 router.patch("/:id/fix-cod-mismatch", orderController.fixCodMismatch);
 router.patch("/order-schedule/:orderId", orderController.scheduleOrder);
 

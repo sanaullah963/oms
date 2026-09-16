@@ -18,6 +18,13 @@ export const orderService = {
   markAttentionResolved: (orderId) =>
     api.patch(`${BASE}/update-need-attention/${orderId}`),
 
+  // Note বাবলের তিনটা বাটন — action: "solve" | "failed" | "try_next"
+  noteAction: (orderId, action) =>
+    api.patch(`${BASE}/${orderId}/note-action`, { action }),
+
+  // Note বাবলের "আগের অর্ডার" মডেলের জন্য — একই কাস্টমারের আগের অর্ডার লিস্ট
+  getPreviousOrders: (orderId) => api.get(`${BASE}/${orderId}/previous-orders`),
+
   schedule: (orderId, scheduledDate, noteText) =>
     api.patch(`${BASE}/order-schedule/${orderId}`, { scheduledDate, noteText }),
 

@@ -604,6 +604,105 @@ exports.updateNeedAttention = async (req, res) => {
   }
 };
 
+// --- Note বাবলের তিনটা অ্যাকশন বাটনের জন্য কনফিগ ---
+// solve/failed দুটোই needsAttention false করে দেয় (নোট লিস্ট থেকে সরে যায়),
+// শুধু অ্যাক্টিভিটি লগে টাইপ আলাদা থাকে যাতে পরে বোঝা যায় কীভাবে শেষ হয়েছিল।
+// try_next needsAttention true-ই রাখে (আবার ট্রাই করতে হবে বলে নোট লিস্টে থেকে যায়)।
+// description এখন একটু বিস্তারিত রাখা হয়েছে (এক-দুই শব্দের বদলে পূর্ণ বাক্য) —
+// যাতে পরে অন্য কেউ টাইমলাইন দেখলে ঠিক কী হয়েছিল সেটা স্পষ্ট বুঝতে পারে। কে করেছে
+// সেটা আলাদা `author` ফিল্ডেই থাকে (buildActivity/logActivity, timeline-এ দেখানো হয়)।
+const NOTE_ACTION_CONFIG = {
+  solve: {
+    type: "Note Solved",
+    description: "নোটটি সমাধান করা হয়েছে।",
+    needsAttention: false,
+  },
+  failed: {
+    type: "Note Failed",
+    description:
+      "নোটটি সমাধান করা যায়নি, ব্যর্থ হিসেবে বন্ধ করা হয়েছে।",
+    needsAttention: false,
+  },
+  try_next: {
+    type: "Try Next",
+    description:
+      "কাস্টমারকে রিচ করা যায়নি, পরে আবার চেষ্টা করা হবে।",
+    needsAttention: true,
+  },
+};
+
+// --- PATCH /api/orders/:id/note-action  { action: "solve" | "failed" | "try_next" } ---
+exports.noteAction = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const { action } = req.body;
+    const io = req.app.get("io");
+
+    const config = NOTE_ACTION_CONFIG[action];
+    if (!config) {
+      return res.status(400).json({ message: "অবৈধ action।" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    order.needsAttention = config.needsAttention;
+    await logActivity(
+      order,
+      {
+        type: config.type,
+        description: config.description,
+        author: req.user?.name,
+      },
+      { save: false },
+    );
+    await order.save();
+
+    if (io) emitOrderUpdate(io, order);
+    return res.status(200).json({ order });
+  } catch (error) {
+    console.error("Note action error:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while updating note." });
+  }
+};
+
+// --- GET /api/orders/:id/previous-orders — এই কাস্টমারের (ফোন নম্বর মিলিয়ে) আগের
+// অর্ডারগুলো তার সর্বশেষ স্ট্যাটাসসহ ফেরত দেয় (Note বাবলের "আগের অর্ডার" মডেলের জন্য) ---
+exports.getPreviousOrders = async (req, res) => {
+  try {
+    const currentOrder = await Order.findById(req.params.id).select("castomerPhone");
+    if (!currentOrder) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    const phones = currentOrder.castomerPhone || [];
+    if (phones.length === 0) {
+      return res.status(200).json({ previousOrders: [] });
+    }
+
+    const previousOrders = await Order.find({
+      _id: { $ne: currentOrder._id },
+      castomerPhone: { $in: phones },
+    })
+      .select(
+        "castomerName castomerPhone totalCOD orderStatus productCode courier.courierStatus courier.trackingId createdAt",
+      )
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    return res.status(200).json({ previousOrders });
+  } catch (error) {
+    console.error("Previous orders fetch error:", error);
+    return res
+      .status(500)
+      .json({ message: "আগের অর্ডার আনতে ব্যর্থ হয়েছে।" });
+  }
+};
+
 // --- PATCH /api/orders/:id/fix-cod-mismatch — ড্যাশবোর্ডের COD গরমিল টেবিল থেকে,
 // আমাদের totalCOD-কে কুরিয়ারের ডেলিভারড COD amount দিয়ে সেট করে দেয়। এরপর
 // getDashboardSummary-এর mismatch কুয়েরিতে (totalCOD !== courier.deliveredCodAmount)
