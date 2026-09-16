@@ -25,13 +25,12 @@ function OrderActivityTimeline({ activities }) {
           <div className="w-3/4 pl-3 border-l-2 border-dashed border-gray-200">
             <p className="font-semibold text-gray-800">
               <span className="text-purple-600"> {activity?.actor || activity?.author}</span>{" "}
-              - {activity?.type}
+              - {activity?.type || activity?.description}
             </p>
             <p className="text-gray-600 mt-0.5">
-              {activity?.details?.description ||
+              {activity.type ? (activity?.details?.description ||
                 activity?.description ||
-                activity?.note ||
-                "নোট নেই"}
+                activity?.note) : ""}
             </p>
           </div>
         </div>

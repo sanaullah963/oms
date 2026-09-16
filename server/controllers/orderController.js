@@ -953,7 +953,7 @@ exports.steadfastBookingWebhook = async (req, res) => {
       $push: {
         activities: buildActivity({
           author: "Steadfast",
-          type: notification_type,
+          // type: notification_type,
           description: tracking_message || "empty",
         }),
       },
@@ -971,7 +971,7 @@ exports.steadfastBookingWebhook = async (req, res) => {
       updateData,
       { new: true },
     );
-
+    // send response
     if (updatedOrder) {
       if (io) emitOrderUpdate(io, updatedOrder);
       return res
