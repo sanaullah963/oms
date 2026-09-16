@@ -17,6 +17,8 @@ router.get("/master-search", orderController.masterSearchOrders);
 // মাস্টার সার্চ থেকে সীমিত ফিল্ড এডিট (নাম/ফোন/প্রোডাক্ট কোড/ঠিকানা/অর্ডার স্ট্যাটাস/কুরিয়ার স্ট্যাটাস) —
 // fbp/fbc/fingerprintHash-এর মতো লকড ফিল্ড এই এন্ডপয়েন্ট কখনো ছোঁয় না, প্রতি ফিল্ডের জন্য audit log হয়
 router.patch("/:id/master-edit", orderController.masterEditOrder);
+// মাস্টার সার্চ থেকে activities লগের একটা নির্দিষ্ট এন্ট্রির description এডিট (শুধু টেক্সট, type নয়)
+router.patch("/:id/activity-edit", orderController.masterEditActivity);
 
 // ইনকমপ্লিট/ড্রাফট অর্ডার (কাস্টমার সাবমিট করার আগেই ফর্মে যা পূরণ করেছে)
 router.get("/drafts", orderController.getDraftOrders);

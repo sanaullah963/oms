@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { MdAddIcCall } from "react-icons/md";
+import { toast } from "react-toastify";
 import { useSocket } from "@/hooks/useSocket";
 import { orderService } from "@/services/orderService";
 import DisplayTime from "@/components/common/DisplayTime";
@@ -50,6 +51,10 @@ function NoteBubble({ order, onUpdate }) {
       }
     } catch (error) {
       console.error("Note action error:", error);
+      const message =
+        error.response?.data?.message ||
+        "নোট আপডেট করতে ব্যর্থ হয়েছে, আবার চেষ্টা করুন।";
+      toast.error(message);
     } finally {
       setActionLoading(null);
     }

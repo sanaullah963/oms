@@ -477,7 +477,45 @@ exports.masterEditOrder = async (req, res) => {
       order.courier.courierStatus = req.body.courierStatus;
     }
 
-    // --- ৭. totalCOD ---
+    // --- ৭. courier.trackingId — কুরিয়ারের কনসাইনমেন্ট/ট্র্যাকিং আইডি ---
+    if (
+      typeof req.body.trackingId === "string" &&
+      req.body.trackingId.trim() &&
+      req.body.trackingId.trim() !== (order.courier?.trackingId || "")
+    ) {
+      recordChange(
+        "courier.trackingId",
+        order.courier?.trackingId,
+        req.body.trackingId.trim(),
+      );
+      order.courier.trackingId = req.body.trackingId.trim();
+    }
+
+    // --- ৮-১০. কুরিয়ার থেকে আসা ফাইন্যান্সিয়াল ফিল্ড (আগে শুধু ওয়েবহুক দিয়েই সেট হতো,
+    // এখন ম্যানুয়ালি ভুল হলে মাস্টার সার্চ থেকে সংশোধন করা যাবে — COD মিসম্যাচ/হিসাব
+    // ঠিক করার জন্য দরকার হয় মাঝেমধ্যে) ---
+    const courierNumberFields = [
+      ["deliveredCodAmount", "courier.deliveredCodAmount"],
+      ["deliveryCharge", "courier.deliveryCharge"],
+      ["codChargeAmount", "courier.codChargeAmount"],
+    ];
+    for (const [bodyKey, fieldLabel] of courierNumberFields) {
+      if (req.body[bodyKey] !== undefined && req.body[bodyKey] !== "") {
+        const newVal = Number(req.body[bodyKey]);
+        if (Number.isNaN(newVal) || newVal < 0) {
+          return res
+            .status(400)
+            .json({ message: `${fieldLabel}-এর মান সঠিক না।` });
+        }
+        const courierKey = bodyKey; // courier.<courierKey>
+        if (newVal !== order.courier?.[courierKey]) {
+          recordChange(fieldLabel, order.courier?.[courierKey], newVal);
+          order.courier[courierKey] = newVal;
+        }
+      }
+    }
+
+    // --- ১১. totalCOD ---
     if (
       req.body.totalCOD !== undefined &&
       req.body.totalCOD !== "" &&
@@ -491,7 +529,7 @@ exports.masterEditOrder = async (req, res) => {
       order.totalCOD = newTotal;
     }
 
-    // --- ৮. needsAttention (হ্যাঁ/না) ---
+    // --- ১২. needsAttention (হ্যাঁ/না) ---
     if (
       req.body.needsAttention !== undefined &&
       Boolean(req.body.needsAttention) !== Boolean(order.needsAttention)
@@ -504,7 +542,7 @@ exports.masterEditOrder = async (req, res) => {
       order.needsAttention = Boolean(req.body.needsAttention);
     }
 
-    // --- ৯. permanentNote ---
+    // --- ১৩. permanentNote ---
     if (
       typeof req.body.permanentNote === "string" &&
       req.body.permanentNote !== (order.permanentNote || "")
@@ -544,6 +582,84 @@ exports.masterEditOrder = async (req, res) => {
   } catch (error) {
     console.error("Master edit order error:", error);
     return res.status(500).json({ message: "এডিট করতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- PATCH /api/orders/:id/activity-edit — মাস্টার সার্চ থেকে activities লগের একটা
+// নির্দিষ্ট এন্ট্রির description (নোট টেক্সট) ইন্ডিভিজুয়ালি এডিট করা। যেমন: Steadfast
+// থেকে ভুল/অস্পষ্ট কোনো নোট এসে থাকলে সেটা ঠিক করে দেওয়া। activities অ্যারে থেকে
+// কখনো এন্ট্রি ডিলিট/রিঅর্ডার হয় না (শুধু push হয়), তাই array index দিয়েই স্থিরভাবে
+// রেফারেন্স করা যায় — প্রতিটা এন্ট্রির আলাদা _id নেই।
+// ⚠️ শুধু description এডিট করা যায়, type নয় — type ("Note Solved", "Try Next",
+// "Master Search Edit" ইত্যাদি) ফ্রন্টএন্ডের একাধিক জায়গায় (NoteBubble.jsx-এর
+// NOTE_ACTION_TYPES ফিল্টার, activity timeline আইকন/স্টাইল) লজিক্যালি ব্যবহার হয় —
+// সেটা এডিটযোগ্য করলে ভুলবশত UI ভেঙে যাওয়ার ঝুঁকি থাকে। আসল edit-history নিজেই
+// activities-এ একটা নতুন "Activity Edited" এন্ট্রি হিসেবে (আগে/পরে সহ) লগ হয়। ---
+exports.masterEditActivity = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "অর্ডারটি খুঁজে পাওয়া যায়নি।" });
+    }
+
+    const activityIndex = Number(req.body.activityIndex);
+    const newDescription =
+      typeof req.body.description === "string"
+        ? req.body.description.trim()
+        : "";
+
+    if (!Number.isInteger(activityIndex) || activityIndex < 0) {
+      return res.status(400).json({ message: "activityIndex সঠিক না।" });
+    }
+    if (!order.activities[activityIndex]) {
+      return res
+        .status(404)
+        .json({ message: "এই ইনডেক্সে কোনো অ্যাক্টিভিটি নেই।" });
+    }
+    if (!newDescription) {
+      return res
+        .status(400)
+        .json({ message: "description খালি রাখা যাবে না।" });
+    }
+
+    const target = order.activities[activityIndex];
+    const oldDescription = target.description;
+
+    if (oldDescription === newDescription) {
+      return res.status(200).json({ message: "কোনো পরিবর্তন হয়নি।", order });
+    }
+
+    target.description = newDescription;
+    order.markModified("activities");
+
+    const editorName = req.user?.name || "Unknown";
+    await logActivity(
+      order,
+      {
+        author: editorName,
+        type: "Activity Edited",
+        description: `${editorName} একটা পুরনো নোট এডিট করেছেন (${target.type || "?"})`,
+        details: {
+          activityIndex,
+          field: "description",
+          oldDescription,
+          newDescription,
+        },
+      },
+      { save: false },
+    );
+
+    const savedOrder = await order.save();
+
+    const io = req.app.get("io");
+    if (io) emitOrderUpdate(io, savedOrder);
+
+    return res
+      .status(200)
+      .json({ message: "নোট সফলভাবে এডিট হয়েছে।", order: savedOrder });
+  } catch (error) {
+    console.error("Master edit activity error:", error);
+    return res.status(500).json({ message: "নোট এডিট করতে ব্যর্থ হয়েছে।" });
   }
 };
 
@@ -619,14 +735,12 @@ const NOTE_ACTION_CONFIG = {
   },
   failed: {
     type: "Note Failed",
-    description:
-      "নোটটি সমাধান করা যায়নি, ব্যর্থ হিসেবে বন্ধ করা হয়েছে।",
+    description: "নোটটি সমাধান করা যায়নি, ব্যর্থ হিসেবে বন্ধ করা হয়েছে।",
     needsAttention: false,
   },
   try_next: {
     type: "Try Next",
-    description:
-      "কাস্টমারকে রিচ করা যায়নি, পরে আবার চেষ্টা করা হবে।",
+    description: "কাস্টমারকে রিচ করা যায়নি, পরে আবার চেষ্টা করা হবে।",
     needsAttention: true,
   },
 };
@@ -664,6 +778,14 @@ exports.noteAction = async (req, res) => {
     return res.status(200).json({ order });
   } catch (error) {
     console.error("Note action error:", error);
+    // ✅ ValidationError হলে (যেমন পুরনো কোনো Steadfast activity-তে description
+    // মিসিং থেকে গিয়ে থাকলে) generic মেসেজের বদলে আসল কারণটা ফ্রন্টএন্ডে পাঠানো
+    // হচ্ছে, যাতে টোস্টে স্পেসিফিক এরর দেখা যায় এবং ডিবাগ করা সহজ হয়।
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: `এই অর্ডারের ডেটায় সমস্যা আছে, সেভ করা যায়নি: ${error.message}`,
+      });
+    }
     return res
       .status(500)
       .json({ message: "Server error while updating note." });
@@ -674,7 +796,9 @@ exports.noteAction = async (req, res) => {
 // অর্ডারগুলো তার সর্বশেষ স্ট্যাটাসসহ ফেরত দেয় (Note বাবলের "আগের অর্ডার" মডেলের জন্য) ---
 exports.getPreviousOrders = async (req, res) => {
   try {
-    const currentOrder = await Order.findById(req.params.id).select("castomerPhone");
+    const currentOrder = await Order.findById(req.params.id).select(
+      "castomerPhone",
+    );
     if (!currentOrder) {
       return res.status(404).json({ message: "Order not found." });
     }
@@ -697,9 +821,7 @@ exports.getPreviousOrders = async (req, res) => {
     return res.status(200).json({ previousOrders });
   } catch (error) {
     console.error("Previous orders fetch error:", error);
-    return res
-      .status(500)
-      .json({ message: "আগের অর্ডার আনতে ব্যর্থ হয়েছে।" });
+    return res.status(500).json({ message: "আগের অর্ডার আনতে ব্যর্থ হয়েছে।" });
   }
 };
 
@@ -832,7 +954,7 @@ exports.steadfastBookingWebhook = async (req, res) => {
         activities: buildActivity({
           author: "Steadfast",
           type: notification_type,
-          description: tracking_message,
+          description: tracking_message || "empty",
         }),
       },
     };

@@ -2,6 +2,7 @@
 import NoteBubble from "@/components/orders/NoteBubble";
 import NoteQuickCopyBar from "@/components/orders/NoteQuickCopyBar";
 import React from "react";
+import { ToastContainer } from "react-toastify";
 import { useOrders } from "@/context/OrderContext";
 import DashboardHeader from "@/components/layout/DashboardHeader";
 import SearchAndMenu from "@/components/layout/SearchAndMenu";
@@ -16,6 +17,7 @@ function NotePageContent() {
 
   return (
     <div className="p-1 md:p-4 bg-gray-100 pb-36">
+      <ToastContainer autoClose={1500} />
       <SearchAndMenu scope="notes" />
       <DashboardHeader totalItems={visibleNotes.length} />
       <NoteQuickCopyBar />

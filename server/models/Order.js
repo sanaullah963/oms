@@ -6,21 +6,18 @@ const ActivitySchema = new mongoose.Schema(
       type: String,
       default: "User",
     },
-    // ইভেন্টের ধরন (যেমন: 'Order Created', 'Status Updated', 'Note Added')
     type: {
       type: String,
-      required: true,
+      required: false,
     },
     // টাইমলাইনে দেখানোর জন্য মূল টেক্সট/নোট
     description: {
       type: String,
-      required: true,
+      required: false,
     },
-    // ডেটা পরিবর্তনের ক্ষেত্রে পূর্ববর্তী ও নতুন মান (যদি প্রয়োজন হয়)
     details: {
       type: mongoose.Schema.Types.Mixed, // JSON object
     },
-    // ইভেন্টের সময়
     timestamp: {
       type: Date,
       default: Date.now,

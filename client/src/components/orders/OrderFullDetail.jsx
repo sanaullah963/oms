@@ -82,6 +82,10 @@ export default function OrderFullDetail({ order: initialOrder }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(null);
+  // --- অ্যাক্টিভিটি লগের ইন্ডিভিজুয়াল এডিট (শুধু একটা এন্ট্রির description) ---
+  const [editingActivityIndex, setEditingActivityIndex] = useState(null);
+  const [activityDraft, setActivityDraft] = useState("");
+  const [activitySaving, setActivitySaving] = useState(false);
 
   if (!order) return null;
 
@@ -104,6 +108,10 @@ export default function OrderFullDetail({ order: initialOrder }) {
       rawInputText: order.rawInputText || "",
       orderStatus: order.orderStatus || "Pending",
       courierStatus: c.courierStatus || "unknown",
+      trackingId: c.trackingId || "",
+      deliveredCodAmount: c.deliveredCodAmount ?? "",
+      deliveryCharge: c.deliveryCharge ?? "",
+      codChargeAmount: c.codChargeAmount ?? "",
       totalCOD: order.totalCOD ?? "",
       needsAttention: Boolean(order.needsAttention),
       permanentNote: order.permanentNote || "",
@@ -143,6 +151,38 @@ export default function OrderFullDetail({ order: initialOrder }) {
       alert(err.response?.data?.message || "এডিট সেভ করা যায়নি।");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // --- অ্যাক্টিভিটি টাইমলাইনের একটা নির্দিষ্ট এন্ট্রি এডিট শুরু/সেভ/বাতিল ---
+  const startActivityEdit = (originalIndex, currentDescription) => {
+    setEditingActivityIndex(originalIndex);
+    setActivityDraft(currentDescription || "");
+  };
+  const cancelActivityEdit = () => {
+    setEditingActivityIndex(null);
+    setActivityDraft("");
+  };
+  const saveActivityEdit = async () => {
+    if (!activityDraft.trim()) {
+      alert("নোট খালি রাখা যাবে না।");
+      return;
+    }
+    setActivitySaving(true);
+    try {
+      const res = await orderService.editActivity(
+        order._id,
+        editingActivityIndex,
+        activityDraft.trim(),
+      );
+      setOrder(res.data.order);
+      setEditingActivityIndex(null);
+      setActivityDraft("");
+    } catch (err) {
+      console.error("Activity edit save error:", err);
+      alert(err.response?.data?.message || "নোট এডিট সেভ করা যায়নি।");
+    } finally {
+      setActivitySaving(false);
     }
   };
 
@@ -373,17 +413,74 @@ export default function OrderFullDetail({ order: initialOrder }) {
 
       {/* --- ২. কুরিয়ার তথ্য --- */}
       <Section title="🚚 কুরিয়ার তথ্য (courier)">
-        <Row label="Tracking ID" value={c.trackingId} />
+        {editing ? (
+          <>
+            <EditRow label="Tracking ID">
+              <input
+                type="text"
+                value={form.trackingId}
+                onChange={(e) =>
+                  setForm((f0) => ({ ...f0, trackingId: e.target.value }))
+                }
+                className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm"
+                disabled={saving}
+              />
+            </EditRow>
+            <EditRow label="ডেলিভারড COD এমাউন্ট">
+              <input
+                type="number"
+                min="0"
+                value={form.deliveredCodAmount}
+                onChange={(e) =>
+                  setForm((f0) => ({
+                    ...f0,
+                    deliveredCodAmount: e.target.value,
+                  }))
+                }
+                className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm"
+                disabled={saving}
+              />
+            </EditRow>
+            <EditRow label="ডেলিভারি চার্জ">
+              <input
+                type="number"
+                min="0"
+                value={form.deliveryCharge}
+                onChange={(e) =>
+                  setForm((f0) => ({ ...f0, deliveryCharge: e.target.value }))
+                }
+                className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm"
+                disabled={saving}
+              />
+            </EditRow>
+            <EditRow label="COD চার্জ (১%)">
+              <input
+                type="number"
+                min="0"
+                value={form.codChargeAmount}
+                onChange={(e) =>
+                  setForm((f0) => ({ ...f0, codChargeAmount: e.target.value }))
+                }
+                className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm"
+                disabled={saving}
+              />
+            </EditRow>
+          </>
+        ) : (
+          <>
+            <Row label="Tracking ID" value={c.trackingId} />
+            <Row label="ডেলিভারড COD এমাউন্ট" value={c.deliveredCodAmount} />
+            <Row label="ডেলিভারি চার্জ" value={c.deliveryCharge} />
+            <Row label="COD চার্জ (১%)" value={c.codChargeAmount} />
+          </>
+        )}
         <Row label="Booking Status" value={c.bookingStatus} />
-        <Row label="Courier Status" value={c.courierStatus} />
+        {!editing && <Row label="Courier Status" value={c.courierStatus} />}
         <Row label="বুক হয়েছে" value={formatDate(c.bookedAt)} />
         <Row
           label="স্ট্যাটাস আপডেট হয়েছে"
           value={formatDate(c.statusUpdatedAt)}
         />
-        <Row label="ডেলিভারড COD এমাউন্ট" value={c.deliveredCodAmount} />
-        <Row label="ডেলিভারি চার্জ" value={c.deliveryCharge} />
-        <Row label="COD চার্জ (১%)" value={c.codChargeAmount} />
         <Row
           label="Response Data (raw)"
           value={c.responseData ? JSON.stringify(c.responseData) : null}
@@ -453,25 +550,74 @@ export default function OrderFullDetail({ order: initialOrder }) {
           {activities
             .slice()
             .reverse()
-            .map((a, i) => (
-              <div
-                key={i}
-                className="text-xs bg-gray-50 rounded px-2 py-1.5 border border-gray-100"
-              >
-                <div className="flex justify-between text-gray-400">
-                  <span>
-                    {a.author} · {a.type}
-                  </span>
-                  <span>{formatDate(a.timestamp)}</span>
-                </div>
-                <div className="text-gray-700 mt-0.5">{a.description}</div>
-                {a.details && (
-                  <div className="text-gray-400 mt-0.5 break-all">
-                    {JSON.stringify(a.details)}
+            .map((a, i) => {
+              // ⚠️ activities কখনো ডিলিট/রিঅর্ডার হয় না (শুধু push হয়), তাই আসল
+              // ইনডেক্স বের করতে reverse করা লিস্টের পজিশন থেকে হিসাব করতে হয় —
+              // এই originalIndex-টাই ব্যাকএন্ডে (activity-edit) পাঠানো হয়।
+              const originalIndex = activities.length - 1 - i;
+              const isEditingThis = editingActivityIndex === originalIndex;
+              return (
+                <div
+                  key={originalIndex}
+                  className="text-xs bg-gray-50 rounded px-2 py-1.5 border border-gray-100"
+                >
+                  <div className="flex justify-between text-gray-400">
+                    <span>
+                      {a.author} · {a.type}
+                    </span>
+                    <span>{formatDate(a.timestamp)}</span>
                   </div>
-                )}
-              </div>
-            ))}
+                  {isEditingThis ? (
+                    <div className="mt-1">
+                      <textarea
+                        value={activityDraft}
+                        onChange={(e) => setActivityDraft(e.target.value)}
+                        rows={2}
+                        className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs"
+                        disabled={activitySaving}
+                      />
+                      <div className="flex justify-end gap-1.5 mt-1">
+                        <button
+                          type="button"
+                          onClick={cancelActivityEdit}
+                          disabled={activitySaving}
+                          className="px-2 py-0.5 rounded bg-gray-200 text-gray-700 text-xs"
+                        >
+                          বাতিল
+                        </button>
+                        <button
+                          type="button"
+                          onClick={saveActivityEdit}
+                          disabled={activitySaving}
+                          className="px-2 py-0.5 rounded bg-indigo-600 text-white text-xs disabled:opacity-50"
+                        >
+                          {activitySaving ? "সেভ হচ্ছে..." : "সেভ"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-start gap-2 mt-0.5">
+                      <div className="text-gray-700">{a.description}</div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          startActivityEdit(originalIndex, a.description)
+                        }
+                        className="text-gray-400 hover:text-amber-600 shrink-0"
+                        title="এই নোট এডিট করুন"
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                  )}
+                  {a.details && (
+                    <div className="text-gray-400 mt-0.5 break-all">
+                      {JSON.stringify(a.details)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
         </div>
       </Section>
 
