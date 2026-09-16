@@ -93,7 +93,7 @@ async function createLandingOrder({
   const totalCOD = unitPrice * qty + deliveryCharge;
 
   const order = await Order.create({
-    rawInputText: `${name}\n${phone}\n${address}\nProduct: ${page.productCode} - ৳${totalCOD}\nDelivery: ৳${deliveryCharge} (${area === "outside" ? "ঢাকার বাইরে" : "ঢাকার ভেতরে"})`,
+    rawInputText: `${name}\n${address}\n${phone}\nProduct: ${page.productCode} (${productTypeLabel}x${qty}) - ৳${totalCOD}`,
     castomerName: name,
     castomerPhone: [phone],
     productCode: page.productCode,
