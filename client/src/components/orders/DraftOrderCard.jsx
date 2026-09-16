@@ -325,7 +325,7 @@ export default function DraftOrderCard({ draft }) {
 
   return (
     <>
-      <div className="mb-1 rounded-lg border border-gray-300 bg-white p-2 shadow-lg transition-all duration-300 hover:shadow-xl md:p-4">
+      <div className="mb-1 rounded-lg border border-gray-500 bg-white p-2 shadow-lg transition-all duration-300 hover:shadow-xl md:p-4">
         {isEditing ? (
           <div className="space-y-4">
             <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-3 sm:p-4">
