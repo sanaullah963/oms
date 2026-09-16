@@ -105,7 +105,7 @@ async function createLandingOrder({
       buildActivity({
         type: "Order Created",
         author: authorName,
-        description: `Order from / ${page.slug}`,
+        description: `Order from /${page.slug}`,
       }),
     ],
     tracking: {
