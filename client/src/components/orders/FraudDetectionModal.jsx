@@ -94,7 +94,9 @@ export default function FraudDetectionModal({ order, onClose, onUpdate }) {
       );
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || "ব্যর্থ হয়েছে, আবার চেষ্টা করুন।");
+      toast.error(
+        error.response?.data?.message || "ব্যর্থ হয়েছে, আবার চেষ্টা করুন।",
+      );
     } finally {
       setLoading(false);
     }
@@ -104,8 +106,13 @@ export default function FraudDetectionModal({ order, onClose, onUpdate }) {
     <div className="fixed inset-0 z-[100] bg-black/50 flex justify-center items-center p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
         <div className="p-5 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
-          <h3 className="text-lg font-bold text-red-600">⚠️ Multiple Orders Detected</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl px-2">
+          <h3 className="text-lg font-bold text-red-600">
+            ⚠️ Multiple Orders Detected
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-700 text-xl px-2"
+          >
             ×
           </button>
         </div>
@@ -117,8 +124,12 @@ export default function FraudDetectionModal({ order, onClose, onUpdate }) {
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
               বর্তমান রিভিউ স্ট্যাটাস:{" "}
-              <span className="font-semibold">{fraudCheck.reviewStatus || "none"}</span>
-              {fraudCheck.reviewedByName ? ` (${fraudCheck.reviewedByName})` : ""}
+              <span className="font-semibold">
+                {fraudCheck.reviewStatus || "none"}
+              </span>
+              {fraudCheck.reviewedByName
+                ? ` (${fraudCheck.reviewedByName})`
+                : ""}
             </p>
           </div>
 
@@ -151,7 +162,9 @@ export default function FraudDetectionModal({ order, onClose, onUpdate }) {
             {matchLoading ? (
               <p className="text-xs text-gray-400">লোড হচ্ছে...</p>
             ) : matchedOrders.length === 0 ? (
-              <p className="text-xs text-gray-400">কোনো বিস্তারিত তথ্য পাওয়া যায়নি।</p>
+              <p className="text-xs text-gray-400">
+                কোনো বিস্তারিত তথ্য পাওয়া যায়নি।
+              </p>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {matchedOrders.map((m) => (
@@ -168,25 +181,29 @@ export default function FraudDetectionModal({ order, onClose, onUpdate }) {
                           </span>
                         </p>
                         <p className="text-xs text-gray-500">
-                          {m.productCode} · ৳{m.totalCOD} · {m.orderSource || "Manual"}
+                          {m.productCode} · ৳{m.totalCOD} ·{" "}
+                          {m.orderSource || "Manual"}
                         </p>
                       </div>
-                      <DisplayTime timeStamp={m.createdAt} />
+                      {/* <DisplayTime timeStamp={m.createdAt} /> */}
+                      <DisplayTime timeStamp={m.activities[0].timestamp} showDate={false} />
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       <span
                         className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                          ORDER_STATUS_COLOR[m.orderStatus] || "bg-gray-100 text-gray-700"
+                          ORDER_STATUS_COLOR[m.orderStatus] ||
+                          "bg-gray-100 text-gray-700"
                         }`}
                       >
                         অর্ডার: {m.orderStatus}
                       </span>
-                      {m.courier?.courierStatus && m.courier.courierStatus !== "unknown" && (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                          কুরিয়ার: {m.courier.courierStatus}
-                        </span>
-                      )}
+                      {m.courier?.courierStatus &&
+                        m.courier.courierStatus !== "unknown" && (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                            কুরিয়ার: {m.courier.courierStatus}
+                          </span>
+                        )}
                       {(ruleByOrderId[String(m._id)] || []).map((rule) => (
                         <span
                           key={rule}
@@ -206,9 +223,9 @@ export default function FraudDetectionModal({ order, onClose, onUpdate }) {
           {showBlockConfirm && (
             <div className="border border-red-300 rounded-lg p-3 bg-red-50">
               <p className="text-sm font-semibold text-red-700 mb-2">
-                নিশ্চিত করুন — এই কাস্টমারকে ব্লক করলে ভবিষ্যতে ল্যান্ডিং পেজে অর্ডার
-                সাবমিট করলে একটা Popup দেখাবে (WhatsApp-এ যোগাযোগ করতে বলা হবে), অর্ডার
-                আর তৈরি হবে না।
+                নিশ্চিত করুন — এই কাস্টমারকে ব্লক করলে ভবিষ্যতে ল্যান্ডিং পেজে
+                অর্ডার সাবমিট করলে একটা Popup দেখাবে (WhatsApp-এ যোগাযোগ করতে
+                বলা হবে), অর্ডার আর তৈরি হবে না।
               </p>
               <input
                 type="text"

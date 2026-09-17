@@ -1,11 +1,12 @@
 import { formatDate, formatTime } from "@/utils/dateUtils";
 import React from "react";
 
-function DisplayTime({ timeStamp }) {
+function DisplayTime({ timeStamp , showDate = true}) {
   return (
     <div>
       <span className="text-gray-700 text-sm flex gap-1.5 md:gap-3 ">
-        <span className="whitespace-nowrap">{`${formatTime(timeStamp)}`}</span>
+        {/* <span className="whitespace-nowrap">{`${formatTime(timeStamp)}`}</span> */}
+        {showDate && (<span className="whitespace-nowrap">{`${formatTime(timeStamp)}`}</span>)}
         <span className="whitespace-nowrap">{`${formatDate(timeStamp)}`}</span>
       </span>
     </div>

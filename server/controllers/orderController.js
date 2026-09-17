@@ -1137,17 +1137,20 @@ exports.getFraudMatches = async (req, res) => {
       ...new Set(reasons.flatMap((r) => (r.matchedOrderIds || []).map(String))),
     ];
 
+    // const matchedOrders = await Order.find({ _id: { $in: allIds } })
+    //   .select(
+    //     "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus createdAt",
+    //   )
+    //   .sort({ createdAt: -1 })
+    //   .lean()
+
     const matchedOrders = await Order.find({ _id: { $in: allIds } })
-      // .select(
-      //   "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus courier.bookingStatus createdAt",
-      // )
-      // .sort({ createdAt: -1 })
-      // .lean();
-      .select(
-        "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus courier.courierStatus createdAt",
-      )
-      .sort({ createdAt: -1 })
-      .lean();
+  .select(
+    "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus createdAt"
+  )
+  .slice("activities", 1)
+  .sort({ createdAt: -1 })
+  .lean();
 
     return res.status(200).json({ reasons, matchedOrders });
   } catch (error) {
