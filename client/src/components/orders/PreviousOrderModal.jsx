@@ -73,7 +73,7 @@ export default function PreviousOrderModal({ order, onClose }) {
                         {o.productCode} · ৳{o.totalCOD}
                       </p>
                     </div>
-                    <DisplayTime timeStamp={o.createdAt} />
+                    <DisplayTime timeStamp={o.activities[0]?.timestamp} />
                   </div>
 
                   <div className="flex flex-wrap gap-1.5 mt-1">

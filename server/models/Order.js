@@ -8,12 +8,9 @@ const ActivitySchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      required: false,
     },
-    // টাইমলাইনে দেখানোর জন্য মূল টেক্সট/নোট
     description: {
       type: String,
-      required: false,
     },
     details: {
       type: mongoose.Schema.Types.Mixed, // JSON object

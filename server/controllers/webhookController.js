@@ -16,7 +16,7 @@ const IGNORE_PATTERNS = [
   /received at .+ hub/i,
   /null set by /i,
   /sent to .+ hub/i,
-  /zone not clear/i,
+  // /zone not clear/i,
   /dispatch id:\s*\d+/i,
 ];
 
@@ -104,15 +104,15 @@ exports.handleSteadfastWebhook = async (req, res) => {
     });
   }
 
-  const noteText = data.tracking_message || "null set by our server";
-  const isImportant = classifyNote(noteText);
+  const noteText = data.tracking_message || "null-set by our server";
+  const isImportant = classifyNote(noteText); //true = গুরুত্বপূর্ণ, false = ignorable
   const courierLabel = getCourierStatus(data);
 
   // create new activity
   const newActivity = buildActivity({
     author: "Steadfast",
     description: data.tracking_message,
-    type: data.notification_type,
+    // type: data.notification_type,
   });
 
   const setFields = {

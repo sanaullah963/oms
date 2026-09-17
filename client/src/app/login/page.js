@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { useAuth } from "@/context/AuthContext";
 import { registerPushNotification } from "@/utils/pushNotification";
 
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -55,13 +57,30 @@ export default function LoginPage() {
           </div>
           <div>
             <label className="text-xs text-gray-500">পাসওয়ার্ড</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
-            />
+            <div className="relative mt-1">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={
+                  showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখান"
+                }
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                {showPassword ? (
+                  <MdVisibilityOff size={18} />
+                ) : (
+                  <MdVisibility size={18} />
+                )}
+              </button>
+            </div>
           </div>
           <button
             type="submit"

@@ -610,9 +610,9 @@ export default function OrderFullDetail({ order: initialOrder }) {
                       </button>
                     </div>
                   )}
-                  {a.details && (
+                  {a?.details && (
                     <div className="text-gray-400 mt-0.5 break-all">
-                      {JSON.stringify(a.details)}
+                      {JSON.stringify(a?.details)}
                     </div>
                   )}
                 </div>

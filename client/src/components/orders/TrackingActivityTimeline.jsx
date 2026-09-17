@@ -18,8 +18,7 @@ function ActivityRow({ activity }) {
           - {activity?.type}
         </p>
         <p className="text-gray-600 mt-0.5">
-          {activity?.details?.description ||
-            activity?.description ||
+          {activity?.description ||
             activity?.note ||
             "নোট নেই"}
         </p>
