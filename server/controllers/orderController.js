@@ -11,6 +11,9 @@ const { withLandingPageMeta } = require("../utils/draftOrderView");
 const { checkFraudSignals } = require("../utils/fraudDetection");
 const { buildActivity, logActivity } = require("../utils/activityLogger");
 const mongoose = require("mongoose");
+const axios = require("axios");
+const convertNumber = require("../utils/convertNumber");
+const { BDCOURIER_SECRET_KEY } = require("../config/env");
 
 // প্যাটার্ন: একাধিক অর্ডার আলাদা করার জন্য (WhatsApp/Messenger টাইমস্ট্যাম্প ট্যাগ)
 const MULTIPLE_ORDERS_PATTERN =
@@ -288,7 +291,6 @@ exports.createManualOrder = async (req, res) => {
     // ফ্ল্যাগ হবে। কাউকে অটোমেটিক ব্লক করা হয় না।
     for (const order of savedOrders) {
       try {
-        
         const phone = order.castomerPhone?.[0];
         if (!phone) continue;
         const fraudResult = await checkFraudSignals({
@@ -605,9 +607,7 @@ exports.masterEditActivity = async (req, res) => {
 
     const activityIndex = Number(req.body.activityIndex);
     const newDescription =
-      typeof req.body.description === "string"
-        ? req.body.description.trim()
-        : "";
+      typeof req.body.description === "string" ? req.body.description.trim() : "";
 
     if (!Number.isInteger(activityIndex) || activityIndex < 0) {
       return res.status(400).json({ message: "activityIndex সঠিক না।" });
@@ -618,9 +618,7 @@ exports.masterEditActivity = async (req, res) => {
         .json({ message: "এই ইনডেক্সে কোনো অ্যাক্টিভিটি নেই।" });
     }
     if (!newDescription) {
-      return res
-        .status(400)
-        .json({ message: "description খালি রাখা যাবে না।" });
+      return res.status(400).json({ message: "description খালি রাখা যাবে না।" });
     }
 
     const target = order.activities[activityIndex];
@@ -640,12 +638,7 @@ exports.masterEditActivity = async (req, res) => {
         author: editorName,
         type: "Activity Edited",
         description: `${editorName} একটা পুরনো নোট এডিট করেছেন (${target.type || "?"})`,
-        details: {
-          activityIndex,
-          field: "description",
-          oldDescription,
-          newDescription,
-        },
+        details: { activityIndex, field: "description", oldDescription, newDescription },
       },
       { save: false },
     );
@@ -736,12 +729,14 @@ const NOTE_ACTION_CONFIG = {
   },
   failed: {
     type: "Note Failed",
-    description: "নোটটি সমাধান করা যায়নি, ব্যর্থ হিসেবে বন্ধ করা হয়েছে।",
+    description:
+      "নোটটি সমাধান করা যায়নি, ব্যর্থ হিসেবে বন্ধ করা হয়েছে।",
     needsAttention: false,
   },
   try_next: {
     type: "Try Next",
-    description: "কাস্টমারকে রিচ করা যায়নি, পরে আবার চেষ্টা করা হবে।",
+    description:
+      "কাস্টমারকে রিচ করা যায়নি, পরে আবার চেষ্টা করা হবে।",
     needsAttention: true,
   },
 };
@@ -797,9 +792,7 @@ exports.noteAction = async (req, res) => {
 // অর্ডারগুলো তার সর্বশেষ স্ট্যাটাসসহ ফেরত দেয় (Note বাবলের "আগের অর্ডার" মডেলের জন্য) ---
 exports.getPreviousOrders = async (req, res) => {
   try {
-    const currentOrder = await Order.findById(req.params.id).select(
-      "castomerPhone",
-    );
+    const currentOrder = await Order.findById(req.params.id).select("castomerPhone");
     if (!currentOrder) {
       return res.status(404).json({ message: "Order not found." });
     }
@@ -822,7 +815,9 @@ exports.getPreviousOrders = async (req, res) => {
     return res.status(200).json({ previousOrders });
   } catch (error) {
     console.error("Previous orders fetch error:", error);
-    return res.status(500).json({ message: "আগের অর্ডার আনতে ব্যর্থ হয়েছে।" });
+    return res
+      .status(500)
+      .json({ message: "আগের অর্ডার আনতে ব্যর্থ হয়েছে।" });
   }
 };
 
@@ -954,7 +949,7 @@ exports.steadfastBookingWebhook = async (req, res) => {
       $push: {
         activities: buildActivity({
           author: "Steadfast",
-          // type: notification_type,
+          type: notification_type,
           description: tracking_message || "empty",
         }),
       },
@@ -972,7 +967,7 @@ exports.steadfastBookingWebhook = async (req, res) => {
       updateData,
       { new: true },
     );
-    // send response
+
     if (updatedOrder) {
       if (io) emitOrderUpdate(io, updatedOrder);
       return res
@@ -1138,20 +1133,17 @@ exports.getFraudMatches = async (req, res) => {
       ...new Set(reasons.flatMap((r) => (r.matchedOrderIds || []).map(String))),
     ];
 
-    // const matchedOrders = await Order.find({ _id: { $in: allIds } })
-    //   .select(
-    //     "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus createdAt",
-    //   )
-    //   .sort({ createdAt: -1 })
-    //   .lean()
-
     const matchedOrders = await Order.find({ _id: { $in: allIds } })
-  .select(
-    "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus createdAt"
-  )
-  .slice("activities", 1)
-  .sort({ createdAt: -1 })
-  .lean();
+      // .select(
+      //   "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus courier.bookingStatus createdAt",
+      // )
+      // .sort({ createdAt: -1 })
+      // .lean();
+      .select(
+        "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus courier.courierStatus createdAt",
+      )
+      .sort({ createdAt: -1 })
+      .lean();
 
     return res.status(200).json({ reasons, matchedOrders });
   } catch (error) {
@@ -1159,5 +1151,81 @@ exports.getFraudMatches = async (req, res) => {
     return res
       .status(500)
       .json({ message: "ম্যাচ হওয়া অর্ডারের তথ্য আনতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- POST /api/orders/:id/courier-history — OrderCard-এর "History" বাটনে ক্লিক
+// করলে কল হয়। আগে এটা socket ("allCourierHistory" emit → "distributecourierHistory"
+// দিয়ে রেজাল্ট ফেরত) দিয়ে হতো, এখন প্লেইন HTTP request/response দিয়ে করা হচ্ছে —
+// socket কানেক্টেড থাক বা না থাক কাজ করবে। bdcourier.com API দিয়ে castomerPhone-এর
+// প্রতিটা নম্বর চেক করে সব কুরিয়ার মিলিয়ে success/cancel count বের করে, order.courierHistory.all-এ
+// সেভ করে, আপডেটেড অর্ডারটাই রেসপন্সে ফেরত দেয় (ফ্রন্টএন্ড এটা existing onUpdate/handleOrderUpdate
+// দিয়েই লিস্টে বসিয়ে দেবে, আলাদা কোনো নতুন মেকানিজম লাগে না)।
+exports.getCourierHistory = async (req, res) => {
+  try {
+    const orderDoc = await Order.findById(req.params.id);
+    if (!orderDoc) {
+      return res.status(404).json({ message: "অর্ডারটি খুঁজে পাওয়া যায়নি।" });
+    }
+
+    // ⚠️ গুরুত্বপূর্ণ: `orderDoc.courierHistory?.all` দিয়ে সরাসরি চেক করা যাবে না —
+    // Order.js স্কিমায় courierHistory.all একটা nested object path (আলাদা কোনো
+    // Schema/subdocument না), তাই Mongoose in-memory ডকুমেন্টে এটা সবসময় একটা
+    // "phantom" খালি {} অবজেক্ট হিসেবে থাকে — DB-তে আসলে কখনো সেট না হলেও।
+    // (এই খালি {} শুধু JSON সিরিয়ালাইজেশনের সময় minimize:true-এর কারণে বাদ পড়ে
+    // যায়, তাই ফ্রন্টএন্ড ঠিকমতো falsy পায় — কিন্তু এখানে সার্ভার-সাইডে এখনো
+    // সিরিয়ালাইজ হয়নি।) তাই {} vs আসল ডেটার পার্থক্য বুঝতে লিফ-ভ্যালু (success)
+    // সরাসরি চেক করা হচ্ছে — এটাই আসল "আগে থেকে ফেচ করা আছে কিনা" প্রশ্নের সঠিক উত্তর দেয়।
+    const alreadyFetched = orderDoc.courierHistory?.all?.success !== undefined;
+
+    if (alreadyFetched) {
+      return res.status(200).json({ order: orderDoc, success: true });
+    }
+
+    if (!Array.isArray(orderDoc.castomerPhone) || orderDoc.castomerPhone.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "এই অর্ডারে কোনো ফোন নম্বর নেই।" });
+    }
+
+    const count = { success: 0, cancel: 0 };
+
+    await Promise.all(
+      orderDoc.castomerPhone.map(async (phone) => {
+        const engNum = convertNumber(phone);
+        const bdRes = await axios
+          .post(
+            "https://bdcourier.com/api/courier-check",
+            { phone: engNum },
+            { headers: { Authorization: `Bearer ${BDCOURIER_SECRET_KEY}` } },
+          )
+          .catch((err) => {
+            console.error("bdcourier API error:", err.message);
+            return null;
+          });
+        if (bdRes?.data) {
+          count.success += bdRes.data?.courierData?.summary?.success_parcel || 0;
+          count.cancel += bdRes.data?.courierData?.summary?.cancelled_parcel || 0;
+        }
+      }),
+    );
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderDoc._id,
+      {
+        $set: {
+          "courierHistory.all.success": count.success,
+          "courierHistory.all.cancel": count.cancel,
+        },
+      },
+      { new: true },
+    );
+
+    return res.status(200).json({ order: updatedOrder, success: true });
+  } catch (error) {
+    console.error("Get courier history error:", error);
+    return res
+      .status(500)
+      .json({ message: "কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।" });
   }
 };

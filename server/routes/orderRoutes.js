@@ -19,6 +19,8 @@ router.get("/master-search", orderController.masterSearchOrders);
 router.patch("/:id/master-edit", orderController.masterEditOrder);
 // মাস্টার সার্চ থেকে activities লগের একটা নির্দিষ্ট এন্ট্রির description এডিট (শুধু টেক্সট, type নয়)
 router.patch("/:id/activity-edit", orderController.masterEditActivity);
+// OrderCard-এর "History" বাটন — কাস্টমারের সব কুরিয়ার মিলিয়ে success/cancel history (HTTP, socket না)
+router.post("/:id/courier-history", orderController.getCourierHistory);
 
 // ইনকমপ্লিট/ড্রাফট অর্ডার (কাস্টমার সাবমিট করার আগেই ফর্মে যা পূরণ করেছে)
 router.get("/drafts", orderController.getDraftOrders);

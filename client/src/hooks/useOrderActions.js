@@ -23,23 +23,15 @@ export function useOrderActions(order, onUpdate) {
     const handleNoteAdded = (data) => {
       if (data?.updatedOrder && onUpdate) onUpdate(data.updatedOrder);
     };
-    const handleCourierHistoryResult = (data) => {
-      setHistoryLoading(false);
-      if (data?.success && data?.result && onUpdate) {
-        onUpdate(data.result);
-      }
-    };
 
     socket.on("orderUpdated", handleOrderUpdated);
     socket.on("statusUpdated", handleStatusUpdated);
     socket.on("noteAdded", handleNoteAdded);
-    socket.on("distributecourierHistory", handleCourierHistoryResult);
 
     return () => {
       socket.off("orderUpdated", handleOrderUpdated);
       socket.off("statusUpdated", handleStatusUpdated);
       socket.off("noteAdded", handleNoteAdded);
-      socket.off("distributecourierHistory", handleCourierHistoryResult);
     };
   }, [socket, onUpdate]);
 
@@ -66,12 +58,23 @@ export function useOrderActions(order, onUpdate) {
     [socket, order._id],
   );
 
-  // --- কাস্টমারের সব কুরিয়ারের হিস্ট্রি আনা ---
-  const fetchCourierHistory = useCallback(() => {
-    if (!socket || order?.courierHistory?.all) return;
+  // --- কাস্টমারের সব কুরিয়ারের হিস্ট্রি আনা (HTTP request/response দিয়ে, সকেট না —
+  // আগে socket.emit("allCourierHistory") দিয়ে হতো, এখন সরাসরি REST কল করে existing
+  // onUpdate() দিয়েই রেজাল্ট (আপডেটেড order) লিস্টে বসিয়ে দেওয়া হয়) ---
+  const fetchCourierHistory = useCallback(async () => {
+    if (order?.courierHistory?.all) return;
     setHistoryLoading(true);
-    socket.emit("allCourierHistory", { orderId: order._id });
-  }, [socket, order]);
+    try {
+      const response = await orderService.getCourierHistory(order._id);
+      if (response.data?.success && response.data?.order && onUpdate) {
+        onUpdate(response.data.order);
+      }
+    } catch (error) {
+      console.error("Courier history fetch error:", error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [order, onUpdate]);
 
   // --- অর্ডার আপডেট (এডিট ফর্ম সেভ) ---
   const updateOrder = useCallback(

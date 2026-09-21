@@ -1,5 +1,6 @@
 const axios = require("axios");
 const Order = require("../models/Order");
+const DraftOrder = require("../models/DraftOrder");
 const EventLog = require("../models/EventLog");
 const convertNumber = require("../utils/convertNumber");
 const { emitOrderUpdate } = require("../utils/socketBroadcast");
@@ -89,53 +90,6 @@ async function handleAddNote(socket, { orderId, note }) {
   }
 }
 
-// --- কাস্টমারের সব কুরিয়ার হিস্ট্রি (bdcourier API) ---
-async function handleAllCourierHistory(socket, { orderId }) {
-  try {
-    const orderDoc = await Order.findById(orderId).select("castomerPhone");
-    if (!orderDoc) return;
-
-    if (!Array.isArray(orderDoc.castomerPhone)) {
-      return socket.emit("distributecourierHistory", {
-        result: "bdCourier api response error",
-        success: false,
-      });
-    }
-
-    const count = { success: 0, cancel: 0 };
-
-    await Promise.all(
-      orderDoc.castomerPhone.map(async (phone) => {
-        const engNum = convertNumber(phone);
-        const res = await axios.post(
-          "https://bdcourier.com/api/courier-check",
-          { phone: engNum },
-          { headers: { Authorization: `Bearer ${BDCOURIER_SECRET_KEY}` } },
-        );
-        if (res.data) {
-          count.success += res.data?.courierData?.summary?.success_parcel || 0;
-          count.cancel += res.data?.courierData?.summary?.cancelled_parcel || 0;
-        }
-      }),
-    );
-
-    const updatedOrder = await Order.findByIdAndUpdate(
-      orderDoc._id,
-      {
-        $set: {
-          "courierHistory.all.success": count.success,
-          "courierHistory.all.cancel": count.cancel,
-        },
-      },
-      { new: true },
-    );
-
-    socket.emit("distributecourierHistory", { result: updatedOrder, success: true });
-  } catch (err) {
-    console.error("Error getting order history:", err);
-  }
-}
-
 // --- সার্চ কোয়েরি হ্যান্ডেল (মডারেটর হলে শুধু নিজের অর্ডারের মধ্যে সার্চ হবে) ---
 async function handleSearchQuery(socket, q) {
   try {
@@ -172,13 +126,81 @@ async function handleSearchQuery(socket, q) {
   }
 }
 
+// --- ড্রাফট (ইনকমপ্লিট) অর্ডার কার্ডের জন্য কাস্টমার হিস্ট্রি — real Order-এর "History"
+// বাটন এখন HTTP দিয়ে হয় (orderController.js-এর getCourierHistory, socket না), কিন্তু
+// DraftOrder-এ courier.trackingId/castomerPhone array নেই (শুধু একটা phone স্ট্রিং),
+// আর ড্রাফট আপডেট যেহেতু এমনিতেই socket ("draftOrderUpdate") দিয়ে broadcast হয়, তাই
+// এটা আপাতত socket-ভিত্তিকই রাখা হলো। "our" = আমাদের নিজের Order কালেকশনে এই ফোন
+// নম্বরে আগে কতগুলো অর্ডার হয়েছে (attachCourierHistory-এর মতোই হিসাব, কিন্তু লাইভ),
+// "all" = bdcourier.com API দিয়ে সব কুরিয়ার মিলিয়ে success/cancel ---
+async function handleDraftCourierHistory(socket, { draftId }) {
+  try {
+    const draft = await DraftOrder.findById(draftId).select("phone");
+    if (!draft) return;
+
+    if (!draft.phone) {
+      return socket.emit("distributeDraftCourierHistory", {
+        draftId,
+        result: "ফোন নম্বর নেই",
+        success: false,
+      });
+    }
+
+    const ourCountPromise = Order.countDocuments({
+      castomerPhone: draft.phone,
+    });
+
+    const engNum = convertNumber(draft.phone);
+    const bdCourierPromise = axios
+      .post(
+        "https://bdcourier.com/api/courier-check",
+        { phone: engNum },
+        { headers: { Authorization: `Bearer ${BDCOURIER_SECRET_KEY}` } },
+      )
+      .catch((err) => {
+        console.error("bdcourier API error (draft):", err.message);
+        return null;
+      });
+
+    const [ourCount, bdRes] = await Promise.all([
+      ourCountPromise,
+      bdCourierPromise,
+    ]);
+
+    const courierHistory = {
+      our: ourCount,
+      all: {
+        success: bdRes?.data?.courierData?.summary?.success_parcel || 0,
+        cancel: bdRes?.data?.courierData?.summary?.cancelled_parcel || 0,
+      },
+    };
+
+    await DraftOrder.findByIdAndUpdate(draft._id, {
+      $set: { courierHistory },
+    });
+
+    socket.emit("distributeDraftCourierHistory", {
+      draftId,
+      result: courierHistory,
+      success: true,
+    });
+  } catch (err) {
+    console.error("Error getting draft courier history:", err);
+    socket.emit("distributeDraftCourierHistory", {
+      draftId,
+      result: "bdCourier api response error",
+      success: false,
+    });
+  }
+}
+
 // --- প্রতিটি নতুন Socket connection-এর জন্য সব event listener রেজিস্টার করা ---
 function registerOrderSocketHandlers(io, socket) {
   socket.on("updateStatus", (payload) => handleUpdateStatus(io, socket, payload));
 
   socket.on("addNote", (payload) => handleAddNote(socket, payload));
 
-  socket.on("allCourierHistory", (payload) => handleAllCourierHistory(socket, payload));
+  socket.on("draftCourierHistory", (payload) => handleDraftCourierHistory(socket, payload));
 
   socket.on("searchQuery", (q) => handleSearchQuery(socket, q));
 
