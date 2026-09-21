@@ -250,7 +250,7 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
                       </span>
                     </span>
                   )}
-
+                  {/* হিস্টরি */}
                   <div>
                     {order?.courierHistory?.all ? (
                       <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">

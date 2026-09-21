@@ -6,6 +6,10 @@ import { useSocket } from "@/hooks/useSocket";
 import { orderService } from "@/services/orderService";
 import ShowMessage from "@/components/common/ShowMessage";
 
+// ⚠️ এটা orderService.createManual() দিয়ে সরাসরি একটা REST API কল (POST
+// /manual-single) — সকেটের কোনো সংযোগ নেই। আগে ভুলবশত সকেট কানেক্টেড আছে
+// কিনা চেক করে ইনপুট ডিজেবল রাখা হতো, যেটার আসলে কোনো দরকার ছিল না — এখন
+// সেই ডিপেন্ডেন্সি সরিয়ে দেওয়া হলো।
 export default function ManualOrderInput({ onUpdate }) {
   const { socket } = useSocket();
   const [inputValue, setInputValue] = useState("");
@@ -21,7 +25,6 @@ export default function ManualOrderInput({ onUpdate }) {
     setInputValue(event.target.value);
     setMessage("");
   };
-
   const showTemporaryMessage = (text) => {
     setMessage(text);
     setTimeout(() => setMessage(""), text.startsWith("✅") ? 4000 : 3000);
@@ -33,11 +36,6 @@ export default function ManualOrderInput({ onUpdate }) {
     setMessage("");
 
     if (!isClient) return;
-    if (!socket?.connected) {
-      showTemporaryMessage("❌ সকেট সার্ভারের সাথে সংযোগ নেই।");
-      setLoading(false);
-      return;
-    }
     if (inputValue.length < 11) {
       showTemporaryMessage("⚠️ অনুগ্রহ করে অর্ডার বিবরণ লিখুন।");
       setLoading(false);
@@ -49,7 +47,11 @@ export default function ManualOrderInput({ onUpdate }) {
 
       if (httpResponse.status === 201) {
         showTemporaryMessage(`✅ ${httpResponse.data?.message}`);
-        if (onUpdate) onUpdate(httpResponse.data?.order);
+        const createdOrders = Array.isArray(httpResponse.data?.order)
+          ? httpResponse.data.order
+          : [httpResponse.data?.order].filter(Boolean);
+        if (onUpdate) createdOrders.forEach((o) => onUpdate(o));
+
         setInputValue("");
       } else {
         showTemporaryMessage(
@@ -62,7 +64,8 @@ export default function ManualOrderInput({ onUpdate }) {
         error.response?.data || error.message,
       );
       const errorMessage =
-        error.response?.data?.message || "অর্ডার তৈরি করার সময় সার্ভার ত্রুটি হয়েছে।";
+        error.response?.data?.message ||
+        "অর্ডার তৈরি করার সময় সার্ভার ত্রুটি হয়েছে।";
       showTemporaryMessage(`❌ ত্রুটি: ${errorMessage}`);
     } finally {
       setLoading(false);
@@ -75,17 +78,14 @@ export default function ManualOrderInput({ onUpdate }) {
       : "Disconnected"
     : "Loading...";
 
-  const isInputDisabled = !socket?.connected || inputValue.trim() === "" || loading || !isClient;
-  const statusColor = isClient
-    ? socket?.connected
-      ? "text-green-600"
-      : "text-red-600"
-    : "text-gray-500";
-
+  const isInputDisabled = inputValue.trim() === "" || loading || !isClient;
   return (
     <div className=" w-full">
       {message && (
-        <ShowMessage message={message} type={message.startsWith("✅") ? "success" : "error"} />
+        <ShowMessage
+          message={message}
+          type={message.startsWith("✅") ? "success" : "error"}
+        />
       )}
 
       <form onSubmit={handleSubmit} className="flex items-end">
@@ -101,7 +101,9 @@ export default function ManualOrderInput({ onUpdate }) {
         />
 
         <div className="flex flex-col h-full items-center juctify-center">
-          <span className={`font-mono ${statusColor}  text-[10px]`}>{renderStatusText}</span>
+          <span className={`font-mono text-gray-600  text-[10px]`}>
+            {renderStatusText}
+          </span>
           <button
             type="submit"
             disabled={isInputDisabled}

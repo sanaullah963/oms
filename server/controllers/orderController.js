@@ -288,6 +288,7 @@ exports.createManualOrder = async (req, res) => {
     // ফ্ল্যাগ হবে। কাউকে অটোমেটিক ব্লক করা হয় না।
     for (const order of savedOrders) {
       try {
+        
         const phone = order.castomerPhone?.[0];
         if (!phone) continue;
         const fraudResult = await checkFraudSignals({
