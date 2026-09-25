@@ -21,6 +21,8 @@ router.patch("/:id/master-edit", orderController.masterEditOrder);
 router.patch("/:id/activity-edit", orderController.masterEditActivity);
 // OrderCard-এর "History" বাটন — কাস্টমারের সব কুরিয়ার মিলিয়ে success/cancel history (HTTP, socket না)
 router.post("/:id/courier-history", orderController.getCourierHistory);
+// OrderCard-এর নোট সেকশন (HTTP, socket না — আগে socket.emit("addNote") দিয়ে হতো)
+router.patch("/:id/note", orderController.addNote);
 
 // ইনকমপ্লিট/ড্রাফট অর্ডার (কাস্টমার সাবমিট করার আগেই ফর্মে যা পূরণ করেছে)
 router.get("/drafts", orderController.getDraftOrders);

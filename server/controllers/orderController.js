@@ -788,6 +788,36 @@ exports.noteAction = async (req, res) => {
   }
 };
 
+// --- PATCH /api/orders/:id/note — OrderCard-এর নোট সেকশন থেকে কল হয় (আগে
+// socket.emit("addNote") দিয়ে হতো, এখন প্লেইন HTTP দিয়ে — socket কানেক্টেড থাক বা
+// না থাক কাজ করবে)। আপডেটেড অর্ডার সব কানেক্টেড ক্লায়েন্টে broadcast করা হয় যেন অন্য
+// ইউজাররাও রিয়েল-টাইমে নোটটা দেখতে পায় (আগে socket ভার্সনে এই broadcast ছিলই না) ---
+exports.addNote = async (req, res) => {
+  try {
+    const { note } = req.body;
+    if (typeof note !== "string") {
+      return res.status(400).json({ message: "note ফিল্ড আবশ্যক।" });
+    }
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      { note },
+      { new: true },
+    );
+    if (!updatedOrder) {
+      return res.status(404).json({ message: "অর্ডার খুঁজে পাওয়া যায়নি।" });
+    }
+
+    const io = req.app.get("io");
+    if (io) emitOrderUpdate(io, updatedOrder);
+
+    return res.status(200).json({ success: true, order: updatedOrder });
+  } catch (error) {
+    console.error("Error adding note:", error);
+    return res.status(500).json({ message: "নোট যোগ করতে ব্যর্থ হয়েছে।" });
+  }
+};
+
 // --- GET /api/orders/:id/previous-orders — এই কাস্টমারের (ফোন নম্বর মিলিয়ে) আগের
 // অর্ডারগুলো তার সর্বশেষ স্ট্যাটাসসহ ফেরত দেয় (Note বাবলের "আগের অর্ডার" মডেলের জন্য) ---
 exports.getPreviousOrders = async (req, res) => {

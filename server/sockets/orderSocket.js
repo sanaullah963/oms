@@ -78,18 +78,6 @@ async function handleUpdateStatus(io, socket, { orderId, newStatus, note }) {
   }
 }
 
-// --- নোট যোগ করা ---
-async function handleAddNote(socket, { orderId, note }) {
-  try {
-    const updatedOrder = await Order.findByIdAndUpdate(orderId, { note }, { new: true });
-    if (updatedOrder) {
-      socket.emit("noteAdded", { updatedOrder });
-    }
-  } catch (err) {
-    console.error("Error adding note:", err);
-  }
-}
-
 // --- সার্চ কোয়েরি হ্যান্ডেল (মডারেটর হলে শুধু নিজের অর্ডারের মধ্যে সার্চ হবে) ---
 async function handleSearchQuery(socket, q) {
   try {
@@ -197,8 +185,6 @@ async function handleDraftCourierHistory(socket, { draftId }) {
 // --- প্রতিটি নতুন Socket connection-এর জন্য সব event listener রেজিস্টার করা ---
 function registerOrderSocketHandlers(io, socket) {
   socket.on("updateStatus", (payload) => handleUpdateStatus(io, socket, payload));
-
-  socket.on("addNote", (payload) => handleAddNote(socket, payload));
 
   socket.on("draftCourierHistory", (payload) => handleDraftCourierHistory(socket, payload));
 

@@ -20,18 +20,13 @@ export function useOrderActions(order, onUpdate) {
     const handleStatusUpdated = (data) => {
       if (data?.success && data?.order && onUpdate) onUpdate(data.order);
     };
-    const handleNoteAdded = (data) => {
-      if (data?.updatedOrder && onUpdate) onUpdate(data.updatedOrder);
-    };
 
     socket.on("orderUpdated", handleOrderUpdated);
     socket.on("statusUpdated", handleStatusUpdated);
-    socket.on("noteAdded", handleNoteAdded);
 
     return () => {
       socket.off("orderUpdated", handleOrderUpdated);
       socket.off("statusUpdated", handleStatusUpdated);
-      socket.off("noteAdded", handleNoteAdded);
     };
   }, [socket, onUpdate]);
 
@@ -49,13 +44,19 @@ export function useOrderActions(order, onUpdate) {
   );
 
 
-  // --- কমেন্ট/নোট যোগ করা ---
+  // --- কমেন্ট/নোট যোগ করা (HTTP — socket না, আগে socket.emit("addNote") দিয়ে হতো) ---
   const addNote = useCallback(
-    (noteText) => {
-      if (!socket) return;
-      socket.emit("addNote", { orderId: order._id, note: noteText });
+    async (noteText) => {
+      try {
+        const response = await orderService.addNote(order._id, noteText);
+        if (response.data?.success && response.data?.order && onUpdate) {
+          onUpdate(response.data.order);
+        }
+      } catch (error) {
+        console.error("Add note error:", error);
+      }
     },
-    [socket, order._id],
+    [order._id, onUpdate],
   );
 
   // --- কাস্টমারের সব কুরিয়ারের হিস্ট্রি আনা (HTTP request/response দিয়ে, সকেট না —

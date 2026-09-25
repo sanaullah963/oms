@@ -14,6 +14,9 @@ export const orderService = {
   // কাস্টমারের সব কুরিয়ার মিলিয়ে history (HTTP — socket না)
   getCourierHistory: (id) => api.post(`${BASE}/${id}/courier-history`),
 
+  // OrderCard-এর নোট সেকশন (HTTP — socket না, আগে socket.emit("addNote") দিয়ে হতো)
+  addNote: (orderId, note) => api.patch(`${BASE}/${orderId}/note`, { note }),
+
   createManual: (rawInputText) => api.post(`${BASE}/manual-single`, { rawInputText }),
 
   update: (orderId, formData) => api.put(`${BASE}/update-order/${orderId}`, formData),
