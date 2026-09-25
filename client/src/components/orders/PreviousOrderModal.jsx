@@ -29,7 +29,7 @@ export default function PreviousOrderModal({ order, onClose }) {
       .catch((err) => console.error("Previous orders fetch error:", err))
       .finally(() => setLoading(false));
   }, [order?._id]);
-
+console.log(previousOrders)
   if (!order) return null;
 
   return ReactDOM.createPortal(
@@ -73,7 +73,7 @@ export default function PreviousOrderModal({ order, onClose }) {
                         {o.productCode} · ৳{o.totalCOD}
                       </p>
                     </div>
-                    <DisplayTime timeStamp={o.activities[0]?.timestamp} />
+                    {/* <DisplayTime timeStamp={o.activities?.[0]?.timestamp} /> */}
                   </div>
 
                   <div className="flex flex-wrap gap-1.5 mt-1">

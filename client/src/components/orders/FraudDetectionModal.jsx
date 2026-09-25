@@ -185,8 +185,7 @@ export default function FraudDetectionModal({ order, onClose, onUpdate }) {
                           {m.orderSource || "Manual"}
                         </p>
                       </div>
-                      {/* <DisplayTime timeStamp={m.createdAt} /> */}
-                      <DisplayTime timeStamp={m.activities[0].timestamp} showDate={false} />
+                      <DisplayTime timeStamp={m.activities?.[0]?.timestamp} showDate={false} />
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 mt-1">

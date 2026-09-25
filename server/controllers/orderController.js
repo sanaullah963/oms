@@ -807,9 +807,9 @@ exports.getPreviousOrders = async (req, res) => {
       castomerPhone: { $in: phones },
     })
       .select(
-        "castomerName castomerPhone totalCOD orderStatus productCode courier.courierStatus courier.trackingId createdAt",
+        "castomerName castomerPhone totalCOD orderStatus productCode courier.courierStatus courier.trackingId activities",
       )
-      .sort({ createdAt: -1 })
+      .sort({ _id: -1 })
       .limit(20);
 
     return res.status(200).json({ previousOrders });
@@ -1134,15 +1134,10 @@ exports.getFraudMatches = async (req, res) => {
     ];
 
     const matchedOrders = await Order.find({ _id: { $in: allIds } })
-      // .select(
-      //   "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus courier.bookingStatus createdAt",
-      // )
-      // .sort({ createdAt: -1 })
-      // .lean();
       .select(
-        "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus courier.courierStatus createdAt",
+        "castomerName castomerPhone productCode totalCOD orderStatus orderSource courier.courierStatus courier.courierStatus activities",
       )
-      .sort({ createdAt: -1 })
+      .sort({ _id: -1 })
       .lean();
 
     return res.status(200).json({ reasons, matchedOrders });
