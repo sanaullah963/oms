@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const Order = require("../models/Order");
 const { STEADFAST_WEBHOOK_TOKEN } = require("../config/env");
 const { calculateCodCharge } = require("../utils/codCharge");
@@ -93,14 +94,45 @@ function getCourierStatus(data) {
 exports.handleSteadfastWebhook = async (req, res) => {
   const data = req.body;
   const io = req.app.get("io");
-  const authHeader = req.headers["authorization"];
 
-  // validation check
-  if (!authHeader || authHeader !== `Bearer ${STEADFAST_WEBHOOK_TOKEN}`) {
-    console.log("Unauthorized Access: Invalid Token");
+  // ----------- validation check
+  // note: Steadfast আগে Authorization: Bearer <token> পাঠাতো, এখন তাদের নতুন
+  // ডকুমেন্টেশন অনুযায়ী X-Signature হেডারে raw body-র HMAC-SHA256 পাঠায়।
+  // এই মেথড বদলের কারণেই আগের Bearer check সবসময় fail করে 401 দিচ্ছিল, ফলে
+  // tracking note/activity কিছুই সেভ হচ্ছিল না।
+  const signature = req.headers["x-signature"];
+
+  if (!signature || !req.rawBody) {
+    console.log("Unauthorized Access: Missing Signature or Raw Body");
     return res.status(401).json({
       status: "error",
-      message: "Unauthorized: Invalid Token",
+      message: "Unauthorized: Invalid Signature",
+    });
+  }
+
+  let isValidSignature = false;
+  try {
+    const expectedSignature = crypto
+      .createHmac("sha256", STEADFAST_WEBHOOK_TOKEN)
+      .update(req.rawBody)
+      .digest("hex");
+
+    const givenBuf = Buffer.from(signature, "hex");
+    const expectedBuf = Buffer.from(expectedSignature, "hex");
+
+    isValidSignature =
+      givenBuf.length === expectedBuf.length &&
+      crypto.timingSafeEqual(givenBuf, expectedBuf);
+  } catch (err) {
+    // malformed signature header (non-hex ইত্যাদি) হলে Buffer.from() throw করতে পারে
+    isValidSignature = false;
+  }
+
+  if (!isValidSignature) {
+    console.log("Unauthorized Access: Invalid Signature");
+    return res.status(401).json({
+      status: "error",
+      message: "Unauthorized: Invalid Signature",
     });
   }
 

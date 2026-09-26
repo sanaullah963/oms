@@ -24,7 +24,17 @@ const app = express();
 
 // ------ Middleware ---
 app.use(cors());
-app.use(bodyParser.json());
+// note: verify callback-এ raw body (Buffer) req.rawBody-তে রেখে দেওয়া হচ্ছে,
+// কারণ webhook signature (HMAC) ভেরিফাই করতে হয় parse হওয়া JSON object দিয়ে না,
+// exact raw bytes দিয়ে — নিচের express.json() টা req._body flag দেখে স্কিপ হয়ে যাবে,
+// তাই verify এখানেই বসাতে হয়েছে।
+app.use(
+  bodyParser.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 app.use(express.json());
 
 // ------ পাবলিক রুট (লগইন ছাড়াই অ্যাক্সেসযোগ্য) ---
