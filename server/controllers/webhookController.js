@@ -140,10 +140,22 @@ exports.handleSteadfastWebhook = async (req, res) => {
   const isImportant = classifyNote(noteText); //true = গুরুত্বপূর্ণ, false = ignorable
   const courierLabel = getCourierStatus(data);
 
+  // ----------- অ্যাক্টিভিটি লগের সময় — আমাদের সার্ভারে webhook পৌঁছানোর মুহূর্ত
+  // (new Date()) না নিয়ে, Steadfast তাদের পেলোডে যে সময় status আপডেট হয়েছে সেই
+  // `updated_at` পাঠায় সেটাই ব্যবহার করা হচ্ছে — এতে টাইমলাইনে আসল সময়টাই থাকে,
+  // নেটওয়ার্ক/রিট্রাই ডিলের কারণে দেরিতে webhook পৌঁছালেও সময় ভুল দেখায় না।
+  // পেলোডে `updated_at` না থাকলে বা invalid হলে বর্তমান সময়েই fallback করে।
+  const parsedUpdatedAt = data.updated_at ? new Date(data.updated_at) : null;
+  const activityTimestamp =
+    parsedUpdatedAt && !Number.isNaN(parsedUpdatedAt.getTime())
+      ? parsedUpdatedAt
+      : new Date();
+
   // create new activity
   const newActivity = buildActivity({
     author: "Steadfast",
     description: data.tracking_message,
+    timestamp: activityTimestamp,
     // type: data.notification_type,
   });
 

@@ -20,10 +20,14 @@
  *   তাই মানুষের করা যেকোনো অ্যাকশনে সবসময় req.user?.name / socket.user?.name দাও;
  *   সিস্টেম/কুরিয়ার-অটোমেটেড অ্যাকশনে "System" বা "Steadfast" এর মতো লেবেল দাও)
  * @param {Object} [params.details] - প্রয়োজনে আগে/পরের মান বা অন্য এক্সট্রা ডেটা (JSON)
+ * @param {Date} [params.timestamp] - এই অ্যাক্টিভিটির সময় (না দিলে এখনকার সময়,
+ *   `new Date()`, ডিফল্ট হিসেবে বসবে)। যেমন Steadfast webhook-এর জন্য তাদের
+ *   পাঠানো `updated_at` (নিজেদের সার্ভারে রিকোয়েস্ট পৌঁছানোর সময় না, বরং
+ *   Steadfast-এর সিস্টেমে ঠিক যখন স্ট্যাটাসটা আপডেট হয়েছে সেই সময়) পাস করা হয়।
  * @returns {Object} plain activity object
  */
-function buildActivity({ type, description, author, details }) {
-  const activity = { type, description, timestamp: new Date() };
+function buildActivity({ type, description, author, details, timestamp }) {
+  const activity = { type, description, timestamp: timestamp || new Date() };
   if (author) activity.author = author;
   if (details) activity.details = details;
   return activity;
