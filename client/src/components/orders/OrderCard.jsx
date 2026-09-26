@@ -27,7 +27,14 @@ function getStatusColor(status) {
   return STATUS_COLOR_MAP[status] || "text-indigo-600 bg-indigo-100";
 }
 
-export default function OrderCard({ order, onUpdate, setSearchQuery }) {
+export default function OrderCard({
+  order,
+  onUpdate,
+  setSearchQuery,
+  selectMode = false,
+  isSelected = false,
+  onToggleSelect,
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [isCopied, setIsCopied] = useState(false);
@@ -211,7 +218,24 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow-lg p-2 md:p-4 border border-gray-300 hover:shadow-xl transition-all duration-300 mb-1">
+      <div
+        className={`bg-white rounded-lg shadow-lg p-2 md:p-4 border hover:shadow-xl transition-all duration-300 mb-1 relative ${
+          selectMode && isSelected ? "border-green-500 ring-2 ring-green-300" : "border-gray-300"
+        }`}
+      >
+        {selectMode && (
+          <label
+            className="absolute top-2 right-2 z-10 flex items-center justify-center w-6 h-6 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              className="w-4 h-4 cursor-pointer accent-green-600"
+              checked={isSelected}
+              onChange={() => onToggleSelect?.(order._id)}
+            />
+          </label>
+        )}
         {isEditing ? (
           <OrderEditForm
             formData={formData}

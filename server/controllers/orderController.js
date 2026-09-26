@@ -11,10 +11,8 @@ const { withLandingPageMeta } = require("../utils/draftOrderView");
 const { checkFraudSignals } = require("../utils/fraudDetection");
 const { buildActivity, logActivity } = require("../utils/activityLogger");
 const { triggerPurchaseEvent } = require("../utils/metaCapi");
+const { fetchCourierHistorySummary } = require("../utils/courierHistoryProviders");
 const mongoose = require("mongoose");
-const axios = require("axios");
-const convertNumber = require("../utils/convertNumber");
-const { BDCOURIER_SECRET_KEY } = require("../config/env");
 
 // প্যাটার্ন: একাধিক অর্ডার আলাদা করার জন্য (WhatsApp/Messenger টাইমস্ট্যাম্প ট্যাগ)
 const MULTIPLE_ORDERS_PATTERN =
@@ -1273,27 +1271,7 @@ exports.getCourierHistory = async (req, res) => {
         .json({ message: "এই অর্ডারে কোনো ফোন নম্বর নেই।" });
     }
 
-    const count = { success: 0, cancel: 0 };
-
-    await Promise.all(
-      orderDoc.castomerPhone.map(async (phone) => {
-        const engNum = convertNumber(phone);
-        const bdRes = await axios
-          .post(
-            "https://bdcourier.com/api/courier-check",
-            { phone: engNum },
-            { headers: { Authorization: `Bearer ${BDCOURIER_SECRET_KEY}` } },
-          )
-          .catch((err) => {
-            console.error("bdcourier API error:", err.message);
-            return null;
-          });
-        if (bdRes?.data) {
-          count.success += bdRes.data?.courierData?.summary?.success_parcel || 0;
-          count.cancel += bdRes.data?.courierData?.summary?.cancelled_parcel || 0;
-        }
-      }),
-    );
+    const count = await fetchCourierHistorySummary(orderDoc.castomerPhone);
 
     const updatedOrder = await Order.findByIdAndUpdate(
       orderDoc._id,
@@ -1315,5 +1293,73 @@ exports.getCourierHistory = async (req, res) => {
     return res
       .status(500)
       .json({ message: "কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- POST /api/orders/courier-history-bulk  { orderIds: [...] } — হোমপেজের অর্ডার
+// লিস্টে একসাথে একাধিক অর্ডার সিলেক্ট করে "History" চাপলে একবারেই সবগুলোর জন্য কল হয়
+// (উপরের getCourierHistory-এর মতোই একই লজিক, শুধু একটা রিকোয়েস্টে অনেকগুলো অর্ডার একসাথে)।
+// প্রতিটা অর্ডারের জন্য আলাদাভাবে emitOrderUpdate broadcast করা হয়, যাতে যারা এই মুহূর্তে
+// সাইটে আছে (socket কানেক্টেড) তাদের সবার পেইজেও প্রতিটা অর্ডার রিয়েল-টাইমে আপডেট হয়ে যায় —
+// শুধু যে বাল্ক অ্যাকশনটা নিলো তার কাছেই আটকে না থেকে। একটা অর্ডারে সমস্যা হলে (ফোন নম্বর
+// নেই ইত্যাদি) সেটা স্কিপ হবে, কিন্তু বাকি অর্ডারগুলোর প্রসেসিং থামবে না।
+//
+// note: আপাতত শুধু bdcourier.com (fetchCourierHistorySummary → utils/courierHistoryProviders.js)
+// ব্যবহার হচ্ছে। ভবিষ্যতে আরো প্রোভাইডার যোগ হলে ওই একটা ফাইলেই যোগ করলেই হবে, এই ফাংশন
+// বদলাতে হবে না।
+exports.getCourierHistoryBulk = async (req, res) => {
+  try {
+    const { orderIds } = req.body;
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "orderIds ফিল্ড আবশ্যক (নন-এম্পটি অ্যারে)।" });
+    }
+
+    const orders = await Order.find({ _id: { $in: orderIds } });
+    if (orders.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "কোনো অর্ডার পাওয়া যায়নি।" });
+    }
+
+    const io = req.app.get("io");
+
+    const updatedOrders = await Promise.all(
+      orders.map(async (orderDoc) => {
+        // ⚠️ single history-endpoint-এর মতোই: courierHistory.all Mongoose-এ nested
+        // path হওয়ায় in-memory ডকুমেন্টে সবসময় একটা phantom {} থাকে, তাই leaf ভ্যালু
+        // (success) দিয়েই "আগে ফেচ করা আছে কিনা" যাচাই করা হচ্ছে।
+        const alreadyFetched = orderDoc.courierHistory?.all?.success !== undefined;
+        if (alreadyFetched) return orderDoc;
+
+        if (!Array.isArray(orderDoc.castomerPhone) || orderDoc.castomerPhone.length === 0) {
+          return orderDoc; // ফোন নম্বর নেই — এই অর্ডারটা স্কিপ, বাকিগুলো চলবে
+        }
+
+        const count = await fetchCourierHistorySummary(orderDoc.castomerPhone);
+
+        const updatedOrder = await Order.findByIdAndUpdate(
+          orderDoc._id,
+          {
+            $set: {
+              "courierHistory.all.success": count.success,
+              "courierHistory.all.cancel": count.cancel,
+            },
+          },
+          { new: true },
+        );
+
+        if (io) emitOrderUpdate(io, updatedOrder);
+        return updatedOrder;
+      }),
+    );
+
+    return res.status(200).json({ success: true, orders: updatedOrders });
+  } catch (error) {
+    console.error("Get bulk courier history error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "বাল্ক কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।" });
   }
 };

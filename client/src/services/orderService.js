@@ -13,6 +13,9 @@ export const orderService = {
     api.patch(`${BASE}/${id}/activity-edit`, { activityIndex, description }),
   // কাস্টমারের সব কুরিয়ার মিলিয়ে history (HTTP — socket না)
   getCourierHistory: (id) => api.post(`${BASE}/${id}/courier-history`),
+  // হোমপেজে একসাথে একাধিক অর্ডার সিলেক্ট করে "History" — একবারেই সবগুলোর জন্য রিকোয়েস্ট
+  getCourierHistoryBulk: (orderIds) =>
+    api.post(`${BASE}/courier-history-bulk`, { orderIds }),
 
   // OrderCard-এর নোট সেকশন (HTTP — socket না, আগে socket.emit("addNote") দিয়ে হতো)
   addNote: (orderId, note) => api.patch(`${BASE}/${orderId}/note`, { note }),
