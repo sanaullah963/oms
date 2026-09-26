@@ -149,13 +149,16 @@ export default function OrderCard({ order, onUpdate, setSearchQuery }) {
     }
   };
 
-  const handleStatusUpdate = (shortcut) => {
+  const handleStatusUpdate = async (shortcut) => {
     if (shortcut.key === "Custom" && !noteText) {
       toast.error("আগে কমেন্ট লিখুন");
       return;
     }
-    updateStatus(shortcut, noteText);
+    const result = await updateStatus(shortcut, noteText);
     setNoteText("");
+    if (!result.success) {
+      showMessage("alert", `ত্রুটি: ${result.message}`, null);
+    }
   };
 
   const handleBooking = async () => {

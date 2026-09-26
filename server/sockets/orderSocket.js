@@ -1,82 +1,14 @@
 const axios = require("axios");
 const Order = require("../models/Order");
 const DraftOrder = require("../models/DraftOrder");
-const EventLog = require("../models/EventLog");
 const convertNumber = require("../utils/convertNumber");
-const { emitOrderUpdate } = require("../utils/socketBroadcast");
-const { sendCapiEvent } = require("../utils/metaCapi");
-const { buildActivity } = require("../utils/activityLogger");
 const { BDCOURIER_SECRET_KEY } = require("../config/env");
 
-// --- "Confirmed" হলে Meta CAPI-তে Purchase ইভেন্ট পাঠানো (একটা অর্ডারে সর্বোচ্চ একবারই) ---
-async function triggerPurchaseEvent(order) {
-  const alreadySent = await EventLog.findOne({
-    order: order._id,
-    eventName: "Purchase",
-    status: "sent",
-  });
-  if (alreadySent) return; // দ্বিতীয়বার Confirm হলেও (বা ভুলে দুইবার ক্লিক হলেও) আবার পাঠানো হবে না
-
-  await sendCapiEvent({
-    eventName: "Purchase",
-    eventId: `purchase_${order._id}`,
-    orderId: order._id,
-    sessionId: order.tracking?.sessionId,
-    userData: {
-      phone: order.castomerPhone?.[0],
-      ip: order.tracking?.ip,
-      userAgent: order.tracking?.userAgent,
-      fbc: order.tracking?.fbc,
-      fbp: order.tracking?.fbp,
-    },
-    customData: {
-      value: order.totalCOD,
-      contentName: order.productCode,
-      contentIds: order.productCode ? [order.productCode] : undefined,
-      numItems: 1,
-    },
-  });
-}
-
-// --- অর্ডার স্ট্যাটাস আপডেট ---
-async function handleUpdateStatus(io, socket, { orderId, newStatus, note }) {
-  try {
-    const updatedOrder = await Order.findByIdAndUpdate(
-      orderId,
-      {
-        orderStatus: newStatus,
-        $push: {
-          activities: buildActivity({
-            description: note,
-            // type: newStatus,
-            author: socket.user?.name,
-          }),
-        },
-      },
-      { new: true },
-    );
-
-    if (!updatedOrder) {
-      return socket.emit("statusUpdated", { success: false, message: "Order not found" });
-    }
-
-    socket.emit("statusUpdated", { success: true, order: updatedOrder });
-    emitOrderUpdate(io, updatedOrder);
-
-    // --- এখানেই আসল কাজ: Purchase ইভেন্ট শুধু এখন পাঠানো হয়, ফর্ম সাবমিটের সময় না —
-    // এবং শুধুমাত্র ল্যান্ডিং পেজ থেকে আসা অর্ডারের জন্যই (origin === "landing_page")।
-    // ম্যানুয়ালি/পেস্ট করে বানানো অর্ডারে কোনো fbp/fbc/সেশন ডেটা থাকে না, তাই সেগুলোর
-    // জন্য Purchase ইভেন্ট কখনো পাঠানো হবে না। ---
-    if (newStatus === "Confirmed" && updatedOrder.origin === "landing_page") {
-      triggerPurchaseEvent(updatedOrder).catch((err) =>
-        console.error("Purchase CAPI trigger error:", err),
-      );
-    }
-  } catch (err) {
-    console.error("Error updating status:", err);
-    socket.emit("statusUpdated", { success: false, message: "Database update failed" });
-  }
-}
+// note: অর্ডার স্ট্যাটাস আপডেট (আগে এই socket event এখানেই হ্যান্ডেল হতো —
+// handleUpdateStatus + triggerPurchaseEvent) এখন HTTP দিয়ে হয়:
+// orderController.js-এর exports.updateStatus (রুট: PATCH /api/orders/:id/status)।
+// Purchase CAPI ট্রিগার লজিকটা utils/metaCapi.js-এ triggerPurchaseEvent হিসেবে
+// সরিয়ে নেওয়া হয়েছে, যাতে দুই জায়গায় (socket/HTTP) কপি-পেস্ট করে রাখতে না হয়।
 
 // --- সার্চ কোয়েরি হ্যান্ডেল (মডারেটর হলে শুধু নিজের অর্ডারের মধ্যে সার্চ হবে) ---
 async function handleSearchQuery(socket, q) {
@@ -184,8 +116,6 @@ async function handleDraftCourierHistory(socket, { draftId }) {
 
 // --- প্রতিটি নতুন Socket connection-এর জন্য সব event listener রেজিস্টার করা ---
 function registerOrderSocketHandlers(io, socket) {
-  socket.on("updateStatus", (payload) => handleUpdateStatus(io, socket, payload));
-
   socket.on("draftCourierHistory", (payload) => handleDraftCourierHistory(socket, payload));
 
   socket.on("searchQuery", (q) => handleSearchQuery(socket, q));

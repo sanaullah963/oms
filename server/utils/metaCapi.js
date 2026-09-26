@@ -207,10 +207,46 @@ async function retryEvent(eventLogId) {
   }
 }
 
+/**
+ * অর্ডার "Confirmed" হলে Meta CAPI-তে Purchase ইভেন্ট পাঠায় (একটা অর্ডারে সর্বোচ্চ একবারই —
+ * EventLog চেক করে দ্বিতীয়বার Confirm হলেও বা ভুলে দুইবার ক্লিক হলেও আবার পাঠানো হবে না)।
+ * সোর্স যেখান থেকেই স্ট্যাটাস আপডেট হোক (socket বা HTTP) — এই একটাই ফাংশন ব্যবহার করা উচিত,
+ * যাতে দুই জায়গায় আলাদা কপি রেখে ভবিষ্যতে একটা আপডেট হলে আরেকটা বাদ পড়ে না যায়।
+ */
+async function triggerPurchaseEvent(order) {
+  const alreadySent = await EventLog.findOne({
+    order: order._id,
+    eventName: "Purchase",
+    status: "sent",
+  });
+  if (alreadySent) return;
+
+  await sendCapiEvent({
+    eventName: "Purchase",
+    eventId: `purchase_${order._id}`,
+    orderId: order._id,
+    sessionId: order.tracking?.sessionId,
+    userData: {
+      phone: order.castomerPhone?.[0],
+      ip: order.tracking?.ip,
+      userAgent: order.tracking?.userAgent,
+      fbc: order.tracking?.fbc,
+      fbp: order.tracking?.fbp,
+    },
+    customData: {
+      value: order.totalCOD,
+      contentName: order.productCode,
+      contentIds: order.productCode ? [order.productCode] : undefined,
+      numItems: 1,
+    },
+  });
+}
+
 module.exports = {
   sendCapiEvent,
   retryEvent,
   generateEventId,
   hashPII,
   hashPhone,
+  triggerPurchaseEvent,
 };

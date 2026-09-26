@@ -17,30 +17,36 @@ export function useOrderActions(order, onUpdate) {
     const handleOrderUpdated = (data) => {
       if (data?.order && onUpdate) onUpdate(data.order);
     };
-    const handleStatusUpdated = (data) => {
-      if (data?.success && data?.order && onUpdate) onUpdate(data.order);
-    };
 
     socket.on("orderUpdated", handleOrderUpdated);
-    socket.on("statusUpdated", handleStatusUpdated);
 
     return () => {
       socket.off("orderUpdated", handleOrderUpdated);
-      socket.off("statusUpdated", handleStatusUpdated);
     };
   }, [socket, onUpdate]);
 
-  // --- স্ট্যাটাস আপডেট (কনফার্ম, বাতিল ইত্যাদি শর্টকাট বাটন) ---
+  // --- স্ট্যাটাস আপডেট (কনফার্ম, বাতিল ইত্যাদি শর্টকাট বাটন) — HTTP, socket না
+  // (আগে socket.emit("updateStatus") দিয়ে হতো, সাথে "statusUpdated" রেসপন্স listener ছিল) ---
   const updateStatus = useCallback(
-    (shortcut, noteText) => {
-      if (!socket) return;
+    async (shortcut, noteText) => {
       const note = noteText || shortcut?.note;
       if (shortcut.copyText) {
         copyToClipboard(shortcut.copyText);
       }
-      socket.emit("updateStatus", { orderId: order._id, newStatus: shortcut.key, note });
+      try {
+        const response = await orderService.updateStatus(order._id, shortcut.key, note);
+        if (response.data?.success && response.data?.order && onUpdate) {
+          onUpdate(response.data.order);
+        }
+        return { success: !!response.data?.success };
+      } catch (error) {
+        const message =
+          error.response?.data?.message || "সার্ভার এরর: স্ট্যাটাস আপডেট করা ব্যর্থ হয়েছে।";
+        console.error("Update status error:", error);
+        return { success: false, message };
+      }
     },
-    [socket, order._id],
+    [order._id, onUpdate],
   );
 
 

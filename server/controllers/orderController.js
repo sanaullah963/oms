@@ -10,6 +10,7 @@ const {
 const { withLandingPageMeta } = require("../utils/draftOrderView");
 const { checkFraudSignals } = require("../utils/fraudDetection");
 const { buildActivity, logActivity } = require("../utils/activityLogger");
+const { triggerPurchaseEvent } = require("../utils/metaCapi");
 const mongoose = require("mongoose");
 const axios = require("axios");
 const convertNumber = require("../utils/convertNumber");
@@ -711,6 +712,62 @@ exports.updateNeedAttention = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Server error while updating order." });
+  }
+};
+
+// --- PATCH /api/orders/:id/status  { newStatus, note } — OrderCard-এর স্ট্যাটাস
+// শর্টকাট বাটন (Confirmed/Cancelled/Custom ইত্যাদি) থেকে কল হয়। আগে
+// socket.emit("updateStatus") দিয়ে হতো (sockets/orderSocket.js: handleUpdateStatus),
+// এখন প্লেইন HTTP দিয়ে — socket ডিসকানেক্টেড থাকলেও (মোবাইল নেটওয়ার্ক টুকরো হওয়া,
+// ট্যাব ব্যাকগ্রাউন্ডে গিয়ে socket রিকানেক্ট না হওয়া ইত্যাদি) কাজ করবে ---
+exports.updateStatus = async (req, res) => {
+  try {
+    const { newStatus, note } = req.body;
+    if (!newStatus) {
+      return res
+        .status(400)
+        .json({ success: false, message: "newStatus ফিল্ড আবশ্যক।" });
+    }
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      {
+        orderStatus: newStatus,
+        $push: {
+          activities: buildActivity({
+            description: note,
+            author: req.user?.name,
+          }),
+        },
+      },
+      { new: true },
+    );
+
+    if (!updatedOrder) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    const io = req.app.get("io");
+    if (io) emitOrderUpdate(io, updatedOrder);
+
+    // --- এখানেই আসল কাজ: Purchase ইভেন্ট শুধু এখন পাঠানো হয়, ফর্ম সাবমিটের সময় না —
+    // এবং শুধুমাত্র ল্যান্ডিং পেজ থেকে আসা অর্ডারের জন্যই (origin === "landing_page")।
+    // ম্যানুয়ালি/পেস্ট করে বানানো অর্ডারে কোনো fbp/fbc/সেশন ডেটা থাকে না, তাই সেগুলোর
+    // জন্য Purchase ইভেন্ট কখনো পাঠানো হবে না। response-কে ব্লক না করে ফায়ার-অ্যান্ড-ফরগেট। ---
+    if (newStatus === "Confirmed" && updatedOrder.origin === "landing_page") {
+      triggerPurchaseEvent(updatedOrder).catch((err) =>
+        console.error("Purchase CAPI trigger error:", err),
+      );
+    }
+
+    return res.status(200).json({ success: true, order: updatedOrder });
+  } catch (error) {
+    console.error("Error updating status:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Database update failed" });
   }
 };
 

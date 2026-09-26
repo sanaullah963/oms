@@ -33,6 +33,8 @@ router.delete("/drafts/:id", orderController.dismissDraftOrder); // সম্প
 router.post("/manual-single", orderController.createManualOrder);
 router.delete("/delete/:id", orderController.deleteOrder);
 router.put("/update-order/:id", orderController.updateOrder);
+// OrderCard-এর স্ট্যাটাস শর্টকাট বাটন (HTTP, socket না — আগে socket.emit("updateStatus") দিয়ে হতো)
+router.patch("/:id/status", orderController.updateStatus);
 router.patch("/update-need-attention/:id", orderController.updateNeedAttention);
 // Note বাবলের সমাধান/ব্যর্থ/ট্রাই নেক্সট অ্যাকশন (activities-এ কে করেছে তা মিনিমাল টেক্সটে লগ হয়)
 router.patch("/:id/note-action", orderController.noteAction);

@@ -23,6 +23,10 @@ export const orderService = {
 
   remove: (orderId) => api.delete(`${BASE}/delete/${orderId}`),
 
+  // OrderCard-এর স্ট্যাটাস শর্টকাট বাটন (HTTP — socket না, আগে socket.emit("updateStatus") দিয়ে হতো)
+  updateStatus: (orderId, newStatus, note) =>
+    api.patch(`${BASE}/${orderId}/status`, { newStatus, note }),
+
   markAttentionResolved: (orderId) =>
     api.patch(`${BASE}/update-need-attention/${orderId}`),
 
