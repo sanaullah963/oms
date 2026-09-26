@@ -51,6 +51,16 @@ const draftOrderSchema = new Schema(
     // LandingPage মডেল populate/lookup না করতে হয়) ---
     productName: { type: String, default: null },
 
+    // --- Order মডেলের courierHistory.all-এর মতোই — OrderCard/DraftOrderCard-এর
+    // "History" বাটনে ক্লিক করলে (bdcourier.com দিয়ে) একবারই ফেচ হয়ে এখানে সেভ
+    // থাকে, পরের বার আর নতুন করে API কল লাগে না ---
+    courierHistory: {
+      all: {
+        success: { type: Number, default: undefined },
+        cancel: { type: Number, default: undefined },
+      },
+    },
+
     // সর্বশেষ customer/admin পরিবর্তনের সময় — ইনকমপ্লিট লিস্ট sort করার জন্য ব্যবহৃত হয়।
     lastActivityAt: { type: Date, default: Date.now, index: true },
 

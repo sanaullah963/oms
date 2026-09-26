@@ -19,6 +19,7 @@ import {
 } from "react-icons/fa";
 import DisplayTime from "@/components/common/DisplayTime";
 import ConfirmModal from "@/components/common/ConfirmModal";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import { useOrders } from "@/context/OrderContext";
 import {
@@ -93,12 +94,18 @@ function CallLogTimeline({ logs }) {
   );
 }
 
-export default function DraftOrderCard({ draft }) {
+export default function DraftOrderCard({
+  draft,
+  selectMode = false,
+  isSelected = false,
+  onToggleSelect,
+}) {
   const {
     deleteDraftOrder,
     updateDraftOrder,
     updateDraftCallStatus,
     convertDraftOrder,
+    fetchDraftCourierHistory,
     setSearchQuery,
   } = useOrders();
 
@@ -118,6 +125,7 @@ export default function DraftOrderCard({ draft }) {
   const [showCancelCallModal, setShowCancelCallModal] = useState(false);
   const [callNoteText, setCallNoteText] = useState("");
   const [isCallUpdating, setIsCallUpdating] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -323,9 +331,42 @@ export default function DraftOrderCard({ draft }) {
     await performCallStatusUpdate("cancelled", callNoteText);
   };
 
+  // --- OrderCard-এর "History" বাটনের হুবহু একই প্যাটার্ন — কাস্টমারের সব কুরিয়ার
+  // মিলিয়ে success/cancel history আনা (একবার ফেচ হয়ে গেলে আর কল হয় না) ---
+  const handleFetchHistory = async () => {
+    if (draft?.courierHistory?.all) return;
+    setHistoryLoading(true);
+    try {
+      await fetchDraftCourierHistory(draft._id);
+    } catch (err) {
+      console.error("Draft courier history fetch error:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   return (
     <>
-      <div className="mb-1 rounded-lg border border-gray-500 bg-white p-2 shadow-lg transition-all duration-300 hover:shadow-xl md:p-4">
+      <div
+        className={`relative mb-1 rounded-lg border bg-white p-2 shadow-lg transition-all duration-300 hover:shadow-xl md:p-4 ${
+          selectMode && isSelected
+            ? "border-green-500 ring-2 ring-green-300"
+            : "border-gray-500"
+        }`}
+      >
+        {selectMode && (
+          <label
+            className="absolute top-2 right-2 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-gray-300 bg-white shadow-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              className="h-4 w-4 cursor-pointer accent-green-600"
+              checked={isSelected}
+              onChange={() => onToggleSelect?.(draft._id)}
+            />
+          </label>
+        )}
         {isEditing ? (
           <div className="space-y-4">
             <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-3 sm:p-4">
@@ -591,6 +632,32 @@ export default function DraftOrderCard({ draft }) {
                   >
                     {callStatusMeta.label}
                   </span>
+                  {/* হিস্টরি — OrderCard-এর সাথে একই প্যাটার্ন */}
+                  <div>
+                    {draft?.courierHistory?.all ? (
+                      <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
+                        <span> All </span>
+                        <span className="text-green-700">
+                          {draft?.courierHistory?.all?.success}
+                        </span>
+                        /
+                        <span className="text-red-600">
+                          {draft?.courierHistory?.all?.cancel}
+                        </span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFetchHistory();
+                        }}
+                        className="bg-green-500 text-white text-sm px-2 py-1 rounded-md cursor-pointer"
+                      >
+                        {historyLoading ? <LoadingSpinner /> : "History"}
+                      </button>
+                    )}
+                  </div>
                   {draft?.callAttempts > 0 && (
                     <span className="rounded-lg bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700">
                       {draft.callAttempts}বার কল করা হয়েছে

@@ -29,4 +29,10 @@ export const draftOrderService = {
   // এই ড্রাফটকে আসল Order-এ (Pending queue) কনভার্ট করে — চাইলে body-তে এডিট করা
   // ভ্যালু দেওয়া যায়, না দিলে draft-এ যা সেভ আছে তাই ব্যবহার হবে
   convert: (draftId, data = {}) => api.post(`${BASE}/${draftId}/convert`, data),
+
+  // কাস্টমারের সব কুরিয়ার মিলিয়ে history (HTTP — OrderCard-এর getCourierHistory-এর মতোই)
+  getCourierHistory: (draftId) => api.post(`${BASE}/${draftId}/courier-history`),
+  // ইনকমপ্লিট লিস্টে একসাথে একাধিক ড্রাফট সিলেক্ট করে "History" — একবারেই সবগুলোর জন্য রিকোয়েস্ট
+  getCourierHistoryBulk: (draftIds) =>
+    api.post(`${BASE}/courier-history-bulk`, { draftIds }),
 };

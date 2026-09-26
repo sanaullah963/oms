@@ -158,6 +158,33 @@ export function OrderProvider({ children }) {
     [],
   );
 
+  // --- একটা ড্রাফটের কুরিয়ার হিস্ট্রি আনা (HTTP request/response, OrderCard-এর
+  // fetchCourierHistory-এর মতোই — existing setDraftOrders দিয়েই রেজাল্ট লিস্টে বসে যায়) ---
+  const fetchDraftCourierHistory = useCallback(async (draftId) => {
+    const res = await draftOrderService.getCourierHistory(draftId);
+    if (res?.data?.success && res.data?.draft) {
+      setDraftOrders((prev) =>
+        prev.map((draft) =>
+          draft?._id === draftId ? res.data.draft : draft,
+        ),
+      );
+    }
+    return res;
+  }, []);
+
+  // --- সিলেক্টেড ড্রাফটগুলোর জন্য একবারে (একটাই রিকোয়েস্টে) কুরিয়ার হিস্ট্রি ফেচ ---
+  const fetchDraftCourierHistoryBulk = useCallback(async (draftIds) => {
+    const res = await draftOrderService.getCourierHistoryBulk(draftIds);
+    const updatedDrafts = res?.data?.drafts || [];
+    if (updatedDrafts.length > 0) {
+      setDraftOrders((prev) => {
+        const byId = new Map(updatedDrafts.map((d) => [d._id, d]));
+        return prev.map((draft) => byId.get(draft?._id) || draft);
+      });
+    }
+    return res;
+  }, []);
+
   // --- ড্রাফটকে Pending queue-তে কনভার্ট ---
   const convertDraftOrder = useCallback(async (draftId, data = {}) => {
     const res = await draftOrderService.convert(draftId, data);
@@ -386,6 +413,8 @@ export function OrderProvider({ children }) {
     updateDraftOrder,
     updateDraftCallStatus,
     convertDraftOrder,
+    fetchDraftCourierHistory,
+    fetchDraftCourierHistoryBulk,
   };
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;
