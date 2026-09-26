@@ -29,6 +29,7 @@ async function createLandingOrder({
   createdBy = null,
   sourceLabel = "ল্যান্ডিং পেজ থেকে",
   authorName = "Customer",
+  courierHistory = null,
   io = null,
 }) {
   const PHONE_REGEX = /^01[3-9]\d{8}$/;
@@ -92,6 +93,12 @@ async function createLandingOrder({
 
   const totalCOD = unitPrice * qty + deliveryCharge;
 
+  // --- ড্রাফট (ইনকমপ্লিট) অবস্থায় "History" বাটনে ক্লিক করে bdcourier.com থেকে
+  // কুরিয়ার হিস্ট্রি (success/cancel) আগেই ফেচ করা থাকলে, সেটা নতুন Order-এ
+  // ক্যারি-ওভার করা হয় — নাহলে কনভার্ট করার পর আবার নতুন করে "History" চাপতে
+  // হতো, যদিও ডেটাটা ইতিমধ্যেই জানা ছিল। ---
+  const hasCourierHistory = courierHistory?.all?.success !== undefined;
+
   const order = await Order.create({
     rawInputText: `${name}\n${address}\n${phone}\nProduct: ${page.productCode} (${productTypeLabel}x${qty}) - ৳${totalCOD}`,
     castomerName: name,
@@ -101,11 +108,22 @@ async function createLandingOrder({
     orderSource: page.productCode,
     origin: "landing_page", // ✅ শুধু এই ফ্ল্যাগ থাকলেই Confirm করার সময় Purchase CAPI ইভেন্ট যাবে
     createdBy,
+    ...(hasCourierHistory && {
+      courierHistory: {
+        all: {
+          success: courierHistory.all.success,
+          cancel: courierHistory.all.cancel,
+        },
+      },
+    }),
     activities: [
       buildActivity({
         type: "Order Created",
         author: authorName,
-        description: `Order from /${page.slug}`,
+        // sourceLabel দিয়ে কল হয়েছে (draft থেকে কনভার্ট হলে "ইনকমপ্লিট অর্ডার থেকে
+        // কনভার্ট করা হয়েছে (অ্যাডমিনের নাম)", সরাসরি ল্যান্ডিং পেজ সাবমিশনে অন্য
+        // টেক্সট) — না দিলে আগের ডিফল্ট আচরণ (page slug) বজায় থাকে।
+        description: sourceLabel || `Order from /${page.slug}`,
       }),
     ],
     tracking: {

@@ -233,6 +233,7 @@ exports.convertDraftToOrder = async (req, res) => {
         userAgent: draft.tracking?.userAgent,
         createdBy: null, // ল্যান্ডিং পেজ অর্ডারের মতোই শেয়ার্ড পেন্ডিং কিউতে যাবে
         sourceLabel: `ইনকমপ্লিট অর্ডার থেকে কনভার্ট করা হয়েছে (${req.user?.name || "অ্যাডমিন"})`,
+        courierHistory: draft.courierHistory, // ড্রাফট অবস্থায় "History" বাটনে ফেচ করা থাকলে ক্যারি-ওভার হবে
         io,
       });
       order = result.order;
