@@ -1242,7 +1242,10 @@ exports.getFraudMatches = async (req, res) => {
 // socket কানেক্টেড থাক বা না থাক কাজ করবে। bdcourier.com API দিয়ে castomerPhone-এর
 // প্রতিটা নম্বর চেক করে সব কুরিয়ার মিলিয়ে success/cancel count বের করে, order.courierHistory.all-এ
 // সেভ করে, আপডেটেড অর্ডারটাই রেসপন্সে ফেরত দেয় (ফ্রন্টএন্ড এটা existing onUpdate/handleOrderUpdate
-// দিয়েই লিস্টে বসিয়ে দেবে, আলাদা কোনো নতুন মেকানিজম লাগে না)।
+// দিয়েই লিস্টে বসিয়ে দেবে, আলাদা কোনো নতুন মেকানিজম লাগে না)। এছাড়া emitOrderUpdate দিয়ে
+// broadcast-ও করা হয়, যাতে যে মুহূর্তে হিস্ট্রি ফেচ হলো, ওই সময় সাইটে সক্রিয় (socket
+// কানেক্টেড) বাকি সবার পেইজেও এই কাউন্ট রিয়েল-টাইমে আপডেট হয়ে যায় — শুধু যে ক্লিক করলো
+// তার কাছেই আটকে না থেকে।
 exports.getCourierHistory = async (req, res) => {
   try {
     const orderDoc = await Order.findById(req.params.id);
@@ -1302,6 +1305,9 @@ exports.getCourierHistory = async (req, res) => {
       },
       { new: true },
     );
+
+    const io = req.app.get("io");
+    if (io) emitOrderUpdate(io, updatedOrder);
 
     return res.status(200).json({ order: updatedOrder, success: true });
   } catch (error) {
