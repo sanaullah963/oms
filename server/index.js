@@ -1,3 +1,4 @@
+require("net").setDefaultAutoSelectFamilyAttemptTimeout(5000);
 const http = require("http");
 const { Server } = require("socket.io");
 
