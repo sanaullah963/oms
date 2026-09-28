@@ -157,26 +157,7 @@ export default function TrackingParcelOrderListModal({
                   <th className="py-2 px-4">#</th>
                   <th className="py-2 px-4">নাম</th>
                   <th className="py-2 px-4">ফোন</th>
-                  <th className="py-2 px-4">
-                    <span className="inline-flex items-center gap-1">
-                      COD
-                      <button
-                        onClick={() => toggleSort("totalCOD")}
-                        title="COD এমাউন্ট অনুযায়ী সর্ট করুন"
-                        className={`cursor-pointer rounded-sm px-1 ${
-                          sortConfig.key === "totalCOD"
-                            ? "text-indigo-600 font-bold"
-                            : "text-gray-400 hover:text-gray-600"
-                        }`}
-                      >
-                        {sortConfig.key === "totalCOD"
-                          ? sortConfig.direction === "asc"
-                            ? "▲"
-                            : "▼"
-                          : "⇅"}
-                      </button>
-                    </span>
-                  </th>
+                  
                   <th className="py-2 px-4">
                     <span className="inline-flex items-center gap-1">
                       Tracking ID
@@ -210,6 +191,26 @@ export default function TrackingParcelOrderListModal({
                         }`}
                       >
                         {sortConfig.key === "productCode"
+                          ? sortConfig.direction === "asc"
+                            ? "▲"
+                            : "▼"
+                          : "⇅"}
+                      </button>
+                    </span>
+                  </th>
+                  <th className="py-2 px-4">
+                    <span className="inline-flex items-center gap-1">
+                      COD
+                      <button
+                        onClick={() => toggleSort("totalCOD")}
+                        title="COD এমাউন্ট অনুযায়ী সর্ট করুন"
+                        className={`cursor-pointer rounded-sm px-1 ${
+                          sortConfig.key === "totalCOD"
+                            ? "text-indigo-600 font-bold"
+                            : "text-gray-400 hover:text-gray-600"
+                        }`}
+                      >
+                        {sortConfig.key === "totalCOD"
                           ? sortConfig.direction === "asc"
                             ? "▲"
                             : "▼"
@@ -272,7 +273,7 @@ export default function TrackingParcelOrderListModal({
                         >
                           {Array.isArray(o.castomerPhone) ? o.castomerPhone[0] : o.castomerPhone}
                         </td>
-                        <td className="py-2 px-4">৳{o.totalCOD}</td>
+                        
                         <td
                           className="py-2 px-4 text-blue-600 cursor-pointer"
                           onClick={(e) => {
@@ -283,6 +284,7 @@ export default function TrackingParcelOrderListModal({
                           {o.courier?.trackingId || "-"}
                         </td>
                         <td className="py-2 px-4 text-gray-500">{o.productCode || "-"}</td>
+                        <td className="py-2 px-4">৳{o.totalCOD}</td>
                         <td className="py-2 px-4 text-gray-500">{o.orderStatus || "-"}</td>
                         <td className="py-2 px-4 text-gray-500">{o?.courier?.courierStatus  || "-"}</td>
                         <td className="py-2 px-4 text-gray-500 text-center">{o.createdByName || "-"}</td>
