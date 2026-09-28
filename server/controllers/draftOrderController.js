@@ -431,7 +431,13 @@ exports.getDraftCourierHistoryBulk = async (req, res) => {
           return withLandingPageMeta(draftDoc, page); // ফোন নম্বর নেই — স্কিপ
         }
 
-        const count = await fetchCourierHistorySummary([draftDoc.phone]);
+        let count;
+        try {
+          count = await fetchCourierHistorySummary([draftDoc.phone]);
+        } catch (err) {
+          console.error(`Bulk courier history failed for draft ${draftDoc._id}:`, err.message);
+          return withLandingPageMeta(draftDoc, page); // আনচেঞ্জড, বাকিগুলো চলবে
+        }
 
         const updatedDraft = await DraftOrder.findByIdAndUpdate(
           draftDoc._id,

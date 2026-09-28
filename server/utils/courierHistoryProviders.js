@@ -14,21 +14,49 @@ const { BDCOURIER_SECRET_KEY } = require("../config/env");
 // --- bdcourier.com দিয়ে একটা ফোন নম্বরের success/cancel count আনা ---
 async function fetchBdCourierForPhone(phone) {
   const engNum = convertNumber(phone);
-  const bdRes = await axios
-    .post(
+
+  let bdRes;
+  try {
+    bdRes = await axios.post(
       "https://bdcourier.com/api/courier-check",
       { phone: engNum },
-      { headers: { Authorization: `Bearer ${BDCOURIER_SECRET_KEY}` } },
-    )
-    .catch((err) => {
-      console.error("bdcourier API error:", err.message);
-      return null;
-    });
+      {
+        headers: { Authorization: `Bearer ${BDCOURIER_SECRET_KEY}` },
+        timeout: 15000, // হ্যাং হয়ে থাকা রিকোয়েস্ট আটকাতে
+      },
+    );
+  } catch (err) {
+    console.error(
+      `bdcourier API error [${engNum}]:`,
+      err.response?.status,
+      err.response?.data || err.message,
+    );
+    // ⚠️ জিরো রিটার্ন করা যাবে না — এরর throw হলে কলার DB-তে কিছু সেভ করবে না
+    throw new Error("BDCOURIER_REQUEST_FAILED");
+  }
 
-  return {
-    success: bdRes?.data?.courierData?.summary?.success_parcel || 0,
-    cancel: bdRes?.data?.courierData?.summary?.cancelled_parcel || 0,
-  };
+  const summary = bdRes?.data?.courierData?.summary;
+  if (
+    !summary ||
+    summary.success_parcel == null ||
+    summary.cancelled_parcel == null
+  ) {
+    console.error(
+      `bdcourier unexpected response [${engNum}]:`,
+      JSON.stringify(bdRes?.data),
+    );
+    throw new Error("BDCOURIER_INVALID_RESPONSE");
+  }
+
+  const success = Number(summary.success_parcel);
+  const cancel = Number(summary.cancelled_parcel);
+  if (Number.isNaN(success) || Number.isNaN(cancel)) {
+    console.error(`bdcourier non-numeric summary [${engNum}]:`, JSON.stringify(summary));
+    throw new Error("BDCOURIER_INVALID_RESPONSE");
+  }
+
+  console.log(`bdcourier OK [${engNum}]: success=${success}, cancel=${cancel}`);
+  return { success, cancel };
 }
 
 /**

@@ -1380,7 +1380,13 @@ exports.getCourierHistoryBulk = async (req, res) => {
           return orderDoc; // ফোন নম্বর নেই — এই অর্ডারটা স্কিপ, বাকিগুলো চলবে
         }
 
-        const count = await fetchCourierHistorySummary(orderDoc.castomerPhone);
+        let count;
+        try {
+          count = await fetchCourierHistorySummary(orderDoc.castomerPhone);
+        } catch (err) {
+          console.error(`Bulk courier history failed for order ${orderDoc._id}:`, err.message);
+          return orderDoc; // এই অর্ডার আনচেঞ্জড থাকবে, বাকিগুলো চলবে
+        }
 
         const updatedOrder = await Order.findByIdAndUpdate(
           orderDoc._id,
