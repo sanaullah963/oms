@@ -7,6 +7,8 @@ export const orderService = {
 
   // মাস্টার সার্চ — parcel/order ID, courier.trackingId, বা ফোন নম্বর দিয়ে
   masterSearch: (q) => api.get(`${BASE}/master-search`, { params: { q } }),
+  // হোমপেজ সার্চবক্সের DB সার্চ (HTTP — socket না, আগে socket.emit("searchQuery") দিয়ে হতো)
+  search: (q) => api.get(`${BASE}/search`, { params: { q } }),
   masterEdit: (id, payload) => api.patch(`${BASE}/${id}/master-edit`, payload),
   // মাস্টার সার্চ থেকে activities লগের একটা নির্দিষ্ট এন্ট্রির description এডিট
   editActivity: (id, activityIndex, description) =>

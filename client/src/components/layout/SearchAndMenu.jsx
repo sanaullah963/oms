@@ -16,11 +16,14 @@ const SCOPE_PLACEHOLDER = {
 // হয়েছে তার উপর ভিত্তি করে সার্চ কোন কালেকশনে/লিস্টে হবে সেটা ঠিক হয়
 // (দেখুন OrderContext.jsx-এর searchScope)।
 function SearchAndMenu({ scope = "orders" }) {
-  const { searchQuery, setSearchQuery, setSearchScope, inportantNotes } = useOrders();
+  const { searchQuery, setSearchQuery, setSearchScope, inportantNotes, searchNow, searchWaiting } =
+    useOrders();
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const countAttention = inportantNotes.length;
   const pathname = usePathname()
+  // ব্যাকএন্ড সার্চের মিনিমাম ৪ ক্যারেক্টার (OrderContext-এর SEARCH_MIN_LENGTH-এর সাথে মেলানো)
+  const canSearchNow = searchQuery.trim().length >= 4 && !searchWaiting;
 
   // এই সার্চবক্স যে পেজ/ট্যাবে মাউন্ট হয়েছে সেটা কনটেক্সটকে জানিয়ে দেওয়া, যাতে
   // OrderContext ঠিক করতে পারে সার্চ কোথায় (orders/drafts/notes) চালাতে হবে
@@ -48,13 +51,16 @@ function SearchAndMenu({ scope = "orders" }) {
     <div>
       <div className="flex justify-between ">
         {/* Search bar */}
-        <div className="flex-1 mr-4">
-          <div className="relative">
+        <div className="flex-1 mr-4 flex gap-1">
+          <div className="relative flex-1">
             <input
               type="text"
               placeholder={SCOPE_PLACEHOLDER[scope] || SCOPE_PLACEHOLDER.orders}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && canSearchNow) searchNow();
+              }}
               className="w-full pl-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-200 focus:border-indigo-200 transition duration-11 text-sm"
             />
             {/* Clear button */}
@@ -68,6 +74,19 @@ function SearchAndMenu({ scope = "orders" }) {
               </button>
             )}
           </div>
+
+          {/* সার্চ বাটন — শুধু "orders" স্কোপে (drafts/notes-এর সার্চ লোকাল, সাথে সাথেই হয়)।
+              অটো-সার্চের জন্য অপেক্ষা না করে এখনই সার্চ করে; ৪ অক্ষরের কম হলে ডিজেবল */}
+          {scope === "orders" && (
+            <button
+              type="button"
+              onClick={searchNow}
+              disabled={!canSearchNow}
+              className="bg-green-700 text-white text-sm px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {searchWaiting ? "..." : "সার্চ"}
+            </button>
+          )}
         </div>
 
         <div className="relative">

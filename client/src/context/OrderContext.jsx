@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import { useSocket } from "@/hooks/useSocket";
 import { useAuth } from "@/context/AuthContext";
@@ -14,6 +15,10 @@ import { draftOrderService } from "@/services/draftOrderService";
 import { convertNumber } from "@/utils/numberUtils";
 
 const OrderContext = createContext();
+
+// ---------------- DB সার্চের কনফিগ ----------------
+const SEARCH_MIN_LENGTH = 4; // এর কম হলে ব্যাকএন্ডে রিকোয়েস্ট যাবে না
+const SEARCH_DEBOUNCE_MS = 800; // টাইপিং থেমে এই সময় পর অটোমেটিক রিকোয়েস্ট যাবে
 
 export function OrderProvider({ children }) {
   const [orders, setOrders] = useState([]);
@@ -212,61 +217,62 @@ export function OrderProvider({ children }) {
     });
   }, []);
 
-  // ---------------- SOCKET SEARCH LISTENER ----------------
-  useEffect(() => {
-    if (!socket) return;
+  // ---------------- DB SEARCH (HTTP — socket না) ----------------
+  // আগে socket.emit("searchQuery") দিয়ে হতো, তাই socket কানেক্টেড না থাকলে সার্চ চুপচাপ
+  // বন্ধ হয়ে যেতো (আর "Searching..." আটকে থাকতো)। এখন প্লেইন HTTP — socket থাক বা না থাক
+  // সার্চ কাজ করবে।
+  const searchReqId = useRef(0); // দেরিতে ফেরত আসা পুরনো রেসপন্স যেন নতুন রেজাল্ট ওভাররাইট না করে
+  const debounceTimer = useRef(null);
 
-    const handleSearchResult = (data) => {
-      setDbOrders(data?.orders || []);
+  const runSearch = useCallback(async (q) => {
+    const reqId = ++searchReqId.current;
+    if (!q || q.length < SEARCH_MIN_LENGTH) {
+      setDbOrders([]);
       setDbLoading(false);
       setSearchWaiting(false);
-    };
-
-    socket.on("searchResult", handleSearchResult);
-
-    return () => {
-      socket.off("searchResult", handleSearchResult);
-    };
-  }, [socket]);
-
-  // ---------------- EMIT SEARCH QUERY ----------------
-  const fetchSearchFromDB = useCallback(
-    (q) => {
-      if (!q || !socket?.connected) {
-        setDbOrders([]);
-        return;
+      return;
+    }
+    setDbLoading(true);
+    setSearchWaiting(true);
+    try {
+      const res = await orderService.search(q);
+      if (reqId !== searchReqId.current) return; // পুরনো রিকোয়েস্ট — ইগনোর
+      setDbOrders(res.data?.orders || []);
+    } catch (err) {
+      if (reqId !== searchReqId.current) return;
+      console.error("Search error:", err);
+      setDbOrders([]);
+    } finally {
+      if (reqId === searchReqId.current) {
+        setDbLoading(false);
+        setSearchWaiting(false);
       }
-      setDbLoading(true);
-      socket.emit("searchQuery", q);
-    },
-    [socket],
-  );
+    }
+  }, []);
 
   // ---------------- DEBOUNCE SEARCH ----------------
-  // ✅ শুধু "orders" স্কোপে থাকলেই Order কালেকশনে DB সার্চ হবে (ব্যাকএন্ডে রাউন্ড-ট্রিপ)।
-  // "drafts"/"notes" স্কোপে থাকলে এই DB সার্চের দরকার নেই — সেগুলো নিচে আলাদাভাবে
+  // ✅ শুধু "orders" স্কোপে DB সার্চ হবে। "drafts"/"notes" স্কোপে সেগুলো নিচে আলাদাভাবে
   // ইতিমধ্যে-লোড-করা draftOrders/inportantNotes-এর মধ্যেই লোকালি ফিল্টার হয়।
+  // কি চেঞ্জ হলে টাইমার রিসেট হয়; টাইপিং SEARCH_DEBOUNCE_MS থামলে তবেই রিকোয়েস্ট যায়।
   useEffect(() => {
-    if (searchScope !== "orders") {
+    if (searchScope !== "orders" || !query || query.length < SEARCH_MIN_LENGTH) {
+      searchReqId.current++; // ফ্লাইটে থাকা রিকোয়েস্টের রেজাল্ট বাতিল
       setDbOrders([]);
+      setDbLoading(false);
       setSearchWaiting(false);
       return;
     }
 
-    const timer = setTimeout(() => {
-      // ৪ ক্যারেক্টারের কম হলে ব্যাকএন্ডে সার্চ রিকোয়েস্ট পাঠানো হবে না — শুধু শুধু
-      // প্রতিটা কি-স্ট্রোকে DB রাউন্ড-ট্রিপ এড়ানোর জন্য
-      if (query && query.length >= 4) {
-        fetchSearchFromDB(query);
-        setSearchWaiting(true);
-      } else {
-        setDbOrders([]);
-        setSearchWaiting(false);
-      }
-    }, 600);
+    debounceTimer.current = setTimeout(() => runSearch(query), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(debounceTimer.current);
+  }, [query, runSearch, searchScope]);
 
-    return () => clearTimeout(timer);
-  }, [query, fetchSearchFromDB, searchScope]);
+  // ---------------- সার্চ বাটন / Enter — debounce-এর জন্য অপেক্ষা না করে এখনই সার্চ ----------------
+  const searchNow = useCallback(() => {
+    if (searchScope !== "orders") return;
+    clearTimeout(debounceTimer.current); // পেন্ডিং অটো-রিকোয়েস্ট থাকলে ডুপ্লিকেট এড়াতে বাতিল
+    runSearch(query);
+  }, [query, runSearch, searchScope]);
 
   // ---------------- REAL-TIME WEBHOOK/STATUS CHANGE LISTENER ----------------
   useEffect(() => {
@@ -406,6 +412,7 @@ export function OrderProvider({ children }) {
     handleOrderUpdate,
     fetchOrders,
     searchWaiting,
+    searchNow,
     draftOrders,
     filteredDraftOrders,
     draftLoading,

@@ -16,6 +16,8 @@ router.get("/", orderController.getOrders);
 
 // মাস্টার সার্চ — parcel/order ID, courier.trackingId, অথবা ফোন নম্বর দিয়ে খোঁজা (একাধিক থাকলে সবগুলো)
 router.get("/master-search", orderController.masterSearchOrders);
+// হোমপেজ সার্চবক্সের DB সার্চ (HTTP — socket না, আগে socket.emit("searchQuery") দিয়ে হতো)
+router.get("/search", orderController.searchOrders);
 // মাস্টার সার্চ থেকে সীমিত ফিল্ড এডিট (নাম/ফোন/প্রোডাক্ট কোড/ঠিকানা/অর্ডার স্ট্যাটাস/কুরিয়ার স্ট্যাটাস) —
 // fbp/fbc/fingerprintHash-এর মতো লকড ফিল্ড এই এন্ডপয়েন্ট কখনো ছোঁয় না, প্রতি ফিল্ডের জন্য audit log হয়
 router.patch("/:id/master-edit", orderController.masterEditOrder);

@@ -57,6 +57,49 @@ exports.masterSearchOrders = async (req, res) => {
   }
 };
 
+// --- GET /api/orders/search?q=... — হোমপেজের সার্চবক্সের DB সার্চ। আগে socket
+// ("searchQuery" emit → "searchResult") দিয়ে হতো, এখন প্লেইন HTTP — socket কানেক্টেড
+// না থাকলেও সার্চ কাজ করবে। ফোন/নাম/rawInputText/trackingId-তে খোঁজে, সর্বোচ্চ ৫টা রিটার্ন
+// করে (মডারেটর হলে শুধু নিজের/ownerless অর্ডারের মধ্যে)।
+// note: আগের socket ভার্সনে ইউজারের ইনপুট সরাসরি RegExp-এ যেত (যেমন "+880..." দিলে
+// "Nothing to repeat" এরর হয়ে খালি রেজাল্ট আসতো) — এখানে special character escape করা হয়েছে ---
+exports.searchOrders = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) {
+      return res.status(200).json({ success: true, orders: [] });
+    }
+
+    const ownershipFilter =
+      req.user.role === "moderator"
+        ? { $or: [{ createdBy: req.user._id }, { createdBy: null }] }
+        : {};
+
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+
+    const orders = await Order.find({
+      $and: [
+        ownershipFilter,
+        {
+          $or: [
+            { castomerPhone: { $regex: regex } },
+            { castomerName: { $regex: regex } },
+            { rawInputText: { $regex: regex } },
+            { "courier.trackingId": { $regex: regex } },
+          ],
+        },
+      ],
+    }).limit(5);
+
+    return res.status(200).json({ success: true, orders });
+  } catch (error) {
+    console.error("Search error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "সার্চ করতে ব্যর্থ হয়েছে।" });
+  }
+};
+
 // --- GET /api/orders - সব অর্ডার লিস্ট করা (মডারেটর শুধু নিজের তৈরি অর্ডার দেখবে) ---
 exports.getOrders = async (req, res) => {
   try {

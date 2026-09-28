@@ -10,41 +10,8 @@ const { BDCOURIER_SECRET_KEY } = require("../config/env");
 // Purchase CAPI ট্রিগার লজিকটা utils/metaCapi.js-এ triggerPurchaseEvent হিসেবে
 // সরিয়ে নেওয়া হয়েছে, যাতে দুই জায়গায় (socket/HTTP) কপি-পেস্ট করে রাখতে না হয়।
 
-// --- সার্চ কোয়েরি হ্যান্ডেল (মডারেটর হলে শুধু নিজের অর্ডারের মধ্যে সার্চ হবে) ---
-async function handleSearchQuery(socket, q) {
-  try {
-    const safeQuery = (q || "").trim();
-    if (!safeQuery) {
-      socket.emit("searchResult", { orders: [] });
-      return;
-    }
-    const regex = new RegExp(safeQuery, "i");
-
-    const ownershipFilter =
-      socket.user?.role === "moderator"
-        ? { $or: [{ createdBy: socket.user._id }, { createdBy: null }] }
-        : {};
-
-    const orders = await Order.find({
-      $and: [
-        ownershipFilter,
-        {
-          $or: [
-            { castomerPhone: { $regex: regex } },
-            { castomerName: { $regex: regex } },
-            { rawInputText: { $regex: regex } },
-            { "courier.trackingId": { $regex: regex } },
-          ],
-        },
-      ],
-    }).limit(5);
-
-    socket.emit("searchResult", { orders });
-  } catch (err) {
-    console.error("Search error:", err);
-    socket.emit("searchResult", { orders: [] });
-  }
-}
+// note: হোমপেজ সার্চ (আগে এখানে handleSearchQuery + socket "searchQuery" event ছিল) এখন
+// HTTP দিয়ে হয়: orderController.js-এর exports.searchOrders (রুট: GET /api/orders/search)।
 
 // --- ড্রাফট (ইনকমপ্লিট) অর্ডার কার্ডের জন্য কাস্টমার হিস্ট্রি — real Order-এর "History"
 // বাটন এখন HTTP দিয়ে হয় (orderController.js-এর getCourierHistory, socket না), কিন্তু
@@ -117,8 +84,6 @@ async function handleDraftCourierHistory(socket, { draftId }) {
 // --- প্রতিটি নতুন Socket connection-এর জন্য সব event listener রেজিস্টার করা ---
 function registerOrderSocketHandlers(io, socket) {
   socket.on("draftCourierHistory", (payload) => handleDraftCourierHistory(socket, payload));
-
-  socket.on("searchQuery", (q) => handleSearchQuery(socket, q));
 
   socket.on("disconnect", () => {
     console.log("A user disconnected");
