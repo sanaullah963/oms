@@ -133,30 +133,32 @@ exports.getTrackingParcelOrders = async (req, res) => {
       "courier.courierStatus": status,
     };
 
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(
-      MAX_PAGE_SIZE,
-      Math.max(1, parseInt(req.query.limit, 10) || DEFAULT_PAGE_SIZE),
-    );
-    const skip = (page - 1) * limit;
+    // --- পেজিনেশন বন্ধ (কমেন্ট করা) — এখন সব অর্ডার একসাথে যায়। আবার চালু করতে এই
+    // ব্লক এবং নিচের .skip(skip)/.limit(limit) ও রেসপন্সের page/limit/totalPages আনকমেন্ট করো ---
+    // const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    // const limit = Math.min(
+    //   MAX_PAGE_SIZE,
+    //   Math.max(1, parseInt(req.query.limit, 10) || DEFAULT_PAGE_SIZE),
+    // );
+    // const skip = (page - 1) * limit;
 
     const [orders, total] = await Promise.all([
       Order.find(filter)
         .select(
           "castomerName castomerPhone totalCOD productCode orderStatus courier activities createdByName permanentNote note",
         )
-        .sort({ "courier.statusUpdatedAt": -1, "courier.bookedAt": -1 })
-        .skip(skip)
-        .limit(limit),
+        .sort({ "courier.statusUpdatedAt": -1, "courier.bookedAt": -1 }),
+        // .skip(skip)
+        // .limit(limit),
       Order.countDocuments(filter),
     ]);
 
     return res.status(200).json({
       orders,
       total,
-      page,
-      limit,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
+      // page,
+      // limit,
+      // totalPages: Math.max(1, Math.ceil(total / limit)),
     });
   } catch (error) {
     console.error("Tracking parcel orders list error:", error);

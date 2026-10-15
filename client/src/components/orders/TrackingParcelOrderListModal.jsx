@@ -26,7 +26,8 @@ const COURIER_STATUS_COLOR_MAP = {
   unknown: "bg-gray-200 text-gray-700",
 };
 
-const PAGE_SIZE = 20;
+// পেজিনেশন বন্ধ (কমেন্ট করা) — আবার চালু করতে নিচের সব "পেজিনেশন বন্ধ" কমেন্ট আনকমেন্ট করো
+// const PAGE_SIZE = 20;
 
 // --- ড্যাশবোর্ডের DashboardOrderListModal.jsx-এর ডিজাইনের আদলে — ট্র্যাকিং পার্সেল
 // পেজের কার্ড-লিস্টের বদলে টেবিল-মডাল, row ক্লিক করলে এক্সপান্ড হয়ে অ্যাক্টিভিটি/নোট দেখায়।
@@ -40,8 +41,8 @@ export default function TrackingParcelOrderListModal({
 }) {
   const [orders, setOrders] = useState([]);
   const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage] = useState(1);
+  // const [totalPages, setTotalPages] = useState(1);
+  // const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedId, setExpandedId] = useState(null);
@@ -88,10 +89,10 @@ export default function TrackingParcelOrderListModal({
     return sortConfig.direction === "asc" ? sorted : sorted.reverse();
   }, [orders, sortConfig]);
 
-  // স্ট্যাটাস/তারিখ/মডারেটর বদলালে পেজ ১-এ রিসেট
-  useEffect(() => {
-    setPage(1);
-  }, [status, moderatorId, from, to]);
+  // স্ট্যাটাস/তারিখ/মডারেটর বদলালে পেজ ১-এ রিসেট (পেজিনেশন বন্ধ)
+  // useEffect(() => {
+  //   setPage(1);
+  // }, [status, moderatorId, from, to]);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,12 +101,12 @@ export default function TrackingParcelOrderListModal({
     setExpandedId(null);
 
     trackingParcelService
-      .getOrders(status, moderatorId, from, to, page, PAGE_SIZE)
+      .getOrders(status, moderatorId, from, to /*, page, PAGE_SIZE */)
       .then((res) => {
         if (cancelled) return;
         setOrders(res.data.orders || []);
         setTotal(res.data.total || 0);
-        setTotalPages(res.data.totalPages || 1);
+        // setTotalPages(res.data.totalPages || 1);
       })
       .catch((err) => {
         console.error("Tracking parcel order list error:", err);
@@ -118,7 +119,7 @@ export default function TrackingParcelOrderListModal({
     return () => {
       cancelled = true;
     };
-  }, [status, moderatorId, from, to, page]);
+  }, [status, moderatorId, from, to /*, page */]);
 
   const title = TITLE_MAP[status] || "পার্সেল";
 
@@ -246,7 +247,7 @@ export default function TrackingParcelOrderListModal({
               <tbody>
                 {sortedOrders.map((o, index) => {
                   const isExpanded = expandedId === o._id;
-                  const rowNumber = (page - 1) * PAGE_SIZE + index + 1;
+                  const rowNumber = /* (page - 1) * PAGE_SIZE + */ index + 1;
                   return (
                     <React.Fragment key={o._id}>
                       <tr
@@ -338,6 +339,7 @@ export default function TrackingParcelOrderListModal({
           )}
         </div>
 
+        {/* পেজিনেশন বন্ধ (কমেন্ট করা)
         {!loading && !error && totalPages > 1 && (
           <div className="flex items-center justify-center gap-3 py-3 border-t border-gray-100 shrink-0">
             <button
@@ -359,6 +361,7 @@ export default function TrackingParcelOrderListModal({
             </button>
           </div>
         )}
+        */}
       </div>
     </div>
   );
