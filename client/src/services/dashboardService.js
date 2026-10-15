@@ -14,6 +14,8 @@ export const dashboardService = {
     api.get("/api/dashboard/orders", { params: { status, from, to, moderatorId, productCode } }),
   getProductSummary: (from, to, moderatorId) =>
     api.get("/api/dashboard/product-summary", { params: { from, to, moderatorId } }),
+  // হোমপেজের Attention/Tracking/Comments ব্যাজ — শুধু তিনটা সংখ্যা
+  getAttentionCounts: () => api.get("/api/dashboard/attention-counts"),
   getProductFinancialSummary: (productCode, from, to, moderatorId) =>
     api.get("/api/dashboard/product-financial-summary", {
       params: { productCode, from, to, moderatorId },

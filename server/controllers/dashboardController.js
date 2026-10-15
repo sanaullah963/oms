@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Order = require("../models/Order");
+const FacebookComment = require("../models/FacebookComment");
 
 // --- ইউরল কোয়েরি থেকে from/to ডেট রেঞ্জ বের করা (ডিফল্ট: শেষ ৭ দিন) ---
 function getDateRange(req) {
@@ -451,5 +452,86 @@ exports.getProductSummary = async (req, res) => {
   } catch (error) {
     console.error("Product summary error:", error);
     return res.status(500).json({ message: "প্রোডাক্ট এনালিটিক্স আনতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- GET /api/dashboard/attention-counts — হোমপেজের Attention/Tracking/Comments ব্যাজের জন্য
+// শুধু তিনটা সংখ্যা (কোনো তালিকা না)। গণনার ফিল্টার বিদ্যমান লজিকের সাথে মেলানো:
+//  - Attention/Tracking: orderController.getOrders-এর একই নিয়ম (মডারেটরের জন্য নিজের+ownerless
+//    অর্ডার; কুরিয়ারের ফাইনাল স্ট্যাটাস বাদ; Cancelled/Delivered/Booked হলে শেষ ২ দিনের
+//    activity) — যাতে ব্যাজ আর /note ও /tracking-attention পেজের তালিকা একই সংখ্যা দেখায়।
+//  - Comments: কমেন্ট পেজে "No action yet" দেখানো কমেন্ট (active, reply/delete/block হয়নি) ---
+exports.getAttentionCounts = async (req, res) => {
+  try {
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+    const ownershipFilter =
+      req.user.role === "moderator"
+        ? { $or: [{ createdBy: req.user._id }, { createdBy: null }] }
+        : {};
+
+    const [orderAgg, comments] = await Promise.all([
+      Order.aggregate([
+        { $match: ownershipFilter },
+        // আগে ফ্ল্যাগ দিয়ে ছেঁকে নেওয়া হয় — অর্ডারের বিশাল অংশ এখানেই বাদ পড়ে
+        {
+          $match: {
+            $or: [{ needsAttention: true }, { courierTrackingAttention: true }],
+          },
+        },
+        {
+          $match: {
+            "courier.courierStatus": {
+              $nin: ["cancelled", "delivered", "partial_delivered"],
+            },
+          },
+        },
+        {
+          $addFields: {
+            lastActivityTime: { $arrayElemAt: ["$activities.timestamp", -1] },
+          },
+        },
+        {
+          $match: {
+            $or: [
+              { orderStatus: { $nin: ["Cancelled", "Delivered", "Booked"] } },
+              {
+                orderStatus: { $in: ["Cancelled", "Delivered", "Booked"] },
+                lastActivityTime: { $gte: twoDaysAgo },
+              },
+            ],
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            attention: {
+              $sum: { $cond: [{ $eq: ["$needsAttention", true] }, 1, 0] },
+            },
+            tracking: {
+              $sum: {
+                $cond: [{ $eq: ["$courierTrackingAttention", true] }, 1, 0],
+              },
+            },
+          },
+        },
+      ]),
+      FacebookComment.countDocuments({
+        status: "active",
+        isReplied: false,
+        isUserBlocked: false,
+        iscommentDeleted: false,
+      }),
+    ]);
+
+    return res.status(200).json({
+      attention: orderAgg[0]?.attention || 0,
+      tracking: orderAgg[0]?.tracking || 0,
+      comments,
+    });
+  } catch (error) {
+    console.error("Attention counts error:", error);
+    return res.status(500).json({ message: "কাউন্টার আনতে ব্যর্থ হয়েছে।" });
   }
 };

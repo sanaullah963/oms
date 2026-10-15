@@ -14,9 +14,27 @@ const date = new Date();
 
 // হেডারের তিনটা কাউন্টার বাটন (Attention Notes / Tracking Notes / Comments)
 const COUNTER_BUTTONS = [
-  { key: "attention", label: "Notes", title: "Attention Notes", href: "/note", color: "bg-red-500" },
-  { key: "tracking", label: "Tracking", title: "Tracking Notes", href: "/tracking-attention", color: "bg-amber-500" },
-  { key: "comments", label: "Comments", title: "Comments", href: "/comment", color: "bg-blue-500" },
+  {
+    key: "attention",
+    label: "Notes",
+    title: "Attention Notes",
+    href: "/note",
+    color: "bg-red-500",
+  },
+  {
+    key: "tracking",
+    label: "Tracking",
+    title: "Tracking Notes",
+    href: "/tracking-attention",
+    color: "bg-amber-500",
+  },
+  {
+    key: "comments",
+    label: "Comments",
+    title: "Comments",
+    href: "/comment",
+    color: "bg-blue-500",
+  },
 ];
 
 function HomePageContent() {
@@ -93,16 +111,11 @@ function HomePageContent() {
                   key={btn.key}
                   href={btn.href}
                   title={btn.title}
-                  className="relative bg-gray-100 border border-gray-300 text-gray-700 text-[11px] md:text-xs font-semibold px-2 py-0.5 rounded-md"
+                  className="relative inline-flex bg-green-200 border border-gray-300 text-gray-700 text-xs md:text-sm font-semibold p-1 rounded-sm "
                 >
-                  {btn.label}
-                  {count > 0 && (
-                    <span
-                      className={`absolute -top-1.5 -right-1.5 ${btn.color} text-white text-[10px] font-bold rounded-full min-w-4 h-4 px-1 flex items-center justify-center leading-none`}
-                    >
-                      {count}
-                    </span>
-                  )}
+                  {btn.label} {count > 0 &&  count }
+
+                 
                 </Link>
               );
             })}
@@ -136,7 +149,10 @@ function HomePageContent() {
           {searchScope === "orders" && searchWaiting && <p>Searching...</p>}
           {searchQuery && (
             <p>
-              {searchScope === "drafts" ? filteredDraftOrders.length : filteredOrders.length} Result{" "}
+              {searchScope === "drafts"
+                ? filteredDraftOrders.length
+                : filteredOrders.length}{" "}
+              Result{" "}
             </p>
           )}
         </div>
