@@ -98,7 +98,7 @@ function HomePageContent() {
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans bg-gray-100">
       <header className="px-1 py-0 md:p-3 bg-white border-b border-gray-200 shadow-md flex-shrink-0 z-10">
-        <div className=" flex gap-3">
+        <div className=" flex items-center gap-2">
           <span className="text-purple-700 text-xs md:text-sm">{day}</span>
           <span className=" text-xs md:text-sm">{formatDate(date)}</span>
 
