@@ -40,6 +40,9 @@ const OrderSchema = new mongoose.Schema({
   createdByName: { type: String, default: null }, // দ্রুত দেখানোর জন্য নাম ডিনরমালাইজড করে রাখা
   note: { type: String, required: false },
   needsAttention: { type: Boolean, default: false },
+  // --- Courier Tracking Attention: Steadfast "tracking_update" webhook এলে true হয়,
+  // অ্যাডমিন "Tracking OK" চাপলে false হয়। needsAttention থেকে সম্পূর্ণ আলাদা ফ্ল্যাগ ---
+  courierTrackingAttention: { type: Boolean, default: false },
   permanentNote: { type: String, required: false },
   courierHistory: {
     our: {

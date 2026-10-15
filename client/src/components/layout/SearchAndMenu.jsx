@@ -16,11 +16,12 @@ const SCOPE_PLACEHOLDER = {
 // হয়েছে তার উপর ভিত্তি করে সার্চ কোন কালেকশনে/লিস্টে হবে সেটা ঠিক হয়
 // (দেখুন OrderContext.jsx-এর searchScope)।
 function SearchAndMenu({ scope = "orders" }) {
-  const { searchQuery, setSearchQuery, setSearchScope, inportantNotes, searchNow, searchWaiting } =
+  const { searchQuery, setSearchQuery, setSearchScope, inportantNotes, trackingAttentionOrders, searchNow, searchWaiting } =
     useOrders();
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const countAttention = inportantNotes.length;
+  const countTrackingAttention = trackingAttentionOrders.length;
   const pathname = usePathname()
   // ব্যাকএন্ড সার্চের মিনিমাম ৪ ক্যারেক্টার (OrderContext-এর SEARCH_MIN_LENGTH-এর সাথে মেলানো)
   const canSearchNow = searchQuery.trim().length >= 4 && !searchWaiting;
@@ -36,6 +37,7 @@ function SearchAndMenu({ scope = "orders" }) {
     { title: "📊 Dashboard", link: "/dashboard" },
     { title: "🚚 ট্র্যাকিং পার্সেল", link: "/dashboard/tracking-parcels" },
     { title: "Note", link: "/note" },
+    { title: "📍 Tracking Attention", link: "/tracking-attention" },
     { title: "Comment", link: "/comment" },
     ...(user?.role === "admin"
       ? [
@@ -142,6 +144,11 @@ function SearchAndMenu({ scope = "orders" }) {
                   {item.title === "Note" && countAttention > 0 && (
                     <span className="bg-red-500 text-white text-xs font-bold rounded-sm w-6 h-6 flex items-center justify-center leading-none">
                       {countAttention}
+                    </span>
+                  )}
+                  {item.link === "/tracking-attention" && countTrackingAttention > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-sm w-6 h-6 flex items-center justify-center leading-none">
+                      {countTrackingAttention}
                     </span>
                   )}
                 </Link>

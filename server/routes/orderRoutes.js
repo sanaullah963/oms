@@ -46,6 +46,8 @@ router.put("/update-order/:id", orderController.updateOrder);
 // OrderCard-এর স্ট্যাটাস শর্টকাট বাটন (HTTP, socket না — আগে socket.emit("updateStatus") দিয়ে হতো)
 router.patch("/:id/status", orderController.updateStatus);
 router.patch("/update-need-attention/:id", orderController.updateNeedAttention);
+// Courier Tracking Attention পেজের "Tracking OK" বাটন
+router.patch("/:id/tracking-ok", orderController.trackingOk);
 // Note বাবলের সমাধান/ব্যর্থ/ট্রাই নেক্সট অ্যাকশন (activities-এ কে করেছে তা মিনিমাল টেক্সটে লগ হয়)
 router.patch("/:id/note-action", orderController.noteAction);
 // Note বাবলের "আগের অর্ডার" মডেল — একই ফোন নম্বরের আগের অর্ডারগুলোর স্ট্যাটাস

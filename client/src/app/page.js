@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import OrderList from "@/components/orders/OrderList";
 import DraftOrderList from "@/components/orders/DraftOrderList";
 import ManualOrderInput from "@/components/orders/ManualOrderInput";
@@ -8,7 +9,15 @@ import { useOrders } from "@/context/OrderContext";
 import SearchAndMenu from "@/components/layout/SearchAndMenu";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { formatDate } from "@/utils/dateUtils";
+import { dashboardService } from "@/services/dashboardService";
 const date = new Date();
+
+// হেডারের তিনটা কাউন্টার বাটন (Attention Notes / Tracking Notes / Comments)
+const COUNTER_BUTTONS = [
+  { key: "attention", label: "Notes", title: "Attention Notes", href: "/note", color: "bg-red-500" },
+  { key: "tracking", label: "Tracking", title: "Tracking Notes", href: "/tracking-attention", color: "bg-amber-500" },
+  { key: "comments", label: "Comments", title: "Comments", href: "/comment", color: "bg-blue-500" },
+];
 
 function HomePageContent() {
   const {
@@ -32,6 +41,23 @@ function HomePageContent() {
   const searchScope = activeStatus === "Incomplete" ? "drafts" : "orders";
 
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // ---------------- কাউন্টার (Attention / Tracking / Comments) ----------------
+  // অর্ডার লোড শেষ হওয়ার পরেই, শুধু একবার, ব্যাকগ্রাউন্ডে আনা হয় — অর্ডার লোডিং এর জন্য
+  // অপেক্ষা করে না। এরর হলে চুপচাপ উপেক্ষা (ব্যাজ লুকানো থাকে), অন্য কিছুতে প্রভাব নেই।
+  const [counters, setCounters] = useState(null);
+  const countersRequested = useRef(false);
+
+  useEffect(() => {
+    if (loading || countersRequested.current) return;
+    countersRequested.current = true;
+    dashboardService
+      .getAttentionCounts()
+      .then((res) => {
+        if (res?.data) setCounters(res.data);
+      })
+      .catch((err) => console.error("Counters error:", err));
+  }, [loading]);
 
   useEffect(() => {
     setIsAnimating(true);
@@ -57,6 +83,30 @@ function HomePageContent() {
         <div className=" flex gap-3">
           <span className="text-purple-700 text-xs md:text-sm">{day}</span>
           <span className=" text-xs md:text-sm">{formatDate(date)}</span>
+
+          {/* কাউন্টার বাটন — ছোট, মোবাইলে জায়গা কম নেয়; সংখ্যা আসার আগে ব্যাজ দেখায় না */}
+          <div className="ms-auto flex items-center gap-1.5">
+            {COUNTER_BUTTONS.map((btn) => {
+              const count = counters?.[btn.key];
+              return (
+                <Link
+                  key={btn.key}
+                  href={btn.href}
+                  title={btn.title}
+                  className="relative bg-gray-100 border border-gray-300 text-gray-700 text-[11px] md:text-xs font-semibold px-2 py-0.5 rounded-md"
+                >
+                  {btn.label}
+                  {count > 0 && (
+                    <span
+                      className={`absolute -top-1.5 -right-1.5 ${btn.color} text-white text-[10px] font-bold rounded-full min-w-4 h-4 px-1 flex items-center justify-center leading-none`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
         </div>
         <SearchAndMenu scope={searchScope} />
 

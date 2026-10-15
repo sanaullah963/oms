@@ -357,6 +357,13 @@ export function OrderProvider({ children }) {
     return orders.filter((order) => order.needsAttention === true);
   }, [orders]);
 
+  // ---------------- COURIER TRACKING ATTENTION ORDERS ----------------
+  // needsAttention (নোট) থেকে সম্পূর্ণ আলাদা ফ্ল্যাগ — Steadfast "tracking_update" webhook-এ true হয়
+  const trackingAttentionOrders = useMemo(() => {
+    if (!Array.isArray(orders)) return [];
+    return orders.filter((order) => order?.courierTrackingAttention === true);
+  }, [orders]);
+
   // ---------------- ড্রাফট/ইনকমপ্লিট অর্ডার সার্চ (draftOrders-এর মধ্যেই লোকাল ফিল্টার) ----------------
   const filteredDraftOrders = useMemo(() => {
     const safeDrafts = Array.isArray(draftOrders) ? draftOrders.filter(Boolean) : [];
@@ -398,6 +405,7 @@ export function OrderProvider({ children }) {
   const value = {
     inportantNotes,
     filteredImportantNotes,
+    trackingAttentionOrders,
     orders,
     activeStatus,
     setActiveStatus,

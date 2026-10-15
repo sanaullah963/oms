@@ -163,6 +163,13 @@ exports.handleSteadfastWebhook = async (req, res) => {
     needsAttention: isImportant,
   };
 
+  // --- Courier Tracking Attention: শুধু "tracking_update" webhook-এ true হয় (প্রতিটা
+  // নতুন আপডেটে আবার true, অ্যাডমিন "Tracking OK" দিয়ে false করার পরেও)।
+  // "delivery_status" বা অন্য কোনো notification_type এই ফ্ল্যাগ ছোঁয় না ---
+  if (data.notification_type === "tracking_update") {
+    setFields.courierTrackingAttention = true;
+  }
+
   try {
     // বর্তমান courierStatus আগে থেকে জেনে নেওয়া হচ্ছে, যাতে একটা দেরিতে আসা/
     // out-of-order webhook ইতিমধ্যে সেট হওয়া উঁচু-rank স্ট্যাটাসকে ডাউনগ্রেড

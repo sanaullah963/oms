@@ -756,6 +756,33 @@ exports.updateNeedAttention = async (req, res) => {
   }
 };
 
+// --- PATCH /api/orders/:id/tracking-ok — "Courier Tracking Attention" পেজের "Tracking OK"
+// বাটন। শুধু courierTrackingAttention false করে (needsAttention বা activities ছোঁয় না —
+// activity যোগ করলে NoteBubble-এর "সর্বশেষ অ্যাক্টিভিটি" বদলে যেত)। ---
+exports.trackingOk = async (req, res) => {
+  try {
+    const io = req.app.get("io");
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      { courierTrackingAttention: false },
+      { new: true },
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    if (io) emitOrderUpdate(io, updatedOrder);
+    return res.status(200).json({ order: updatedOrder });
+  } catch (error) {
+    console.error("Tracking OK error:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while updating tracking attention." });
+  }
+};
+
 // --- PATCH /api/orders/:id/status  { newStatus, note } — OrderCard-এর স্ট্যাটাস
 // শর্টকাট বাটন (Confirmed/Cancelled/Custom ইত্যাদি) থেকে কল হয়। আগে
 // socket.emit("updateStatus") দিয়ে হতো (sockets/orderSocket.js: handleUpdateStatus),

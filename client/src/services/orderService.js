@@ -35,6 +35,9 @@ export const orderService = {
   markAttentionResolved: (orderId) =>
     api.patch(`${BASE}/update-need-attention/${orderId}`),
 
+  // Courier Tracking Attention পেজের "Tracking OK" বাটন
+  trackingOk: (orderId) => api.patch(`${BASE}/${orderId}/tracking-ok`),
+
   // Note বাবলের তিনটা বাটন — action: "solve" | "failed" | "try_next"
   noteAction: (orderId, action) =>
     api.patch(`${BASE}/${orderId}/note-action`, { action }),
