@@ -32,6 +32,11 @@ export function OrderProvider({ children }) {
   const [searchWaiting, setSearchWaiting] = useState(false);
   const [draftOrders, setDraftOrders] = useState([]);
   const [draftLoading, setDraftLoading] = useState(true);
+  // ইনকমপ্লিট সার্চ: লোড করা (সর্বশেষ ২০০টা) ড্রাফটের বাইরের পুরনো ড্রাফটও DB থেকে আনার জন্য
+  const [dbDraftOrders, setDbDraftOrders] = useState([]);
+  const [draftSearchWaiting, setDraftSearchWaiting] = useState(false);
+  // ইনকমপ্লিট ডাটাবেজের আসল মোট সংখ্যা — { total, cancelled } (লোড-লিমিট ২০০-এর বাইরেও সঠিক)
+  const [draftCounts, setDraftCounts] = useState(null);
   const query = searchQuery.toLowerCase().trim();
 
   // ---------------- সার্চ স্কোপ ----------------
@@ -81,6 +86,23 @@ export function OrderProvider({ children }) {
     fetchOrders();
     fetchDraftOrders();
   }, [authLoading, isAuthenticated, fetchOrders, fetchDraftOrders]);
+
+  // ---------------- ইনকমপ্লিট ডাটাবেজের মোট সংখ্যা ----------------
+  // শুধু সংখ্যা (তালিকা না), ব্যাকগ্রাউন্ডে — ড্রাফট লিস্ট লোড শেষ হওয়ার পরে আনা হয়, তাই
+  // মূল লোডিংয়ে বাধা দেয় না। এরর হলে চুপচাপ উপেক্ষা। ড্রাফট যোগ/বাদ হয়ে লিস্টের সংখ্যা
+  // বদলালে (socket) ১ সেকেন্ড debounce করে আবার আনা হয়।
+  useEffect(() => {
+    if (authLoading || !isAuthenticated || draftLoading) return;
+    const t = setTimeout(() => {
+      draftOrderService
+        .getCount()
+        .then((res) => {
+          if (res?.data) setDraftCounts(res.data);
+        })
+        .catch((err) => console.error("Draft count error:", err));
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [authLoading, isAuthenticated, draftLoading, draftOrders.length]);
 
   // ---------------- ইনকমপ্লিট অর্ডার রিয়েল-টাইম আপডেট (নতুন ড্রাফট/আপডেট হলে) ----------------
   useEffect(() => {
@@ -274,6 +296,38 @@ export function OrderProvider({ children }) {
     runSearch(query);
   }, [query, runSearch, searchScope]);
 
+  // ---------------- ইনকমপ্লিট (ড্রাফট) DB সার্চ ----------------
+  // লোকাল ফিল্টার (নিচে filteredDraftOrders) সাথে সাথেই কাজ করে; এর পাশাপাশি টাইপিং থামলে
+  // ডাটাবেজেও খোঁজা হয়, যাতে লোড করা ২০০টার বাইরের ড্রাফটও রেজাল্টে চলে আসে।
+  // শুধু "drafts" স্কোপে চলে — orders/notes সার্চের কোনো পরিবর্তন নেই।
+  const draftSearchReqId = useRef(0);
+
+  useEffect(() => {
+    if (searchScope !== "drafts" || !query || query.length < SEARCH_MIN_LENGTH) {
+      draftSearchReqId.current++; // ফ্লাইটে থাকা রিকোয়েস্টের রেজাল্ট বাতিল
+      setDbDraftOrders([]);
+      setDraftSearchWaiting(false);
+      return;
+    }
+
+    const reqId = ++draftSearchReqId.current;
+    setDraftSearchWaiting(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await draftOrderService.search(query);
+        if (reqId !== draftSearchReqId.current) return; // পুরনো রিকোয়েস্ট — ইগনোর
+        setDbDraftOrders(res.data?.drafts || []);
+      } catch (err) {
+        if (reqId !== draftSearchReqId.current) return;
+        console.error("Draft search error:", err);
+        setDbDraftOrders([]);
+      } finally {
+        if (reqId === draftSearchReqId.current) setDraftSearchWaiting(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [query, searchScope]);
+
   // ---------------- REAL-TIME WEBHOOK/STATUS CHANGE LISTENER ----------------
   useEffect(() => {
     if (!socket) return;
@@ -369,7 +423,7 @@ export function OrderProvider({ children }) {
     const safeDrafts = Array.isArray(draftOrders) ? draftOrders.filter(Boolean) : [];
     if (!query) return safeDrafts;
 
-    return safeDrafts.filter((draft) => {
+    const localResults = safeDrafts.filter((draft) => {
       const enPhone = convertNumber(draft?.phone);
       const fields = [
         draft?.name,
@@ -381,7 +435,14 @@ export function OrderProvider({ children }) {
       ];
       return fields.some((f) => f && String(f).toLowerCase().includes(query));
     });
-  }, [draftOrders, query]);
+
+    // লোকাল রেজাল্টের সাথে DB সার্চের রেজাল্ট (লোড না হওয়া পুরনো ড্রাফটসহ) মিলিয়ে
+    // ডুপ্লিকেট বাদ — orders সার্চের (filteredOrders) একই প্যাটার্ন
+    const combined = [...localResults, ...dbDraftOrders.filter(Boolean)];
+    return combined.filter(
+      (v, i, a) => v && a.findIndex((t) => t?._id === v?._id) === i,
+    );
+  }, [draftOrders, dbDraftOrders, query]);
 
   // ---------------- নোট সেকশন সার্চ (inportantNotes-এর মধ্যেই লোকাল ফিল্টার) ----------------
   const filteredImportantNotes = useMemo(() => {
@@ -424,6 +485,8 @@ export function OrderProvider({ children }) {
     draftOrders,
     filteredDraftOrders,
     draftLoading,
+    draftSearchWaiting,
+    draftCounts,
     deleteDraftOrder,
     updateDraftOrder,
     updateDraftCallStatus,

@@ -211,7 +211,7 @@ function NoteBubble({ order, onUpdate }) {
         }`}
       >
         <div className="mt-2 pt-2 border-t border-gray-300">
-          <p className="text-xs mb-1">{order.rawInputText}</p>
+          <p className="text-xs mb-1 whitespace-pre-wrap break-words">{order.rawInputText}</p>
           <OrderActivityTimeline activities={order.activities} />
         </div>
       </div>

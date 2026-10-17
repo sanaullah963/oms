@@ -1439,3 +1439,79 @@ exports.getCourierHistoryBulk = async (req, res) => {
       .json({ success: false, message: "বাল্ক কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।" });
   }
 };
+
+
+
+
+
+
+
+
+// --- GET /api/orders/drafts/search?q=... — ইনকমপ্লিট সার্চের DB সার্চ। getDraftOrders শুধু
+// সর্বশেষ ২০০টা লোড করে, তাই তার বাইরের পুরনো ড্রাফটও যেন সার্চে পাওয়া যায়।
+// লিস্টের মতোই active + callStatus "cancelled" নয় এমন ড্রাফটের মধ্যে খোঁজে (সর্বোচ্চ ২০টা) ---
+exports.searchDraftOrders = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) {
+      return res.status(200).json({ success: true, drafts: [] });
+    }
+
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+
+    const drafts = await DraftOrder.find({
+      status: "active",
+      callStatus: { $ne: "cancelled" },
+      $or: [
+        { name: { $regex: regex } },
+        { phone: { $regex: regex } },
+        { address: { $regex: regex } },
+        { productName: { $regex: regex } },
+        { productTypeLabel: { $regex: regex } },
+        { landingPageSlug: { $regex: regex } },
+      ],
+    })
+      .sort({ lastActivityAt: -1, updatedAt: -1 })
+      .limit(20);
+
+    const slugs = [
+      ...new Set(drafts.map((draft) => draft.landingPageSlug).filter(Boolean)),
+    ];
+    const pages = await LandingPage.find({ slug: { $in: slugs } }).select(
+      "slug productName productCode price freeDelivery deliveryChargeInsideDhaka deliveryChargeOutsideDhaka productTypes",
+    );
+    const pageMap = new Map(pages.map((page) => [page.slug, page]));
+    const result = drafts.map((draft) =>
+      withLandingPageMeta(draft, pageMap.get(draft.landingPageSlug)),
+    );
+
+    return res.status(200).json({ success: true, drafts: result });
+  } catch (error) {
+    console.error("Search draft orders error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "ইনকমপ্লিট অর্ডার সার্চ করতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- GET /api/orders/drafts/count — ইনকমপ্লিট লিস্টের মোট সংখ্যা (শুধু সংখ্যা, তালিকা না)।
+// total = লিস্টে যেগুলো দেখায় (active, cancelled বাদে) — getDraftOrders-এর লোড-লিমিট (২০০)
+// ছাড়াই ডাটাবেজের আসল মোট; cancelled = বাতিল করা (লিস্টে দেখায় না) ড্রাফটের সংখ্যা ---
+exports.getDraftOrderCount = async (req, res) => {
+  try {
+    const [total, cancelled] = await Promise.all([
+      DraftOrder.countDocuments({
+        status: "active",
+        callStatus: { $ne: "cancelled" },
+      }),
+      DraftOrder.countDocuments({ status: "active", callStatus: "cancelled" }),
+    ]);
+    return res.status(200).json({ total, cancelled });
+  } catch (error) {
+    console.error("Draft order count error:", error);
+    return res
+      .status(500)
+      .json({ message: "ইনকমপ্লিট অর্ডারের সংখ্যা আনতে ব্যর্থ হয়েছে।" });
+  }
+};
+

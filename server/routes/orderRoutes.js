@@ -32,6 +32,10 @@ router.patch("/:id/note", orderController.addNote);
 
 // ইনকমপ্লিট/ড্রাফট অর্ডার (কাস্টমার সাবমিট করার আগেই ফর্মে যা পূরণ করেছে)
 router.get("/drafts", orderController.getDraftOrders);
+router.get("/drafts/search", orderController.searchDraftOrders);
+router.get("/drafts/count", orderController.getDraftOrderCount);
+
+
 router.patch("/drafts/:id", updateDraftOrder); // এডিট করে সেভ (কনভার্ট না করেই)
 router.patch("/drafts/:id/call-status", updateDraftCallStatus); // কল ধরেনি/ফোন বন্ধ/কথা হয়েছে/বাতিল
 router.post("/drafts/:id/convert", convertDraftToOrder); // Pending queue-তে কনভার্ট

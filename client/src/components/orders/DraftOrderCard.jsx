@@ -706,7 +706,7 @@ export default function DraftOrderCard({
                 <p className="mt-0.5 text-sm text-gray-400">নম্বর নেই</p>
               )}
 
-              <p className="mt-1 line-clamp-2 text-xs text-gray-600">
+              <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-xs text-gray-600">
                 {draft?.address || "ঠিকানা দেওয়া হয়নি"}
               </p>
 

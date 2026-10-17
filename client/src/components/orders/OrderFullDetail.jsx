@@ -33,7 +33,7 @@ function Row({ label, value }) {
   return (
     <div className="flex justify-between gap-3 py-1 border-b border-gray-300 last:border-0">
       <span className="text-xs text-gray-500 shrink-0">{label}</span>
-      <span className="text-sm text-gray-800 text-right break-all">
+      <span className="text-sm text-gray-800 text-right break-all whitespace-pre-wrap">
         {isEmpty ? "—" : String(value)}
       </span>
     </div>

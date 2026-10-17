@@ -14,27 +14,9 @@ const date = new Date();
 
 // হেডারের তিনটা কাউন্টার বাটন (Attention Notes / Tracking Notes / Comments)
 const COUNTER_BUTTONS = [
-  {
-    key: "attention",
-    label: "Notes",
-    title: "Attention Notes",
-    href: "/note",
-    color: "bg-red-500",
-  },
-  {
-    key: "tracking",
-    label: "Tracking",
-    title: "Tracking Notes",
-    href: "/tracking-attention",
-    color: "bg-amber-500",
-  },
-  {
-    key: "comments",
-    label: "Comments",
-    title: "Comments",
-    href: "/comment",
-    color: "bg-blue-500",
-  },
+  { key: "attention", label: "Notes", title: "Attention Notes", href: "/note", color: "bg-red-500" },
+  { key: "tracking", label: "Tracking", title: "Tracking Notes", href: "/tracking-attention", color: "bg-amber-500" },
+  { key: "comments", label: "Comments", title: "Comments", href: "/comment", color: "bg-blue-500" },
 ];
 
 function HomePageContent() {
@@ -52,6 +34,8 @@ function HomePageContent() {
     draftOrders,
     filteredDraftOrders,
     draftLoading,
+    draftSearchWaiting,
+    draftCounts,
   } = useOrders();
 
   // "Incomplete" ট্যাবে থাকলে সার্চবক্স ড্রাফট অর্ডারের মধ্যে খুঁজবে, নাহলে আগের মতোই
@@ -147,12 +131,22 @@ function HomePageContent() {
 
         <div className="ms-2 text-purple-500 font-bold mt-1">
           {searchScope === "orders" && searchWaiting && <p>Searching...</p>}
+          {searchScope === "drafts" && draftSearchWaiting && <p>Searching...</p>}
+          {/* ইনকমপ্লিট পেজের উপরে ডাটাবেজের মোট ইনকমপ্লিট অর্ডার সংখ্যা (সংখ্যা আসার আগে দেখায় না) */}
+          {activeStatus === "Incomplete" && draftCounts && (
+            <p className="text-sm">
+              ডাটাবেজে মোট ইনকমপ্লিট: {draftCounts.total}
+              {draftCounts.cancelled > 0 && (
+                <span className="text-gray-500 font-medium">
+                  {" "}
+                  (বাতিল: {draftCounts.cancelled})
+                </span>
+              )}
+            </p>
+          )}
           {searchQuery && (
             <p>
-              {searchScope === "drafts"
-                ? filteredDraftOrders.length
-                : filteredOrders.length}{" "}
-              Result{" "}
+              {searchScope === "drafts" ? filteredDraftOrders.length : filteredOrders.length} Result{" "}
             </p>
           )}
         </div>

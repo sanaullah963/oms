@@ -15,6 +15,12 @@ export const draftOrderService = {
       params: includeCancelled ? { includeCancelled: "1" } : undefined,
     }),
 
+  // ইনকমপ্লিট সার্চ — ডাটাবেজ থেকে (লোড করা ২০০টার বাইরেরগুলোও)
+  search: (q) => api.get(`${BASE}/search`, { params: { q } }),
+
+  // ইনকমপ্লিটের মোট সংখ্যা — { total, cancelled }
+  getCount: () => api.get(`${BASE}/count`),
+
   // ড্রাফটটা ডাটাবেজ থেকে সম্পূর্ণ ডিলিট করে দেয় (ম্যানুয়ালি লিস্ট থেকে বাদ দেওয়ার জন্য)
   remove: (draftId) => api.delete(`${BASE}/${draftId}`),
 

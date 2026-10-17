@@ -344,7 +344,7 @@ export default function OrderCard({
               {/* phone number list*/}
               <OrderPhoneList castomerPhone={order.castomerPhone} />
 
-              <p className="text-xs text-gray-600 mt-1 h-10">
+              <p className="text-xs text-gray-600 mt-1 min-h-10 whitespace-pre-wrap break-words">
                 {order?.rawInputText || "পাওয়া যায়নি"}
               </p>
             </div>
