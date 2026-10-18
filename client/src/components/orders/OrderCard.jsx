@@ -221,7 +221,9 @@ export default function OrderCard({
     <>
       <div
         className={`bg-white rounded-lg shadow-lg p-2 md:p-4 border hover:shadow-xl transition-all duration-300 mb-1 relative ${
-          selectMode && isSelected ? "border-green-500 ring-2 ring-green-300" : "border-gray-300"
+          selectMode && isSelected
+            ? "border-green-500 ring-2 ring-green-300"
+            : "border-gray-300"
         }`}
       >
         {selectMode && (
@@ -291,7 +293,11 @@ export default function OrderCard({
                       //     {order?.courierHistory?.all?.cancel}
                       //   </span>
                       // </span>
-                         <CourierHistoryDropdown courierHistory={order.courierHistory} />
+                      <CourierHistoryDropdown
+                        courierHistory={order.courierHistory}
+                        onRetry={() => fetchCourierHistory(true)}
+                        retrying={historyLoading}
+                      />
                     ) : (
                       <button
                         onClick={(e) => {
@@ -399,7 +405,15 @@ export default function OrderCard({
 
             {lastActivity && (
               <div className="flex justify-between items-start">
-                <span className="text-sm">{lastActivity.description}</span>
+                <div className="">
+                  <span className="text-purple-600">
+                    {" "}
+                    {lastActivity?.author}
+                  </span>
+                  {" - "}
+                  <span className="text-sm">{lastActivity.description}</span>
+                </div>
+
                 <div className="fflex flex-col">
                   <DisplayTime timeStamp={lastActivity.timestamp} />
                   <DisplayAgoTime timeStamp={lastActivity.timestamp} />

@@ -187,8 +187,9 @@ export function OrderProvider({ children }) {
 
   // --- একটা ড্রাফটের কুরিয়ার হিস্ট্রি আনা (HTTP request/response, OrderCard-এর
   // fetchCourierHistory-এর মতোই — existing setDraftOrders দিয়েই রেজাল্ট লিস্টে বসে যায়) ---
-  const fetchDraftCourierHistory = useCallback(async (draftId) => {
-    const res = await draftOrderService.getCourierHistory(draftId);
+  const fetchDraftCourierHistory = useCallback(async (draftId, force = false) => {
+     const res = await draftOrderService.getCourierHistory(draftId, force);
+
     if (res?.data?.success && res.data?.draft) {
       setDraftOrders((prev) =>
         prev.map((draft) =>

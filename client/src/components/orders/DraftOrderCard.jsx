@@ -28,7 +28,7 @@ import {
 } from "@/constants/orderConstants";
 import { formatDate, formatTime } from "@/utils/dateUtils";
 import DisplayAgoTime from "../common/DisplayAgoTime";
-   import CourierHistoryDropdown from "./CourierHistoryDropdown";
+import CourierHistoryDropdown from "./CourierHistoryDropdown";
 
 const PHONE_REGEX = /^01[3-9]\d{8}$/;
 
@@ -334,11 +334,11 @@ export default function DraftOrderCard({
 
   // --- OrderCard-এর "History" বাটনের হুবহু একই প্যাটার্ন — কাস্টমারের সব কুরিয়ার
   // মিলিয়ে success/cancel history আনা (একবার ফেচ হয়ে গেলে আর কল হয় না) ---
-  const handleFetchHistory = async () => {
-    if (draft?.courierHistory?.all) return;
+  const handleFetchHistory = async (force = false) => {
+    if (force !== true && draft?.courierHistory?.all) return;
     setHistoryLoading(true);
     try {
-      await fetchDraftCourierHistory(draft._id);
+      await fetchDraftCourierHistory(draft._id, force === true);
     } catch (err) {
       console.error("Draft courier history fetch error:", err);
     } finally {
@@ -646,7 +646,11 @@ export default function DraftOrderCard({
                       //     {draft?.courierHistory?.all?.cancel}
                       //   </span>
                       // </span>
-                         <CourierHistoryDropdown courierHistory={draft.courierHistory} />
+                      <CourierHistoryDropdown
+                        courierHistory={draft.courierHistory}
+                        onRetry={() => handleFetchHistory(true)}
+                        retrying={historyLoading}
+                      />
                     ) : (
                       <button
                         type="button"

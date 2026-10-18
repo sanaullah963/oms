@@ -14,7 +14,8 @@ export const orderService = {
   editActivity: (id, activityIndex, description) =>
     api.patch(`${BASE}/${id}/activity-edit`, { activityIndex, description }),
   // কাস্টমারের সব কুরিয়ার মিলিয়ে history (HTTP — socket না)
-  getCourierHistory: (id) => api.post(`${BASE}/${id}/courier-history`),
+  getCourierHistory: (id, force = false) =>
+     api.post(`${BASE}/${id}/courier-history`, force ? { force: true } : {}),
   // হোমপেজে একসাথে একাধিক অর্ডার সিলেক্ট করে "History" — একবারেই সবগুলোর জন্য রিকোয়েস্ট
   getCourierHistoryBulk: (orderIds) =>
     api.post(`${BASE}/courier-history-bulk`, { orderIds }),

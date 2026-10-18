@@ -349,10 +349,10 @@ exports.getDraftCourierHistory = async (req, res) => {
     // nested path হওয়ায় in-memory ডকুমেন্টে সবসময় একটা phantom {} থাকে, তাই leaf
     // ভ্যালু (success) দিয়েই "আগে ফেচ করা আছে কিনা" যাচাই করা হচ্ছে।
     const alreadyFetched = draft.courierHistory?.all?.success !== undefined;
-
+    const force = req.body?.force === true;
     const page = await LandingPage.findOne({ slug: draft.landingPageSlug });
 
-    if (alreadyFetched) {
+    if (alreadyFetched && !force) {
       return res
         .status(200)
         .json({ success: true, draft: withLandingPageMeta(draft, page) });

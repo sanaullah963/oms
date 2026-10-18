@@ -10,7 +10,7 @@ import OrderPhoneList from "@/components/orders/OrderPhoneList";
 import PreviousOrderModal from "@/components/orders/PreviousOrderModal";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import DisplayAgoTime from "../common/DisplayAgoTime";
-   import CourierHistoryDropdown from "./CourierHistoryDropdown";
+import CourierHistoryDropdown from "./CourierHistoryDropdown";
 
 // এই টাইপগুলো Solve/ব্যর্থ/ট্রাই নেক্সট বাটনের নিজস্ব লগ — এগুলো উপরের মূল নোট
 // (lastActivity) হিসেবে দেখানো হবে না, শুধু টাইমলাইনে ও নিচের "সর্বশেষ ট্রাই" লাইনে থাকবে।
@@ -126,8 +126,12 @@ function NoteBubble({ order, onUpdate }) {
               //     {order?.courierHistory?.all?.cancel}
               //   </span>
               // </span>
-              <CourierHistoryDropdown courierHistory={order.courierHistory} />
-            ) }
+              <CourierHistoryDropdown
+                courierHistory={order.courierHistory}
+                onRetry={() => fetchCourierHistory(true)}
+                retrying={historyLoading}
+              />
+            )}
           </div>
           <span>{order.totalCOD}--</span>
           <span className="text-purple-600 pe-2">{order.productCode}</span>
@@ -175,9 +179,7 @@ function NoteBubble({ order, onUpdate }) {
       {/* সর্বশেষ কখন "ট্রাই নেক্সট" করা হয়েছিল — মূল নোট টেক্সট আলাদা থাকে, এটা শুধু তথ্য হিসেবে */}
       {lastTryActivity && (
         <div className="flex items-center gap-1 text-[11px] text-orange-500 mt-2 mb-0">
-          <span>
-            সর্বশেষ ট্রাই: {lastTryActivity.author || "User"} •
-          </span>
+          <span>সর্বশেষ ট্রাই: {lastTryActivity.author || "User"} •</span>
           <DisplayAgoTime timeStamp={lastTryActivity.timestamp} />
         </div>
       )}
@@ -213,7 +215,9 @@ function NoteBubble({ order, onUpdate }) {
         }`}
       >
         <div className="mt-2 pt-2 border-t border-gray-300">
-          <p className="text-xs mb-1 whitespace-pre-wrap break-words">{order.rawInputText}</p>
+          <p className="text-xs mb-1 whitespace-pre-wrap break-words">
+            {order.rawInputText}
+          </p>
           <OrderActivityTimeline activities={order.activities} />
         </div>
       </div>

@@ -1330,8 +1330,9 @@ exports.getCourierHistory = async (req, res) => {
     // সিরিয়ালাইজ হয়নি।) তাই {} vs আসল ডেটার পার্থক্য বুঝতে লিফ-ভ্যালু (success)
     // সরাসরি চেক করা হচ্ছে — এটাই আসল "আগে থেকে ফেচ করা আছে কিনা" প্রশ্নের সঠিক উত্তর দেয়।
     const alreadyFetched = orderDoc.courierHistory?.all?.success !== undefined;
+    const force = req.body?.force === true;
 
-    if (alreadyFetched) {
+    if (alreadyFetched && !force) {
       return res.status(200).json({ order: orderDoc, success: true });
     }
 

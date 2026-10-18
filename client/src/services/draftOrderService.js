@@ -37,7 +37,9 @@ export const draftOrderService = {
   convert: (draftId, data = {}) => api.post(`${BASE}/${draftId}/convert`, data),
 
   // কাস্টমারের সব কুরিয়ার মিলিয়ে history (HTTP — OrderCard-এর getCourierHistory-এর মতোই)
-  getCourierHistory: (draftId) => api.post(`${BASE}/${draftId}/courier-history`),
+getCourierHistory: (draftId, force = false) =>
+     api.post(`${BASE}/${draftId}/courier-history`, force ? { force: true } : {}),
+
   // ইনকমপ্লিট লিস্টে একসাথে একাধিক ড্রাফট সিলেক্ট করে "History" — একবারেই সবগুলোর জন্য রিকোয়েস্ট
   getCourierHistoryBulk: (draftIds) =>
     api.post(`${BASE}/courier-history-bulk`, { draftIds }),

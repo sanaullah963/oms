@@ -68,11 +68,11 @@ export function useOrderActions(order, onUpdate) {
   // --- কাস্টমারের সব কুরিয়ারের হিস্ট্রি আনা (HTTP request/response দিয়ে, সকেট না —
   // আগে socket.emit("allCourierHistory") দিয়ে হতো, এখন সরাসরি REST কল করে existing
   // onUpdate() দিয়েই রেজাল্ট (আপডেটেড order) লিস্টে বসিয়ে দেওয়া হয়) ---
-  const fetchCourierHistory = useCallback(async () => {
-    if (order?.courierHistory?.all) return;
+  const fetchCourierHistory = useCallback(async (force = false) => {
+     if (!force && order?.courierHistory?.all) return;
     setHistoryLoading(true);
     try {
-      const response = await orderService.getCourierHistory(order._id);
+      const response = await orderService.getCourierHistory(order._id, force === true);
       if (response.data?.success && response.data?.order && onUpdate) {
         onUpdate(response.data.order);
       }
