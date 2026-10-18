@@ -372,6 +372,7 @@ exports.getDraftCourierHistory = async (req, res) => {
         $set: {
           "courierHistory.all.success": count.success,
           "courierHistory.all.cancel": count.cancel,
+          "courierHistory.providers": count.providers,
         },
       },
       { new: true },
@@ -445,6 +446,7 @@ exports.getDraftCourierHistoryBulk = async (req, res) => {
             $set: {
               "courierHistory.all.success": count.success,
               "courierHistory.all.cancel": count.cancel,
+              "courierHistory.providers": count.providers,
             },
           },
           { new: true },

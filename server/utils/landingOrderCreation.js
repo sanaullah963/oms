@@ -114,6 +114,9 @@ async function createLandingOrder({
           success: courierHistory.all.success,
           cancel: courierHistory.all.cancel,
         },
+        ...(Array.isArray(courierHistory.providers) && {
+             providers: courierHistory.providers,
+           }),
       },
     }),
     activities: [

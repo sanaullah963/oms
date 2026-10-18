@@ -15,6 +15,7 @@ import FraudDetectionModal from "./FraudDetectionModal";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import { showToast } from "@/lib/toast";
 import DisplayAgoTime from "../common/DisplayAgoTime";
+import CourierHistoryDropdown from "./CourierHistoryDropdown";
 
 const STATUS_COLOR_MAP = {
   Pending: "text-yellow-600 bg-yellow-100",
@@ -280,16 +281,17 @@ export default function OrderCard({
                   {/* হিস্টরি */}
                   <div>
                     {order?.courierHistory?.all ? (
-                      <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
-                        <span> All </span>
-                        <span className="text-green-700">
-                          {order?.courierHistory?.all?.success}
-                        </span>
-                        /
-                        <span className="text-red-600">
-                          {order?.courierHistory?.all?.cancel}
-                        </span>
-                      </span>
+                      // <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
+                      //   <span> All </span>
+                      //   <span className="text-green-700">
+                      //     {order?.courierHistory?.all?.success}
+                      //   </span>
+                      //   /
+                      //   <span className="text-red-600">
+                      //     {order?.courierHistory?.all?.cancel}
+                      //   </span>
+                      // </span>
+                         <CourierHistoryDropdown courierHistory={order.courierHistory} />
                     ) : (
                       <button
                         onClick={(e) => {

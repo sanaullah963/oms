@@ -59,6 +59,19 @@ const draftOrderSchema = new Schema(
         success: { type: Number, default: undefined },
         cancel: { type: Number, default: undefined },
       },
+      providers: {
+    type: [
+      {
+        key: { type: String },     // "bdcourier", "newapi" ...
+        label: { type: String },   // ড্রপডাউনে যে নাম দেখাবে
+        success: { type: Number, default: null },
+        cancel: { type: Number, default: null },
+        meta: { type: Schema.Types.Mixed, default: undefined },
+        _id: false,
+      },
+    ],
+    default: undefined, // নেই হলে খালি অ্যারে সেভ হবে না
+  }
     },
 
     // সর্বশেষ customer/admin পরিবর্তনের সময় — ইনকমপ্লিট লিস্ট sort করার জন্য ব্যবহৃত হয়।

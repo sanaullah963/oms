@@ -10,6 +10,7 @@ import OrderPhoneList from "@/components/orders/OrderPhoneList";
 import PreviousOrderModal from "@/components/orders/PreviousOrderModal";
 import { copyToClipboard } from "@/utils/copyToClipboard";
 import DisplayAgoTime from "../common/DisplayAgoTime";
+   import CourierHistoryDropdown from "./CourierHistoryDropdown";
 
 // এই টাইপগুলো Solve/ব্যর্থ/ট্রাই নেক্সট বাটনের নিজস্ব লগ — এগুলো উপরের মূল নোট
 // (lastActivity) হিসেবে দেখানো হবে না, শুধু টাইমলাইনে ও নিচের "সর্বশেষ ট্রাই" লাইনে থাকবে।
@@ -115,16 +116,17 @@ function NoteBubble({ order, onUpdate }) {
           {/* all previous history */}
           <div>
             {order?.courierHistory?.all && (
-              <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
-                <span> All </span>
-                <span className="text-green-700">
-                  {order?.courierHistory?.all?.success}
-                </span>
-                /
-                <span className="text-red-600">
-                  {order?.courierHistory?.all?.cancel}
-                </span>
-              </span>
+              // <span className="text-xs text-black gap-3 font-medium bg-gray-200 px-2 py-0.5 rounded-lg">
+              //   <span> All </span>
+              //   <span className="text-green-700">
+              //     {order?.courierHistory?.all?.success}
+              //   </span>
+              //   /
+              //   <span className="text-red-600">
+              //     {order?.courierHistory?.all?.cancel}
+              //   </span>
+              // </span>
+              <CourierHistoryDropdown courierHistory={order.courierHistory} />
             ) }
           </div>
           <span>{order.totalCOD}--</span>
