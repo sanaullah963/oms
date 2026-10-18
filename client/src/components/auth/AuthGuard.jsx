@@ -3,8 +3,11 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
-export default function AuthGuard({ children, adminOnly = false }) {
-  const { user, loading, isAuthenticated, isAdmin } = useAuth();
+// requiredPermission="some.key" দিলে (config/permissions.js-এর রেজিস্ট্রির key) পেজটা শুধু ওই পারমিশন-ওয়ালা
+// (বা admin) দেখতে পারবে — যেকোনো নতুন পেজ/URL এভাবে আটকানো যায়। সার্ভারের API-ও আলাদাভাবে
+// requirePermission("some.key") দিয়ে আটকাতে হবে (এটা শুধু UI গার্ড)।
+export default function AuthGuard({ children, adminOnly = false, requiredPermission = null }) {
+  const { user, loading, isAuthenticated, isAdmin, can } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -15,10 +18,20 @@ export default function AuthGuard({ children, adminOnly = false }) {
     }
     if (adminOnly && !isAdmin) {
       router.replace("/");
+      return;
     }
-  }, [loading, isAuthenticated, isAdmin, adminOnly, router]);
+    if (requiredPermission && !can(requiredPermission)) {
+      console.log(`🚫 Page blocked — missing permission: ${requiredPermission}`);
+      router.replace("/");
+    }
+  }, [loading, isAuthenticated, isAdmin, adminOnly, requiredPermission, can, router]);
 
-  if (loading || !isAuthenticated || (adminOnly && !isAdmin)) {
+  if (
+    loading ||
+    !isAuthenticated ||
+    (adminOnly && !isAdmin) ||
+    (requiredPermission && !can(requiredPermission))
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 text-gray-500">
         লোড হচ্ছে...

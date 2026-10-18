@@ -45,6 +45,27 @@ export function AuthProvider({ children }) {
     return res.data;
   };
 
+  // --- শুধু ইউজার/পারমিশন রিফ্রেশ (সকেট রিকানেক্ট ছাড়া) — অ্যাডমিন পারমিশন বদলালে
+  // সার্ভার "permissionsChanged" সকেট ইভেন্ট পাঠায়, OrderContext সেটা শুনে এটা কল করে ---
+  const refreshPermissions = useCallback(async () => {
+    try {
+      const res = await authService.getMe();
+      console.log("🔐 Permissions refreshed:", res.data.user?.role, res.data.user?.permissions);
+      setUser(res.data.user);
+      return res.data.user;
+    } catch (err) {
+      console.error("Refresh permissions error:", err);
+      return null;
+    }
+  }, []);
+
+  // --- পারমিশন চেক: can("orders.viewOthers") — অ্যাডমিন সবসময় true।
+  // ⚠️ এটা শুধু UI দেখানো/লুকানোর জন্য; আসল এনফোর্সমেন্ট সবসময় সার্ভারে হয় ---
+  const can = useCallback(
+    (key) => user?.role === "admin" || user?.permissions?.[key] === true,
+    [user],
+  );
+
   const logout = () => {
     window.localStorage.removeItem(TOKEN_STORAGE_KEY);
     setUser(null);
@@ -61,6 +82,8 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     refreshUser: loadCurrentUser,
+    refreshPermissions,
+    can,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const { hashPassword, comparePassword } = require("../utils/password");
 const { signToken } = require("../utils/jwt");
+const { getEffectivePermissions } = require("../config/permissions");
 
 const PHONE_REGEX = /^\d{11}$/;
 
@@ -11,6 +12,9 @@ function toSafeUser(user) {
     phone: user.phone,
     role: user.role,
     isApproved: user.isApproved,
+    // চূড়ান্ত পারমিশন ম্যাপ ({ "<key>": true/false }) — ক্লায়েন্টের can("<key>") এটা দিয়ে চলে।
+    // (অ্যাডমিনের সব true) — আসল এনফোর্সমেন্ট সবসময় সার্ভারে, এটা শুধু UI দেখানো/লুকানোর জন্য
+    permissions: getEffectivePermissions(user),
     createdAt: user.createdAt,
   };
 }

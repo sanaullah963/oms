@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Order = require("../models/Order");
 const FacebookComment = require("../models/FacebookComment");
+const { courierNotesScope } = require("../utils/orderScope");
 
 // --- ইউরল কোয়েরি থেকে from/to ডেট রেঞ্জ বের করা (ডিফল্ট: শেষ ৭ দিন) ---
 function getDateRange(req) {
@@ -466,10 +467,9 @@ exports.getAttentionCounts = async (req, res) => {
     const twoDaysAgo = new Date();
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
-    const ownershipFilter =
-      req.user.role === "moderator"
-        ? { $or: [{ createdBy: req.user._id }, { createdBy: null }] }
-        : {};
+    // ✅ কুরিয়ার-নোট স্কোপ (utils/orderScope.js): নিজের+মালিকহীন, অথবা courierNotes.viewAll /
+    // orders.viewOthers পারমিশন থাকলে সব — যাতে ব্যাজের সংখ্যা /note ও /tracking-attention পেজের তালিকার সাথে মেলে
+    const ownershipFilter = courierNotesScope(req.user);
 
     const [orderAgg, comments] = await Promise.all([
       Order.aggregate([

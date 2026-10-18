@@ -1,3 +1,6 @@
+const { permRoom } = require("../config/permissions");
+const { hasCourierNoteFlag } = require("./orderScope");
+
 /**
  * অর্ডার আপডেট শুধু সংশ্লিষ্ট মানুষদের কাছে পাঠায় (io.emit দিয়ে সবাইকে পাঠানোর বদলে):
  * - যে ইউজার অর্ডারটা তৈরি করেছে (room: user:<id>)
@@ -27,14 +30,31 @@
  * - যে ইউজার অর্ডারটা তৈরি করেছে (room: user:<id>) — createdBy থাকলে
  * - createdBy না থাকলে (যেমন ল্যান্ডিং পেজ/webhook থেকে আসা "কারো নিজের না" অর্ডার) —
  *   সব মডারেটরকে পাঠানো হয় (room: role:moderator), যাতে যেকোনো মডারেটর সেটা ধরে কনফার্ম করতে পারে
+ * - যে মডারেটরের "orders.viewOthers" পারমিশন আছে (room: perm:orders.viewOthers) — সব অর্ডারের আপডেট
+ *
+ * এর পাশাপাশি "courierNotes.viewAll" পারমিশন-ওয়ালা মডারেটররা (যারা উপরের দলে নেই) আলাদা ইভেন্ট পায়:
+ *  - অর্ডারে কুরিয়ার-নোট ফ্ল্যাগ থাকলে → "courierNoteChange" (পুরো অর্ডার)
+ *  - ফ্ল্যাগ নেই (যেমন নোট সমাধান হয়ে গেল) → "courierNoteCleared" (শুধু _id, কোনো ডেটা লিক না করে)
+ * ক্লায়েন্ট এই অর্ডারগুলো মূল অর্ডার লিস্টে মেশায় না, শুধু নোট পেজে দেখায়।
  */
 function emitOrderUpdate(io, order) {
   if (!io || !order) return;
-  io.to("role:admin").emit("orderStatusChange", order);
-  if (order.createdBy) {
-    io.to(`user:${order.createdBy}`).emit("orderStatusChange", order);
-  } else {
-    io.to("role:moderator").emit("orderStatusChange", order);
+
+  const mainRooms = ["role:admin", permRoom("orders.viewOthers")];
+  mainRooms.push(order.createdBy ? `user:${order.createdBy}` : "role:moderator");
+
+  let main = io;
+  mainRooms.forEach((room) => {
+    main = main.to(room);
+  });
+  main.emit("orderStatusChange", order);
+
+  // --- কুরিয়ার-নোট ভিউয়ার (যারা মূল দলে নেই) ---
+  const noteAudience = io.to(permRoom("courierNotes.viewAll")).except(mainRooms);
+  if (hasCourierNoteFlag(order)) {
+    noteAudience.emit("courierNoteChange", order);
+  } else if (order._id) {
+    noteAudience.emit("courierNoteCleared", String(order._id));
   }
 }
 

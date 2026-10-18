@@ -129,7 +129,7 @@ function NoteBubble({ order, onUpdate }) {
               <CourierHistoryDropdown
                 courierHistory={order.courierHistory}
                 onRetry={() => fetchCourierHistory(true)}
-                retrying={historyLoading}
+                // retrying={historyLoading}
               />
             )}
           </div>

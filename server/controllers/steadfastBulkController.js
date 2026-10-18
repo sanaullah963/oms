@@ -2,6 +2,7 @@ const axios = require("axios");
 const Order = require("../models/Order");
 const { emitOrderUpdate } = require("../utils/socketBroadcast");
 const { buildActivity } = require("../utils/activityLogger");
+const { ordersScope } = require("../utils/orderScope");
 const {
   STEADFAST_API_URL,
   STEADFAST_API_KEY,
@@ -20,7 +21,15 @@ exports.bookSteadfastBulk = async (req, res) => {
     }
 
     // ১. ডাটাবেজ থেকে অর্ডারগুলো খুঁজে বের করা
-    const orders = await Order.find({ _id: { $in: orders_ids } });
+    // ✅ শুধু ইউজারের স্কোপের ভেতরের অর্ডার বুক করা যাবে — বাইরের ID চুপচাপ বাদ পড়ে
+    const orders = await Order.find({
+      $and: [ordersScope(req.user), { _id: { $in: orders_ids } }],
+    });
+    if (orders.length !== orders_ids.length) {
+      console.log(
+        `⚠️ steadfast-bulk: ${orders_ids.length}টি চাওয়া হয়েছে, স্কোপে পাওয়া গেছে ${orders.length}টি (user=${req.user?.name})`,
+      );
+    }
 
     if (orders.length === 0) {
       return res.status(404).json({ message: "কোন অর্ডার পাওয়া যায়নি" });

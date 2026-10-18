@@ -24,6 +24,18 @@ const UserSchema = new mongoose.Schema(
     },
     // সাইনআপ করলেই একাউন্ট সক্রিয় হবে না, এডমিন approve করলে তবেই লগইন করতে পারবে
     isApproved: { type: Boolean, default: false },
+    // মডারেটরের পারমিশন-ওভাররাইড (config/permissions.js-এর রেজিস্ট্রি অনুযায়ী)। শুধু অ্যাডমিনের
+    // এক্সপ্লিসিটলি সেট করা এবং ডিফল্ট থেকে আলাদা মানগুলোই এখানে থাকে; বাকিটা রেজিস্ট্রির ডিফল্ট।
+    // অ্যারে-অফ-{key,allowed} রাখা হয়েছে যাতে নতুন পারমিশন যোগ করতে স্কিমা বদলাতে না হয়।
+    permissions: {
+      type: [
+        new mongoose.Schema(
+          { key: { type: String, required: true }, allowed: { type: Boolean, required: true } },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     pushSubscriptions: { type: [PushSubscriptionSchema], default: [] },
   },
   { timestamps: true },

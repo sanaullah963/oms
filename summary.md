@@ -467,3 +467,31 @@
 - ড্রপডাউনের "মোট" সারি (ইউজারের ডিজাইনে আছে) শুধু BD Courier-এর `all` দেখায়, Steadfast যোগ করে না — একাধিক API থাকলে লেবেল "মোট (BD Courier)" করা ভালো।
 - ড্রপডাউন কনটেইনারের নিচের কাছে ক্লিপ হলে উপরের দিকে খোলার অপশন যোগ করা যায়।
 - Next.js ভার্সনে breaking change আছে (client/AGENTS.md দেখুন) — নতুন Next API ব্যবহারের আগে ডক চেক করা।
+
+---
+
+## ১৫. মডারেটর পারমিশন সিস্টেম (প্রতি-মডারেটর অ্যাক্সেস কন্ট্রোল)
+
+**উদ্দেশ্য:** অ্যাডমিন প্রতিটা মডারেটরের জন্য আলাদা করে ঠিক করতে পারে সে কী কী দেখতে/করতে পারবে। আপাতত দুটো পারমিশন; কাঠামো এমনভাবে বানানো যে যেকোনো নতুন URL/ফিচার পরে এক-দুই লাইনে আটকানো যায়।
+
+| Key | ডিফল্ট (মডারেটর) | কী নিয়ন্ত্রণ করে |
+|---|---|---|
+| `orders.viewOthers` | বন্ধ | বন্ধ: শুধু নিজের তৈরি অর্ডার + মালিকহীন (ল্যান্ডিং পেজ) অর্ডার। চালু: সবার সব অর্ডার দেখা ও (দেখা অর্ডারে) অ্যাকশন নেওয়া। |
+| `courierNotes.viewAll` | বন্ধ | বন্ধ: "নোট" ও "ট্র্যাকিং নোট" পেজে শুধু নিজের পার্সেলের নোট। চালু: সব পার্সেলের কুরিয়ার-নোট দেখা ও সমাধান (Solve/Failed/Try next/Tracking OK) — কিন্তু ওই অর্ডারের বাকি অ্যাকশন (স্ট্যাটাস, এডিট, ডিলিট ইত্যাদি) নয়। কভার করা ফ্ল্যাগ: `needsAttention`, `courierTrackingAttention` (`utils/orderScope.js` → `COURIER_NOTE_FLAGS`)। |
+
+- **অ্যাডমিন সবসময় সব পারমিশন পায়।** আসল এনফোর্সমেন্ট সবসময় সার্ভারে; ক্লায়েন্টের `can(key)` শুধু UI দেখানো/লুকানোর জন্য।
+- **সার্ভার:**
+  - `config/permissions.js` — একমাত্র রেজিস্ট্রি (`PERMISSION_LIST`) + `can(user, key)`, `getEffectivePermissions`, ভ্যালিডেশন।
+  - `utils/orderScope.js` — "কে কোন অর্ডার দেখবে" এক জায়গায় (`ordersScope`, `courierNotesScope`, `orderListScope`, `canAccessOrder`, `markViewScope`)। আগে এই লজিক `orderController`-এর ৩ জায়গায় কপি করা ছিল।
+  - `middleware/permissions.js` — `requirePermission(key)` (যেকোনো রুট আটকানো), `orderAccess({ param, via })` (`:id` রুটে অর্ডারটা ইউজারের স্কোপে আছে কিনা যাচাই)।
+  - `models/User.js` — `permissions: [{ key, allowed }]` (শুধু ডিফল্ট থেকে আলাদা মানগুলো থাকে)।
+  - `PATCH /api/users/:id/permissions` (admin-only) ও `GET /api/users` (এখন `permissionRegistry` সহ); `GET /api/auth/me`/login-এ `user.permissions` (চূড়ান্ত ম্যাপ)।
+  - `orderRoutes.js` — প্রতিটা `:id`/`:orderId` রুটে `orderAccess()` গার্ড; বাল্ক রুট (`courier-history-bulk`, `steadfast-bulk`) কন্ট্রোলারে স্কোপ-ফিল্টার করে।
+  - `getOrders` (লিস্ট), `searchOrders`, `masterSearchOrders`, `getAttentionCounts` (হেডার ব্যাজ) — সবাই একই স্কোপ ফাংশন ব্যবহার করে, তাই ব্যাজের সংখ্যা ও পেজের তালিকা সবসময় মেলে।
+  - সকেট: `utils/socketRooms.js` — মডারেটর তার পারমিশন অনুযায়ী `perm:<key>` রুমে জয়েন করে; অ্যাডমিন পারমিশন/role বদলালে লাইভ কানেকশনের রুম আপডেট হয় (রিকানেক্ট লাগে না) ও `permissionsChanged` ইভেন্ট যায়। `emitOrderUpdate`: `orders.viewOthers` ওয়ালারা সব আপডেট পায়; `courierNotes.viewAll` ওয়ালারা (বাকিদের বাইরে) আলাদা `courierNoteChange` (ফ্ল্যাগ-ওয়ালা অর্ডার) / `courierNoteCleared` (শুধু `_id`) ইভেন্ট পায় — অন্যের অর্ডারের পুরো ডেটা কখনো লিক হয় না।
+- **ক্লায়েন্ট:**
+  - `AuthContext` — `can(key)`, `refreshPermissions()`। `AuthGuard` — `requiredPermission="<key>"` প্রপ (যেকোনো পেজ আটকানো)।
+  - `OrderContext` — শুধু-কুরিয়ার-নোট-পারমিশনে আসা অন্যের অর্ডার (`_viewScope: "courierNotes"`) আলাদা স্টেটে থাকে, মূল অর্ডার লিস্ট/সার্চে মেশে না; শুধু নোট ও ট্র্যাকিং-নোট পেজে দেখায়। `permissionsChanged` ইভেন্টে পারমিশন + অর্ডার লিস্ট রিলোড।
+  - `UserManagementTable` — প্রতি মডারেটরের সারিতে "🔐 পারমিশন" প্যানেল; টগল রেজিস্ট্রি থেকেই তৈরি হয়, টগল করলেই সেভ।
+- **নতুন পারমিশন যোগ করার নিয়ম:** (১) `config/permissions.js`-এর `PERMISSION_LIST`-এ এন্ট্রি; (২) সার্ভার রুটে `requirePermission("<key>")` অথবা `orderScope.js`-এ স্কোপ; (৩) ক্লায়েন্টে `can("<key>")`/`AuthGuard requiredPermission`। অ্যাডমিন UI-তে টগল নিজে নিজে চলে আসে।
+- **ইচ্ছাকৃতভাবে বদলানো হয়নি:** ড্যাশবোর্ড/অ্যানালিটিক্স (`dashboardController` summary, tracking-parcels) মডারেটরের জন্য এখনো শুধু নিজের অর্ডার; "আগের অর্ডার" (`previous-orders`) ও ফ্রড-ম্যাচ মডাল একই ফোন নম্বরের অন্য মডারেটরের অর্ডারও দেখায় (ডুপ্লিকেট/ফ্রড শনাক্তের জন্য); ইনকমপ্লিট (ড্রাফট) অর্ডার সবার জন্য শেয়ার্ড।

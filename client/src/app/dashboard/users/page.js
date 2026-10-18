@@ -10,6 +10,7 @@ import Link from "next/link";
 function UsersPageContent() {
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
+  const [permissionRegistry, setPermissionRegistry] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchUsers = useCallback(async () => {
@@ -17,6 +18,7 @@ function UsersPageContent() {
     try {
       const res = await userService.list();
       setUsers(res.data.users);
+      setPermissionRegistry(res.data.permissionRegistry || []);
     } catch (err) {
       console.error("User list fetch error:", err);
     } finally {
@@ -33,7 +35,7 @@ function UsersPageContent() {
   return (
     <div className="p-2 md:p-6 bg-gray-100 min-h-screen">
       <SearchAndMenu />
-      <div className="max-w-4xl mx-auto mt-3 space-y-4 pb-10">
+      <div className="max-w-5xl mx-auto mt-3 space-y-4 pb-10">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <Link href="/dashboard" className="text-sm text-indigo-600 font-medium">
@@ -51,7 +53,12 @@ function UsersPageContent() {
         {loading ? (
           <div className="text-center py-16 text-gray-500">লোড হচ্ছে...</div>
         ) : (
-          <UserManagementTable users={users} currentUserId={user?._id} onRefresh={fetchUsers} />
+          <UserManagementTable
+            users={users}
+            currentUserId={user?._id}
+            onRefresh={fetchUsers}
+            permissionRegistry={permissionRegistry}
+          />
         )}
       </div>
     </div>

@@ -20,12 +20,33 @@ const OrderContext = createContext();
 const SEARCH_MIN_LENGTH = 4; // এর কম হলে ব্যাকএন্ডে রিকোয়েস্ট যাবে না
 const SEARCH_DEBOUNCE_MS = 800; // টাইপিং থেমে এই সময় পর অটোমেটিক রিকোয়েস্ট যাবে
 
+// ---------------- কুরিয়ার-নোট-ওনলি অর্ডার ----------------
+// "courierNotes.viewAll" পারমিশন থাকলে সার্ভার অন্যদের ফ্ল্যাগ-ওয়ালা (needsAttention /
+// courierTrackingAttention) অর্ডারও পাঠায়, `_viewScope: "courierNotes"` মার্কার সহ। এগুলো মূল
+// অর্ডার লিস্টে (Pending/All/সার্চ ইত্যাদি) মেশানো হয় না — আলাদা স্টেটে থাকে, শুধু নোট/ট্র্যাকিং-নোট
+// পেজে দেখা যায়।
+const COURIER_NOTES_SCOPE = "courierNotes";
+const hasNoteFlag = (o) => o?.needsAttention === true || o?.courierTrackingAttention === true;
+const lastActivityTs = (o) => {
+  const t = o?.lastActivityTime || o?.activities?.[o.activities.length - 1]?.timestamp;
+  const n = t ? new Date(t).getTime() : 0;
+  return Number.isNaN(n) ? 0 : n;
+};
+// মূল অর্ডার + নোট-ওনলি অর্ডার একসাথে (নোট পেজের জন্য); নোট-ওনলি না থাকলে আগের মতোই হুবহু একই অ্যারে
+const withCourierNoteOrders = (orders, extras) =>
+  extras.length === 0
+    ? orders
+    : [...orders, ...extras].sort((a, b) => lastActivityTs(b) - lastActivityTs(a));
+
 export function OrderProvider({ children }) {
   const [orders, setOrders] = useState([]);
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
   const { socket } = useSocket();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, refreshPermissions } = useAuth();
+  // অন্যের অর্ডার, যেগুলো শুধু courierNotes.viewAll পারমিশনের কারণে এসেছে (মূল `orders`-এ নেই)
+  const [courierNoteOrders, setCourierNoteOrdersState] = useState([]);
+  const courierNoteIdsRef = useRef(new Set());
   const [dbOrders, setDbOrders] = useState([]);
   const [dbLoading, setDbLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,6 +68,15 @@ export function OrderProvider({ children }) {
   //   "notes"  -> "নোট"/গুরুত্বপূর্ণ (needsAttention) অর্ডার লিস্ট (inportantNotes-এর মধ্যেই ফিল্টার)
   const [searchScope, setSearchScope] = useState("orders");
 
+  // নোট-ওনলি অর্ডারের স্টেট + id-সেট ref একসাথে আপডেট (handleOrderUpdate যেন জানতে পারে কোন অর্ডার এই দলের)
+  const setCourierNoteOrders = useCallback((updater) => {
+    setCourierNoteOrdersState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      courierNoteIdsRef.current = new Set(next.map((o) => o?._id));
+      return next;
+    });
+  }, []);
+
   // ---------------- FETCH ALL ORDERS ----------------
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -54,14 +84,24 @@ export function OrderProvider({ children }) {
       const res = await orderService.getAll();
       console.log(res.data);
       if (Array.isArray(res.data)) {
-        setOrders(res.data);
+        // কুরিয়ার-নোট-ওনলি অর্ডার (_viewScope মার্কার) আলাদা করা — মূল লিস্টে মিশবে না
+        const mainOrders = [];
+        const noteOnlyOrders = [];
+        res.data.forEach((o) =>
+          (o?._viewScope === COURIER_NOTES_SCOPE ? noteOnlyOrders : mainOrders).push(o),
+        );
+        console.log(
+          `Orders loaded: main=${mainOrders.length}, courier-note-only=${noteOnlyOrders.length}`,
+        );
+        setOrders(mainOrders);
+        setCourierNoteOrders(noteOnlyOrders);
       }
     } catch (err) {
       console.error("Fetch orders error:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setCourierNoteOrders]);
 
   // ---------------- FETCH ইনকমপ্লিট/ড্রাফট অর্ডার ----------------
   const fetchDraftOrders = useCallback(async () => {
@@ -224,6 +264,17 @@ export function OrderProvider({ children }) {
 
   // ---------------- HANDLE ORDER UPDATE (গ্লোবাল মিউটেশন) ----------------
   const handleOrderUpdate = useCallback((data, actionType = "UPDATE") => {
+    // নোট-ওনলি অর্ডার (যেমন অন্যের অর্ডারে "Tracking OK"/Solve চাপার পর কার্ড থেকে আসা আপডেট) —
+    // মূল লিস্টে ঢোকানো যাবে না; ফ্ল্যাগ থাকলে আপডেট, না থাকলে (সমাধান হয়ে গেলে) সরিয়ে দেওয়া
+    if (actionType !== "DELETE" && data?._id && courierNoteIdsRef.current.has(data._id)) {
+      setCourierNoteOrders((prev) =>
+        hasNoteFlag(data)
+          ? prev.map((o) => (o._id === data._id ? { ...data, _viewScope: COURIER_NOTES_SCOPE } : o))
+          : prev.filter((o) => o._id !== data._id),
+      );
+      return;
+    }
+
     setOrders((prev) => {
       const currentPrev = Array.isArray(prev) ? prev : [];
       if (actionType === "DELETE") {
@@ -238,7 +289,7 @@ export function OrderProvider({ children }) {
       }
       return [data, ...currentPrev];
     });
-  }, []);
+  }, [setCourierNoteOrders]);
 
   // ---------------- DB SEARCH (HTTP — socket না) ----------------
   // আগে socket.emit("searchQuery") দিয়ে হতো, তাই socket কানেক্টেড না থাকলে সার্চ চুপচাপ
@@ -345,12 +396,41 @@ export function OrderProvider({ children }) {
       });
     };
 
+    // অন্যের অর্ডার, কুরিয়ার-নোট ফ্ল্যাগ আছে — শুধু courierNotes.viewAll পারমিশনওয়ালারা পায়
+    const handleCourierNoteChange = (orderData) => {
+      if (!orderData?._id) return;
+      const tagged = { ...orderData, _viewScope: COURIER_NOTES_SCOPE };
+      setCourierNoteOrders((prev) =>
+        prev.some((o) => o._id === orderData._id)
+          ? prev.map((o) => (o._id === orderData._id ? tagged : o))
+          : [tagged, ...prev],
+      );
+    };
+
+    // ফ্ল্যাগ নেই এমন আপডেট (নোট সমাধান হয়ে গেছে) — শুধু _id আসে, তালিকা থেকে সরিয়ে দেওয়া
+    const handleCourierNoteCleared = (orderId) => {
+      setCourierNoteOrders((prev) => prev.filter((o) => o._id !== orderId));
+    };
+
+    // অ্যাডমিন এই ইউজারের পারমিশন/role বদলালে — নতুন পারমিশন আনা, তারপর অর্ডার লিস্ট আবার লোড
+    const handlePermissionsChanged = async (payload) => {
+      console.log("🔐 permissionsChanged received:", payload);
+      await refreshPermissions();
+      fetchOrders();
+    };
+
     socket.on("orderStatusChange", handleOrderStatusChange);
+    socket.on("courierNoteChange", handleCourierNoteChange);
+    socket.on("courierNoteCleared", handleCourierNoteCleared);
+    socket.on("permissionsChanged", handlePermissionsChanged);
 
     return () => {
       socket.off("orderStatusChange", handleOrderStatusChange);
+      socket.off("courierNoteChange", handleCourierNoteChange);
+      socket.off("courierNoteCleared", handleCourierNoteCleared);
+      socket.off("permissionsChanged", handlePermissionsChanged);
     };
-  }, [socket]);
+  }, [socket, setCourierNoteOrders, refreshPermissions, fetchOrders]);
 
   // ---------------- PENDING ORDERS CALCULATION ----------------
   const allPendingOrder = useMemo(() => {
@@ -409,15 +489,19 @@ export function OrderProvider({ children }) {
   // ---------------- ATTENTION ORDERS CALCULATION ----------------
   const inportantNotes = useMemo(() => {
     if (!Array.isArray(orders)) return [];
-    return orders.filter((order) => order.needsAttention === true);
-  }, [orders]);
+    return withCourierNoteOrders(orders, courierNoteOrders).filter(
+      (order) => order.needsAttention === true,
+    );
+  }, [orders, courierNoteOrders]);
 
   // ---------------- COURIER TRACKING ATTENTION ORDERS ----------------
   // needsAttention (নোট) থেকে সম্পূর্ণ আলাদা ফ্ল্যাগ — Steadfast "tracking_update" webhook-এ true হয়
   const trackingAttentionOrders = useMemo(() => {
     if (!Array.isArray(orders)) return [];
-    return orders.filter((order) => order?.courierTrackingAttention === true);
-  }, [orders]);
+    return withCourierNoteOrders(orders, courierNoteOrders).filter(
+      (order) => order?.courierTrackingAttention === true,
+    );
+  }, [orders, courierNoteOrders]);
 
   // ---------------- ড্রাফট/ইনকমপ্লিট অর্ডার সার্চ (draftOrders-এর মধ্যেই লোকাল ফিল্টার) ----------------
   const filteredDraftOrders = useMemo(() => {

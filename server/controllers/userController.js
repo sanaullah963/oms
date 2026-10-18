@@ -1,10 +1,28 @@
 const User = require("../models/User");
+const {
+  PERMISSION_LIST,
+  getEffectivePermissions,
+  validatePermissionPatch,
+  applyPermissionChanges,
+} = require("../config/permissions");
+const { syncUserSocketRooms } = require("../utils/socketRooms");
+
+// ইউজার ডকুমেন্ট → ক্লায়েন্টকে পাঠানোর অবজেক্ট (চূড়ান্ত পারমিশন ম্যাপসহ)
+function withEffectivePermissions(userDoc) {
+  const obj = userDoc.toObject ? userDoc.toObject() : { ...userDoc };
+  obj.permissions = getEffectivePermissions(userDoc);
+  return obj;
+}
 
 // --- GET /api/users (admin only) ---
 exports.listUsers = async (req, res) => {
   try {
     const users = await User.find().select("-passwordHash -pushSubscriptions").sort({ createdAt: -1 });
-    return res.status(200).json({ users });
+    // permissionRegistry: অ্যাডমিন UI-র টগলগুলো এই লিস্ট থেকেই তৈরি হয় (config/permissions.js)
+    return res.status(200).json({
+      users: users.map(withEffectivePermissions),
+      permissionRegistry: PERMISSION_LIST,
+    });
   } catch (error) {
     return res.status(500).json({ message: "ইউজার লিস্ট আনতে ব্যর্থ হয়েছে।" });
   }
@@ -56,8 +74,48 @@ exports.setRole = async (req, res) => {
       return res.status(404).json({ message: "ইউজার খুঁজে পাওয়া যায়নি।" });
     }
 
-    return res.status(200).json({ message: "Role আপডেট করা হয়েছে।", user });
+    // role বদলালে লাইভ সকেটের রুমও বদলাতে হবে (admin ↔ moderator), নাহলে রিকানেক্ট না করা পর্যন্ত পুরনো রুমেই থাকত
+    await syncUserSocketRooms(req.app.get("io"), user);
+
+    return res.status(200).json({ message: "Role আপডেট করা হয়েছে।", user: withEffectivePermissions(user) });
   } catch (error) {
     return res.status(500).json({ message: "আপডেট করতে ব্যর্থ হয়েছে।" });
+  }
+};
+
+// --- PATCH /api/users/:id/permissions (admin only) --- মডারেটরের পারমিশন সেট করা ---
+// body: { permissions: { "orders.viewOthers": true, "courierNotes.viewAll": false } }
+// শুধু পাঠানো key গুলো বদলায়, বাকিগুলো যেমন ছিল তেমন থাকে।
+exports.setPermissions = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const check = validatePermissionPatch(req.body?.permissions);
+    if (!check.ok) {
+      return res.status(400).json({ message: check.message });
+    }
+
+    const user = await User.findById(id).select("-passwordHash -pushSubscriptions");
+    if (!user) {
+      return res.status(404).json({ message: "ইউজার খুঁজে পাওয়া যায়নি।" });
+    }
+    if (user.role === "admin") {
+      return res.status(400).json({ message: "Admin সবসময় সব অ্যাক্সেস পায় — পারমিশন বদলানোর দরকার নেই।" });
+    }
+
+    user.permissions = applyPermissionChanges(user, check.changes);
+    await user.save();
+
+    console.log(
+      `🔐 Permissions updated by ${req.user.name} for ${user.name} (${user._id}):`,
+      JSON.stringify(getEffectivePermissions(user)),
+    );
+
+    // লাইভ কানেকশনের সকেট-রুম আপডেট + ক্লায়েন্টকে "permissionsChanged" ইভেন্ট
+    await syncUserSocketRooms(req.app.get("io"), user);
+
+    return res.status(200).json({ message: "পারমিশন আপডেট করা হয়েছে।", user: withEffectivePermissions(user) });
+  } catch (error) {
+    console.error("setPermissions error:", error);
+    return res.status(500).json({ message: "পারমিশন আপডেট করতে ব্যর্থ হয়েছে।" });
   }
 };

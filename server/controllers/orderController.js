@@ -12,6 +12,7 @@ const { checkFraudSignals } = require("../utils/fraudDetection");
 const { buildActivity, logActivity } = require("../utils/activityLogger");
 const { triggerPurchaseEvent } = require("../utils/metaCapi");
 const { fetchCourierHistorySummary } = require("../utils/courierHistoryProviders");
+const { ordersScope, orderListScope, markViewScope } = require("../utils/orderScope");
 const mongoose = require("mongoose");
 
 // প্যাটার্ন: একাধিক অর্ডার আলাদা করার জন্য (WhatsApp/Messenger টাইমস্ট্যাম্প ট্যাগ)
@@ -27,10 +28,9 @@ exports.masterSearchOrders = async (req, res) => {
       return res.status(200).json({ orders: [] });
     }
 
-    const ownershipFilter =
-      req.user.role === "moderator"
-        ? { $or: [{ createdBy: req.user._id }, { createdBy: null }] }
-        : {};
+    // ✅ কে কোন অর্ডার দেখবে সেই নিয়ম এক জায়গায় — utils/orderScope.js (admin / orders.viewOthers পারমিশন /
+    // নিজের + মালিকহীন)
+    const ownershipFilter = ordersScope(req.user);
 
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 
@@ -70,10 +70,9 @@ exports.searchOrders = async (req, res) => {
       return res.status(200).json({ success: true, orders: [] });
     }
 
-    const ownershipFilter =
-      req.user.role === "moderator"
-        ? { $or: [{ createdBy: req.user._id }, { createdBy: null }] }
-        : {};
+    // ✅ কে কোন অর্ডার দেখবে সেই নিয়ম এক জায়গায় — utils/orderScope.js (admin / orders.viewOthers পারমিশন /
+    // নিজের + মালিকহীন)
+    const ownershipFilter = ordersScope(req.user);
 
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 
@@ -111,10 +110,11 @@ exports.getOrders = async (req, res) => {
     // ✅ মডারেটর হলে শুধু নিজের তৈরি অর্ডার দেখতে পাবে, এডমিন সব দেখবে
     // মডারেটর নিজের তৈরি অর্ডার + "মালিকহীন" অর্ডার (যেমন ল্যান্ডিং পেজ থেকে আসা, যেটা
     // কোনো নির্দিষ্ট মডারেটরের না, শেয়ার্ড পেন্ডিং কিউ হিসেবে সবাই দেখবে) — দুটোই দেখবে
-    const ownershipFilter =
-      req.user.role === "moderator"
-        ? { $or: [{ createdBy: req.user._id }, { createdBy: null }] }
-        : {};
+    // ✅ কে কোন অর্ডার দেখবে সেই নিয়ম এক জায়গায় — utils/orderScope.js:
+    //   admin / orders.viewOthers পারমিশন → সব; নাহলে নিজের + মালিকহীন।
+    //   courierNotes.viewAll পারমিশন থাকলে (এবং সব অর্ডার না দেখলে) অন্যদের কুরিয়ার-নোট-ফ্ল্যাগ-ওয়ালা
+    //   অর্ডারও আসে — ওগুলোতে _viewScope: "courierNotes" মার্কার বসে, ক্লায়েন্ট মূল লিস্টে মেশায় না
+    const ownershipFilter = orderListScope(req.user);
 
     // const orders = await Order.aggregate([
     //   { $match: ownershipFilter },
@@ -211,8 +211,13 @@ exports.getOrders = async (req, res) => {
       { $sort: { lastActivityTime: -1 } },
     ]);
 
-    console.log("Orders fetched successfully:", orders.length);
-    return res.status(200).json(orders || []);
+    const result = markViewScope(req.user, orders || []);
+    console.log(
+      "Orders fetched successfully:",
+      result.length,
+      `(user=${req.user.name}, role=${req.user.role}, courierNote-only=${result.filter((o) => o._viewScope).length})`,
+    );
+    return res.status(200).json(result);
   } catch (error) {
     console.error("Error fetching orders:", error);
     return res.status(500).json({ message: "Failed to fetch orders." });
@@ -1388,7 +1393,15 @@ exports.getCourierHistoryBulk = async (req, res) => {
         .json({ success: false, message: "orderIds ফিল্ড আবশ্যক (নন-এম্পটি অ্যারে)।" });
     }
 
-    const orders = await Order.find({ _id: { $in: orderIds } });
+    // ✅ শুধু ইউজারের স্কোপের ভেতরের অর্ডারগুলো — বাইরের ID পাঠালেও চুপচাপ বাদ পড়ে
+    const orders = await Order.find({
+      $and: [ordersScope(req.user), { _id: { $in: orderIds } }],
+    });
+    if (orders.length !== orderIds.length) {
+      console.log(
+        `⚠️ courier-history-bulk: ${orderIds.length}টি চাওয়া হয়েছে, স্কোপে পাওয়া গেছে ${orders.length}টি (user=${req.user.name})`,
+      );
+    }
     if (orders.length === 0) {
       return res
         .status(404)
