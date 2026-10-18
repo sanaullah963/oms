@@ -425,3 +425,45 @@
 
 
 `EventLog` মডেল/কন্ট্রোলার/`/dashboard/event-logs` পেজ — সব আগে থেকেই সম্পূর্ণ তৈরি ছিল, শুধু নেভিগেশন মেনুতে লিংক নেই (§৭ আইটেম ৯)।
+---
+
+## ১৪. সাম্প্রতিক আপডেট (অক্টোবর ২০২৬) — নতুন ফিচার ও ফিক্স
+
+### ১৪.১ Courier Tracking Attention সিস্টেম
+- `Order.courierTrackingAttention` (Boolean, default false, ইনডেক্স সহ) — **needsAttention থেকে সম্পূর্ণ আলাদা** ফ্ল্যাগ। `needsAttention`/note/activities/Socket.IO আচরণ অপরিবর্তিত।
+- `webhookController.js`: Steadfast `tracking_update` webhook এলে `setFields.courierTrackingAttention = true`।
+- `orderController.trackingOk` + `PATCH /api/orders/:id/tracking-ok` — "Tracking OK" চাপলে ফ্ল্যাগ false + `emitOrderUpdate`।
+- Client: `/tracking-attention` পেজ, `TrackingAttentionCard.jsx`, `OrderContext`-এ `trackingAttentionOrders`, মেনুতে লিংক + ব্যাজ (`SearchAndMenu.jsx`), `orderService.trackingOk`।
+
+### ১৪.২ ড্যাশবোর্ড হেডার কাউন্টার (Attention Notes / Tracking Notes / Comments)
+- একটাই aggregate API: `GET /api/dashboard/attention-counts` (`dashboardController.getAttentionCounts`) — অর্ডার লোডের পরে ব্যাকগ্রাউন্ডে একবার (`countersRequested` ref), অর্ডার লোড কখনো ব্লক করে না।
+- ফিল্টার `getOrders`-এর মতোই (final courier status বাদ; Booked/Cancelled/Delivered শুধু শেষ activity-র ২ দিনের মধ্যে)। Comments: `FacebookComment` (`status:"active"`, `isReplied:false`, `isUserBlocked:false`, `iscommentDeleted:false`)।
+- Client: `dashboardService.getAttentionCounts`, `app/page.js`-এ `COUNTER_BUTTONS`।
+
+### ১৪.৩ ছোট UI/লজিক পরিবর্তন
+- `/dashboard/tracking-parcels` মডালের পেজিনেশন বন্ধ — **কমেন্ট করা**, মুছে ফেলা হয়নি (`trackingParcelController.js` + `TrackingParcelOrderListModal.jsx`)।
+- ইনকমপ্লিট (ড্রাফট) অর্ডার সার্চ এখন DB-তেও খোঁজে: `GET /api/orders/drafts/search`, মোট সংখ্যা `GET /api/orders/drafts/count`; পেজের উপরে মোট DB কাউন্ট; `draftOrderService.search/getCount`, `OrderContext`-এ `draftCounts`/`draftSearchWaiting`।
+- লাইন ব্রেক সংরক্ষণ: অর্ডার ঠিকানা/raw input টেক্সটে `whitespace-pre-wrap` (`OrderCard`, `NoteBubble`, `OrderFullDetail`, `DraftOrderCard`)।
+
+### ১৪.৪ ফ্রড/কুরিয়ার হিস্ট্রি — ড্রপডাউন, মাল্টি-প্রোভাইডার, Retry
+- **ডেটা মডেল:** `courierHistory.providers` অ্যারে (`Order.js` ও `DraftOrder.js` দুটোতেই) — আইটেম: `{ key, label, success:Number|null, cancel:Number|null, meta:Mixed }`। `courierHistory.all` (success/cancel) শুধু **BD Courier**-এর সংখ্যা; প্রোভাইডারদের যোগফল না (BD Courier নিজেই একাধিক কুরিয়ার মেলায় — যোগ করলে ডাবল-কাউন্ট)। নতুন ফিল্ড স্কিমায় না থাকলে Mongoose স্ট্রিক্ট মোডে চুপচাপ বাদ দেয়, তাই দুই মডেলেই থাকতে হবে।
+- **`server/utils/courierHistoryProviders.js`:** `fetchCourierHistorySummary(phones)` → BD Courier ও Steadfast প্যারালালে; রিটার্ন `{ success, cancel, providers }`। `fetchSteadfastForPhone` = `GET {STEADFAST_API_URL}/fraud_check/score/{phone}` (হেডার `Api-Key`/`Secret-Key`, টাইমআউট ১০ সে; কী না থাকলে/এরর হলে `null` — শুধু ওই সারি বাদ)। একাধিক ফোনে প্রতিটার আলাদা সারি ("Steadfast (<phone>)")।
+  - ডকুমেন্টেশন অনুযায়ী: `null` = "জানা নেই", কখনো ০/ক্লিন নয়; `delivered_count`/`cancelled_count` null হতে পারে (তখন রেশিও দেখায়); রেশিও যোগফল ৯৯ হতে পারে; `meta`-তে deliveryRatio, cancellationRatio, volumeBand/Range, totalReports, fraudCategories, doubtfulReports, score, level।
+  - ⚠️ অনুমান যাচাই বাকি: Steadfast ফ্রড API-র অথেন্টিকেশন হেডার/বেস URL বুকিং API-র মতোই ধরা হয়েছে।
+- **`$set` পয়েন্ট (৪টা):** `orderController` (`getCourierHistory`, bulk) ও `draftOrderController` (single, bulk)-এ `"courierHistory.providers": count.providers`; `landingOrderCreation.js`-এ ড্রাফট→অর্ডার কনভার্টে `providers` ক্যারি-ওভার।
+- **`CourierHistoryDropdown.jsx`:** কার্ডে "All s/c ▾" পিল (বাটন) → ক্লিকে ড্রপডাউন; প্রতি প্রোভাইডারের সারি (কাউন্ট বা ratio-only, ভলিউম, রিপোর্ট, সন্দেহজনক রিপোর্ট, স্কোর); `providers` না থাকলে পুরনো `all` থেকে একটা "BD Courier" সারি। বাইরে ক্লিক/Escape-এ বন্ধ। দুই কার্ডে (`OrderCard`, `DraftOrderCard`) ব্যবহৃত।
+- **Retry বাটন (নতুন):** ড্রপডাউন হেডারে ছোট "Retry" — নম্বর এডিট/নতুন নম্বর যোগ হলে বা ফলাফল আবার যাচাইয়ে। প্রপ: `onRetry`, `retrying` (দিলে বাটন আসে; চলাকালীন স্পিনার + ডিজেবল)। ফ্লো: `fetchCourierHistory(true)` (`useOrderActions`) / `handleFetchHistory(true)` (`DraftOrderCard`) → `getCourierHistory(id, force)` → `POST …/courier-history` বডিতে `{ force: true }` → সার্ভারে `alreadyFetched && !force` চেকে পুরনো গার্ড এড়িয়ে আবার ফেচ। ফেচ ফেল করলে পুরনো ডেটা অক্ষত। সাধারণ "History" বাটন ও বাল্ক আগের মতোই (আগে থেকে থাকলে স্কিপ)।
+- **অটো কুরিয়ার হিস্ট্রি (বাদ):** নতুন অর্ডারে ব্যাকগ্রাউন্ড অটো-চেক (`server/utils/autoCourierHistory.js`, `landingOrderCreation`-এর `autoCourierHistory` অপশন) একসময় বানানো হয়েছিল — **মালিক সিস্টেম থেকে বাদ দিয়েছেন**। হিস্ট্রি এখন সম্পূর্ণ ম্যানুয়াল (History বাটন / Retry)। ইনকমপ্লিট ও পুরনো অর্ডারে কখনোই অটো কল ছিল না।
+
+### ১৪.৫ বাগফিক্স — ড্যাশবোর্ডের "দৈনিক ডেলিভারি ও ক্যান্সেল ট্রেন্ড" চার্ট ফাঁকা
+`dashboardController.getDashboardSummary`-এর `dailyTrend` অ্যাগ্রিগেশনে তিনটা বাগ ছিল (পাই চার্ট ঠিক ছিল কারণ ওটা `courierStatus`-ভিত্তিক):
+1. ফিল্টার `orderStatus: {$in:["delivered","cancelled"]}` — `orderStatus` কখনো ওই ভ্যালু পায় না → কিছুই ম্যাচ করত না। এখন `"courier.courierStatus": {$in:[...]}`।
+2. `$group`-এ `status: "courier.courierStatus"` (`$` ছাড়া = স্ট্রিং লিটারেল)। এখন `"$courier.courierStatus"`।
+3. `trendMap`-এ `"Delivered"/"Cancelled"` (বড় হাতের) তুলনা। এখন lowercase।
+- ⚠️ খোলা বিষয়: `$dateToString`-এ টাইমজোন নেই (UTC) — বাংলাদেশ সময়ে রাত ১২–ভোর ৬টার আপডেট আগের দিনে গোনা হয়; `timezone: "Asia/Dhaka"` যোগ করা যায় (এখনো করা হয়নি)।
+
+### ১৪.৬ সংশ্লিষ্ট সতর্কতা / পরের কাজ
+- যেসব অর্ডারে আগে থেকেই `all` হিস্ট্রি আছে, তাদের `providers` নেই → ড্রপডাউনে শুধু "BD Courier" সারি; Steadfast সারি পেতে Retry চাপতে হবে।
+- ড্রপডাউনের "মোট" সারি (ইউজারের ডিজাইনে আছে) শুধু BD Courier-এর `all` দেখায়, Steadfast যোগ করে না — একাধিক API থাকলে লেবেল "মোট (BD Courier)" করা ভালো।
+- ড্রপডাউন কনটেইনারের নিচের কাছে ক্লিপ হলে উপরের দিকে খোলার অপশন যোগ করা যায়।
+- Next.js ভার্সনে breaking change আছে (client/AGENTS.md দেখুন) — নতুন Next API ব্যবহারের আগে ডক চেক করা।
