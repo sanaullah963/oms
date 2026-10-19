@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const orderController = require("../controllers/orderController");
-const { orderAccess } = require("../middleware/permissions");
+const { orderAccess,requirePermission } = require("../middleware/permissions");
 const { bookSteadfast } = require("../controllers/steadfastController");
 const { bookSteadfastBulk } = require("../controllers/steadfastBulkController");
 const {
@@ -43,6 +43,7 @@ router.post("/courier-history-bulk", orderController.getCourierHistoryBulk);
 router.patch("/:id/note", orderAccess(), orderController.addNote);
 
 // ইনকমপ্লিট/ড্রাফট অর্ডার (কাস্টমার সাবমিট করার আগেই ফর্মে যা পূরণ করেছে)
+router.use("/drafts", requirePermission("orders.viewLandingPage"));
 router.get("/drafts", orderController.getDraftOrders);
 router.get("/drafts/search", orderController.searchDraftOrders);
 router.get("/drafts/count", orderController.getDraftOrderCount);

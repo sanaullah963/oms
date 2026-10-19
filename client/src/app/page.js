@@ -6,6 +6,7 @@ import DraftOrderList from "@/components/orders/DraftOrderList";
 import ManualOrderInput from "@/components/orders/ManualOrderInput";
 import { STATUS_TABS } from "@/constants/orderConstants";
 import { useOrders } from "@/context/OrderContext";
+import { useAuth } from "@/context/AuthContext";
 import SearchAndMenu from "@/components/layout/SearchAndMenu";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { formatDate } from "@/utils/dateUtils";
@@ -20,6 +21,13 @@ const COUNTER_BUTTONS = [
 ];
 
 function HomePageContent() {
+
+  const { can } = useAuth();
+ // orders.viewLandingPage না থাকলে "ইনকমপ্লিট" ট্যাব দেখানো হয় না
+  const canViewLanding = can("orders.viewLandingPage");
+ const visibleTabs = STATUS_TABS.filter(
+    (tab) => tab.key !== "Incomplete" || canViewLanding,
+  );
   const {
     orders,
     activeStatus,
@@ -38,6 +46,11 @@ function HomePageContent() {
     draftCounts,
   } = useOrders();
 
+  useEffect(() => {
+ if (!canViewLanding && activeStatus === "Incomplete") {
+    setActiveStatus("Pending");
+  }
+ }, [canViewLanding, activeStatus, setActiveStatus]);
   // "Incomplete" ট্যাবে থাকলে সার্চবক্স ড্রাফট অর্ডারের মধ্যে খুঁজবে, নাহলে আগের মতোই
   // মূল অর্ডার লিস্টে
   const searchScope = activeStatus === "Incomplete" ? "drafts" : "orders";
@@ -108,7 +121,7 @@ function HomePageContent() {
         <SearchAndMenu scope={searchScope} />
 
         <div className="flex overflow-x-auto w-auto gap-0.5 md:gap-2 whitespace-nowrap mt-2">
-          {STATUS_TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveStatus(tab.key)}
@@ -157,7 +170,7 @@ function HomePageContent() {
           ${isAnimating ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0"}
         `}
       >
-        {activeStatus === "Incomplete" ? (
+        {activeStatus === "Incomplete" && canViewLanding ? (
           <DraftOrderList
             drafts={searchQuery ? filteredDraftOrders : draftOrders}
             loading={draftLoading}

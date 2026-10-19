@@ -43,7 +43,9 @@ export function OrderProvider({ children }) {
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [loading, setLoading] = useState(true);
   const { socket } = useSocket();
-  const { isAuthenticated, loading: authLoading, refreshPermissions } = useAuth();
+  const { isAuthenticated, loading: authLoading, refreshPermissions, can } = useAuth();
+  // ল্যান্ডিং পেজ/ইনকমপ্লিট অর্ডার দেখার পারমিশন (অ্যাডমিন সবসময় true) — UI-র জন্য; আসল এনফোর্সমেন্ট সার্ভারে
+  const canViewLanding = can("orders.viewLandingPage");
   // অন্যের অর্ডার, যেগুলো শুধু courierNotes.viewAll পারমিশনের কারণে এসেছে (মূল `orders`-এ নেই)
   const [courierNoteOrders, setCourierNoteOrdersState] = useState([]);
   const courierNoteIdsRef = useRef(new Set());
@@ -105,6 +107,13 @@ export function OrderProvider({ children }) {
 
   // ---------------- FETCH ইনকমপ্লিট/ড্রাফট অর্ডার ----------------
   const fetchDraftOrders = useCallback(async () => {
+    // পারমিশন না থাকলে সার্ভার ৪০৩ দেবে — রিকোয়েস্টই পাঠাই না, লিস্ট খালি রাখি
+  if (!canViewLanding) {
+     setDraftOrders([]);
+    setDraftCounts(null);
+    setDraftLoading(false);
+     return;
+   }
     setDraftLoading(true);
     try {
       const res = await draftOrderService.getAll();
@@ -116,7 +125,7 @@ export function OrderProvider({ children }) {
     } finally {
       setDraftLoading(false);
     }
-  }, []);
+  }, [canViewLanding]);
 
   // ---------------- INITIAL LOAD ----------------
   // ✅ লগইন কনফার্ম হওয়ার আগে fetch করা হয় না — নাহলে প্রতিবার অ্যাপ লোড হওয়ার সময়
@@ -132,7 +141,7 @@ export function OrderProvider({ children }) {
   // মূল লোডিংয়ে বাধা দেয় না। এরর হলে চুপচাপ উপেক্ষা। ড্রাফট যোগ/বাদ হয়ে লিস্টের সংখ্যা
   // বদলালে (socket) ১ সেকেন্ড debounce করে আবার আনা হয়।
   useEffect(() => {
-    if (authLoading || !isAuthenticated || draftLoading) return;
+    if (authLoading || !isAuthenticated || draftLoading || !canViewLanding) return;
     const t = setTimeout(() => {
       draftOrderService
         .getCount()
@@ -142,7 +151,7 @@ export function OrderProvider({ children }) {
         .catch((err) => console.error("Draft count error:", err));
     }, 1000);
     return () => clearTimeout(t);
-  }, [authLoading, isAuthenticated, draftLoading, draftOrders.length]);
+}, [authLoading, isAuthenticated, draftLoading, draftOrders.length, canViewLanding]);
 
   // ---------------- ইনকমপ্লিট অর্ডার রিয়েল-টাইম আপডেট (নতুন ড্রাফট/আপডেট হলে) ----------------
   useEffect(() => {

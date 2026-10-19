@@ -1,5 +1,5 @@
 const { permRoom } = require("../config/permissions");
-const { hasCourierNoteFlag } = require("./orderScope");
+const { hasCourierNoteFlag, LANDING_ORIGIN } = require("./orderScope");
 
 /**
  * অর্ডার আপডেট শুধু সংশ্লিষ্ট মানুষদের কাছে পাঠায় (io.emit দিয়ে সবাইকে পাঠানোর বদলে):
@@ -41,7 +41,14 @@ function emitOrderUpdate(io, order) {
   if (!io || !order) return;
 
   const mainRooms = ["role:admin", permRoom("orders.viewOthers")];
-  mainRooms.push(order.createdBy ? `user:${order.createdBy}` : "role:moderator");
+  if (order.createdBy) {
+   mainRooms.push(`user:${order.createdBy}`);
+  } else if (order.origin === LANDING_ORIGIN) {
+    // ল্যান্ডিং পেজ অর্ডার — শুধু যাদের orders.viewLandingPage পারমিশন আছে
+   mainRooms.push(permRoom("orders.viewLandingPage"));
+ } else {
+    mainRooms.push("role:moderator");
+  }
 
   let main = io;
   mainRooms.forEach((room) => {
@@ -66,14 +73,14 @@ function emitOrderUpdate(io, order) {
 function emitDraftUpdate(io, draft) {
   if (!io || !draft) return;
   io.to("role:admin").emit("draftOrderUpdate", draft);
-  io.to("role:moderator").emit("draftOrderUpdate", draft);
+  io.to(permRoom("orders.viewLandingPage")).emit("draftOrderUpdate", draft);
 }
 
 // --- draft সম্পন্ন (সাবমিট) বা বাতিল হলে "ইনকমপ্লিট" লিস্ট থেকে সরিয়ে দেওয়ার জন্য ---
 function emitDraftRemove(io, draftId) {
   if (!io || !draftId) return;
   io.to("role:admin").emit("draftOrderRemove", draftId);
-  io.to("role:moderator").emit("draftOrderRemove", draftId);
+  io.to(permRoom("orders.viewLandingPage")).emit("draftOrderRemove", draftId);
 }
 
 module.exports = { emitOrderUpdate, emitDraftUpdate, emitDraftRemove };

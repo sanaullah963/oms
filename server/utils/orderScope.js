@@ -10,6 +10,8 @@
 //        moderator + orders.viewOthers → সব
 //        moderator (ডিফল্ট)         → নিজের তৈরি (createdBy = সে) + মালিকহীন (createdBy = null,
 //                                     যেমন ল্যান্ডিং পেজ থেকে আসা — শেয়ার্ড পেন্ডিং কিউ)
+//                                     ⚠️ origin = "landing_page" অর্ডার শুধু তখনই, যদি
+//                                     orders.viewLandingPage পারমিশন থাকে (ডিফল্ট: আছে)
 //  2) courierNotes — Steadfast নোট (needsAttention / courierTrackingAttention ফ্ল্যাগ)
 //        admin / moderator + courierNotes.viewAll → ফ্ল্যাগ-ওয়ালা সব অর্ডার
 //        moderator (ডিফল্ট)         → "orders" স্কোপের ভেতরের অর্ডারগুলোর নোট
@@ -32,9 +34,20 @@ function isAdmin(user) {
 // Mongo ফিল্টার (find / aggregate $match-এ বসানোর জন্য)
 // ---------------------------------------------------------------------------
 
+// ল্যান্ডিং পেজ অর্ডারের origin মান (models/Order.js-এর enum-এর সাথে মেলে)
+const LANDING_ORIGIN = "landing_page";
+
+// এই ইউজার ল্যান্ডিং পেজ (ও ইনকমপ্লিট থেকে কনভার্ট করা) অর্ডার দেখতে পারবে কিনা
+function canViewLandingOrders(user) {
+  return isAdmin(user) || can(user, "orders.viewLandingPage");
+}
+
 // "নিজের + মালিকহীন" ফিল্টারের উপাদান
 function ownOrOwnerlessClauses(user) {
-  return [{ createdBy: user._id }, { createdBy: null }];
+  if (canViewLandingOrders(user)) {
+    return [{ createdBy: user._id }, { createdBy: null }];
+  }
+  return [{ createdBy: user._id }, { createdBy: null, origin: { $ne: LANDING_ORIGIN } }];
 }
 
 // সাধারণ অর্ডার স্কোপ
@@ -73,7 +86,10 @@ function orderListScope(user) {
 function inOrdersScope(user, order) {
   if (!user || !order) return false;
   if (isAdmin(user) || can(user, "orders.viewOthers")) return true;
-  if (!order.createdBy) return true; // মালিকহীন — শেয়ার্ড কিউ
+  if (!order.createdBy) {
+    // মালিকহীন — শেয়ার্ড কিউ; তবে ল্যান্ডিং পেজ অর্ডার শুধু পারমিশন থাকলে
+    return order.origin === LANDING_ORIGIN ? canViewLandingOrders(user) : true;
+  }
   return String(order.createdBy) === String(user._id);
 }
 
@@ -106,6 +122,8 @@ function markViewScope(user, orders) {
 }
 
 module.exports = {
+  LANDING_ORIGIN,
+  canViewLandingOrders,
   COURIER_NOTE_FLAGS,
   VIEW_SCOPE_COURIER_NOTES,
   isAdmin,

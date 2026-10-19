@@ -12,6 +12,7 @@ const { seedFromEnvIfEmpty } = require("./utils/facebookPages");
 const { verifyToken } = require("./utils/jwt");
 const User = require("./models/User");
 const Order = require("./models/Order");
+const mongoose = require("mongoose");
 
 const httpServer = http.createServer(app);
 
@@ -67,5 +68,3 @@ startScheduledOrderReleaserJob(io);
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-

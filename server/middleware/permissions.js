@@ -39,7 +39,7 @@ function orderAccess({ param = "id", via = [] } = {}) {
       if (!id || !mongoose.Types.ObjectId.isValid(id)) return next();
 
       const order = await Order.findById(id)
-        .select("createdBy needsAttention courierTrackingAttention")
+        .select("createdBy origin needsAttention courierTrackingAttention")
         .lean();
       if (!order) return next();
 
