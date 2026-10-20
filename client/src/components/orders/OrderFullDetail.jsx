@@ -22,6 +22,8 @@ const MASTER_EDIT_COURIER_STATUS = [
   "review",
   "pending",
   "assigned",
+  "cancel_request",
+  "cancel_parcel_pending",
   "delivered",
   "partial_delivered",
   "cancelled",

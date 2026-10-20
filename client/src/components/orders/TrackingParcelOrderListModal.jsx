@@ -9,6 +9,8 @@ import DisplayAgoTime from "../common/DisplayAgoTime";
 const TITLE_MAP = {
   pending: "⏳ পেন্ডিং পার্সেল",
   assigned: "🚚 এসাইন পার্সেল",
+  cancel_request: "📨 ক্যান্সেল রিকোয়েস্ট পার্সেল",
+  cancel_parcel_pending: "⏳ ক্যান্সেল (রিটার্ন পেন্ডিং) পার্সেল",
   review: "🔎 ইন-রিভিউ পার্সেল",
   partial_delivered: "📦 আংশিক ডেলিভারড পার্সেল",
   delivered: "✅ ডেলিভারড পার্সেল",
@@ -19,6 +21,8 @@ const TITLE_MAP = {
 const COURIER_STATUS_COLOR_MAP = {
   pending: "bg-amber-300 text-blue-900",
   assigned: "bg-blue-300 text-blue-900",
+  cancel_request: "bg-pink-300 text-pink-900",
+  cancel_parcel_pending: "bg-rose-300 text-rose-900",
   review: "bg-purple-300 text-purple-900",
   partial_delivered: "bg-orange-300 text-orange-900",
   delivered: "bg-green-300 text-green-900",

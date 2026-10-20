@@ -16,6 +16,8 @@ const TITLE_MAP = {
 const COURIER_STATUS_COLOR_MAP = {
   pending: "bg-amber-300 text-blue-900",
   assigned: "bg-blue-300 text-blue-900",
+  cancel_request: "bg-pink-300 text-pink-900",
+  cancel_parcel_pending: "bg-rose-300 text-rose-900",
   review: "bg-purple-300 text-purple-900",
   partial_delivered: "bg-orange-300 text-orange-900",
   delivered: "bg-green-300 text-green-900",

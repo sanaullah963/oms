@@ -110,24 +110,17 @@ const OrderSchema = new mongoose.Schema({
     trackingId: { type: String, default: null },
     responseData: { type: mongoose.Schema.Types.Mixed, default: null },
     bookedAt: { type: Date, default: null },
-    // bookingStatus: {
-    //   type: String,
-    //   enum: ["N/A", "Booked", "Failed", "Pending", "Shipping", "Delivered"],
-    //   default: "Pending",
-    // },
     courierStatus: {
       type: String,
-      // note: এই enum-এর ভ্যালুগুলো lowercase — webhookController.js
-      // (STATUS_FIELD_MAP, COURIER_STATUS_PATTERNS), steadfastController.js/
-      // steadfastBulkController.js (বুকিং-এর সময়), orderController.js এবং
-      // client (OrderContext.jsx, page.js, OrderCard.jsx, FraudDetectionModal.jsx)
-      // সবাই এখন এই lowercase কনভেনশন মেনে চলে। নতুন ভ্যালু যোগ করলে ওই
-      // ফাইলগুলোতেও lowercase-এই মেলাতে হবে।
       enum: [
         "unknown",
         "review",
         "pending",
         "assigned",
+        // --- cancel flow (Steadfast-এর অফিসিয়াল status নয় — আমরা নিজেরা tracking_message
+        // দেখে সেট করি, webhookController.js-এর CANCEL_FLOW_PATTERNS দেখুন) ---
+        "cancel_request", // ক্যান্সেলের রিকোয়েস্ট পাঠানো হয়েছে
+        "cancel_parcel_pending", // ক্যান্সেল হয়েছে, কিন্তু রিটার্ন পার্সেল এখনো হাতে আসেনি
         "delivered",
         "partial_delivered",
         "cancelled",

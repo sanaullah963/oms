@@ -33,6 +33,8 @@ const TITLE_MAP = {
   pending: "⏳ পেন্ডিং পার্সেল",
   delivered: "✅ ডেলিভারড পার্সেল",
   cancelled: "❌ ক্যান্সেলড পার্সেল",
+  cancel_request: "📨 ক্যান্সেল রিকোয়েস্ট পার্সেল",
+  cancel_parcel_pending: "⏳ ক্যান্সেল (রিটার্ন পেন্ডিং) পার্সেল",
   // tracking
   assigned: "🚚 এসাইন পার্সেল",
   review: "🔎 ইন-রিভিউ পার্সেল",
@@ -43,6 +45,8 @@ const TITLE_MAP = {
 const COURIER_STATUS_COLOR_MAP = {
   pending: "bg-amber-300 text-blue-900",
   assigned: "bg-blue-300 text-blue-900",
+  cancel_request: "bg-pink-300 text-pink-900",
+  cancel_parcel_pending: "bg-rose-300 text-rose-900",
   review: "bg-purple-300 text-purple-900",
   partial_delivered: "bg-orange-300 text-orange-900",
   delivered: "bg-green-300 text-green-900",
@@ -81,7 +85,9 @@ function SortableTh({ label, sortKey, title, sortConfig, onToggle }) {
           onClick={() => onToggle(sortKey)}
           title={title}
           className={`cursor-pointer rounded-sm px-1 ${
-            active ? "text-indigo-600 font-bold" : "text-gray-400 hover:text-gray-600"
+            active
+              ? "text-indigo-600 font-bold"
+              : "text-gray-400 hover:text-gray-600"
           }`}
         >
           {active ? (sortConfig.direction === "asc" ? "▲" : "▼") : "⇅"}
@@ -129,7 +135,7 @@ export default function ParcelOrderListModal({
     });
     return sortConfig.direction === "asc" ? sorted : sorted.reverse();
   }, [orders, sortConfig]);
-
+console.log("sortedOrders", sortedOrders);
   // ভুল source পাঠালে (টাইপো) ক্র্যাশ না করে এরর মেসেজ দেখায় — এফেক্টের ভেতরে স্টেট বদলানো লাগে না
   const fetcher = FETCHERS[source];
 
@@ -180,7 +186,8 @@ export default function ParcelOrderListModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
           <h3 className="font-bold text-gray-800">
             {title}
-            {productCode ? ` — ${productCode}` : ""} — {count.toLocaleString("bn-BD")}টি
+            {productCode ? ` — ${productCode}` : ""} —{" "}
+            {count.toLocaleString("bn-BD")}টি
           </h3>
           <button
             onClick={onClose}
@@ -196,7 +203,9 @@ export default function ParcelOrderListModal({
           ) : errorMessage ? (
             <div className="text-center py-16 text-red-500">{errorMessage}</div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">এই তালিকায় কোনো পার্সেল নেই।</div>
+            <div className="text-center py-16 text-gray-400">
+              এই তালিকায় কোনো পার্সেল নেই।
+            </div>
           ) : (
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-gray-50">
@@ -240,7 +249,9 @@ export default function ParcelOrderListModal({
               <tbody>
                 {sortedOrders.map((o, index) => {
                   const isExpanded = expandedId === o._id;
-                  const phone = Array.isArray(o.castomerPhone) ? o.castomerPhone[0] : o.castomerPhone;
+                  const phone = Array.isArray(o.castomerPhone)
+                    ? o.castomerPhone[0]
+                    : o.castomerPhone;
                   const lastActivity = o.activities?.[o.activities.length - 1];
                   return (
                     <React.Fragment key={o._id}>
@@ -256,7 +267,9 @@ export default function ParcelOrderListModal({
                           </span>{" "}
                           {index + 1}
                         </td>
-                        <td className="py-2 px-4 font-medium">{o.castomerName}</td>
+                        <td className="py-2 px-4 font-medium">
+                          {o.castomerName}
+                        </td>
                         <td
                           className="py-2 px-4 text-blue-600 cursor-pointer"
                           onClick={(e) => {
@@ -275,13 +288,23 @@ export default function ParcelOrderListModal({
                         >
                           {o.courier?.trackingId || "-"}
                         </td>
-                        <td className="py-2 px-4 text-gray-500">{o.productCode || "-"}</td>
-                        <td className="py-2 px-4">৳{o.totalCOD}</td>
-                        <td className="py-2 px-4 text-gray-500">{o.orderStatus || "-"}</td>
-                        <td className="py-2 px-4 text-gray-500">{o.courier?.courierStatus || "-"}</td>
-                        <td className="py-2 px-4 text-gray-500 text-center">{o.createdByName || "-"}</td>
                         <td className="py-2 px-4 text-gray-500">
-                          <DisplayAgoTime timeStamp={lastActivity?.timestamp || "-"} />
+                          {o.productCode || "-"}
+                        </td>
+                        <td className="py-2 px-4">৳{o.totalCOD}</td>
+                        <td className="py-2 px-4 text-gray-500">
+                          {o.orderStatus || "-"}
+                        </td>
+                        <td className="py-2 px-4 text-gray-500">
+                          {o.courier?.courierStatus || "-"}
+                        </td>
+                        <td className="py-2 px-4 text-gray-500 text-center">
+                          {o.createdByName || "-"}
+                        </td>
+                        <td className="py-2 px-4 text-gray-500">
+                          <DisplayAgoTime
+                            timeStamp={lastActivity?.timestamp || "-"}
+                          />
                         </td>
                       </tr>
 
@@ -300,8 +323,9 @@ export default function ParcelOrderListModal({
                               {o.courier?.courierStatus && (
                                 <span
                                   className={`text-xs font-semibold px-2 py-0.5 rounded-sm ${
-                                    COURIER_STATUS_COLOR_MAP[o.courier.courierStatus] ||
-                                    COURIER_STATUS_COLOR_MAP.unknown
+                                    COURIER_STATUS_COLOR_MAP[
+                                      o.courier.courierStatus
+                                    ] || COURIER_STATUS_COLOR_MAP.unknown
                                   }`}
                                 >
                                   {o.courier.courierStatus}
@@ -322,11 +346,19 @@ export default function ParcelOrderListModal({
                               </p>
                             )}
                             {o.permanentNote && (
-                              <p className="text-sm text-red-700 mb-1">{o.permanentNote}</p>
+                              <p className="text-sm text-red-700 mb-1">
+                                {o.permanentNote}
+                              </p>
                             )}
-                            {o.note && <p className="text-xs text-gray-600 mb-1">নোট: {o.note}</p>}
+                            {o.note && (
+                              <p className="text-xs text-gray-600 mb-1">
+                                নোট: {o.note}
+                              </p>
+                            )}
 
-                            <TrackingActivityTimeline activities={o.activities} />
+                            <TrackingActivityTimeline
+                              activities={o.activities}
+                            />
                           </td>
                         </tr>
                       )}

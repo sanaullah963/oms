@@ -25,13 +25,43 @@ const IGNORE_PATTERNS = [
 // note: সব ভ্যালু lowercase — Order.js স্কিমার enum, steadfastController.js/
 // steadfastBulkController.js এবং client (OrderContext.jsx, page.js,
 // OrderCard.jsx, FraudDetectionModal.jsx)-এর সাথে মিলিয়ে রাখা।
+//note: Steadfast-এর অফিসিয়াল "cancelled" আর সরাসরি আমাদের "cancelled" হয় না —
+// কুরিয়ার ক্যান্সেল করলেও পার্সেলটা এখনো আমাদের হাতে ফেরত আসেনি, তাই আগে
+// "cancel_parcel_pending"-এ যায়। চূড়ান্ত "cancelled" শুধু রিটার্ন মেসেজ
+// (CANCEL_FLOW_PATTERNS) পেলেই সেট হয়।
 const STATUS_FIELD_MAP = {
   pending: "pending",
   delivered: "delivered",
   partial_delivered: "partial_delivered",
-  cancelled: "cancelled",
+  // cancelled: "cancelled",
+  cancelled: "cancel_parcel_pending",
   unknown: "unknown",
 };
+
+// ----------- Cancel flow: tracking_message দেখে আমাদের নিজস্ব ২টা ধাপ + চূড়ান্ত cancelled
+// (cancel_request এবং cancel_parcel_pending Steadfast অফিসিয়ালি পাঠায় না —
+// এগুলো শুধু আমাদের ডাটাবেজের লেবেল)। এই প্যাটার্নগুলো অফিসিয়াল `status`
+// ফিল্ডের আগে চেক করা হয়, কারণ "Consignment status has been updated as Cancelled"
+// মেসেজটা অফিসিয়াল status: "cancelled"-এর সাথেই আসে।
+//   ধাপ ১: "Consignment ID#305133315 cancellation request has been sent."          -> cancel_request
+//   ধাপ ২: "Consignment has been cancelled by system." /
+//          "Consignment status has been updated as Cancelled"                       -> cancel_parcel_pending
+//   ধাপ ৩: "Consignment Return status has been updated to Processing"              -> cancelled (চূড়ান্ত)
+// ধাপ ৩-এ ইচ্ছা করেই "Processing" বাদ দিয়ে শুধু "Return status has been updated to"
+// ধরা হয়েছে — নাহলে পরে "Return ... Delivered" টাইপ মেসেজ এলে সেটা নিচের সাধারণ
+// /Delivered/ প্যাটার্নে পড়ে ভুল করে "delivered" হয়ে যেত।
+const CANCEL_FLOW_PATTERNS = [
+  { label: "cancelled", pattern: /return status has been updated to/i },
+  { label: "cancel_request", pattern: /cancellation request has been sent/i },
+  {
+    label: "cancel_parcel_pending",
+    pattern: /(cancelled by system|status has been updated as cancelled)/i,
+  },
+];
+
+// delivered/partial_delivered হয়ে যাওয়া পার্সেলকে cancel flow-এর মেসেজ যেন উল্টে না দেয়
+// (partial delivery-র পরেও রিটার্ন মেসেজ আসতে পারে)
+const DELIVERED_FINAL_LABELS = ["delivered", "partial_delivered"];
 // ----------- note গুরুত্বপূর্ণ কিনা যাচাই -> সবসময় true/false রিটার্ন করে
 function classifyNote(text) {
   if (!text) return false;
@@ -46,8 +76,17 @@ const COURIER_STATUS_PATTERNS = [
   // tracking_update মেসেজের টেক্সট থেকে অনুমান করা হয়, তাই একাধিক সম্ভাব্য
   // ওয়ার্ডিং রাখা হলো (তবুও এটা Steadfast-এর ডকুমেন্টেড কন্ট্র্যাক্ট না,
   // ওরা মেসেজ বদলালে এই প্যাটার্নও আপডেট করতে হবে)
-  { label: "assigned", pattern: /(assigned to rider|rider assigned|assigned for delivery)/i },
-  { label: "cancelled", pattern: /(Cancelled|cancelled by system)/i },
+  {
+    label: "assigned",
+    pattern: /(assigned to rider|rider assigned|assigned for delivery)/i,
+  },
+  // { label: "cancelled", pattern: /(Cancelled|cancelled by system)/i },
+  // note: অন্য কোনো "cancelled" ওয়ার্ডিং এলেও সরাসরি চূড়ান্ত "cancelled" নয় —
+  // সেটাও cancel_parcel_pending-এ যাবে (চূড়ান্ত cancelled শুধু CANCEL_FLOW_PATTERNS-এর রিটার্ন মেসেজে)
+  {
+    label: "cancel_parcel_pending",
+    pattern: /(Cancelled|cancelled by system)/i,
+  },
   // "delivered" প্যাটার্নের আগে চেক করতে হবে, কারণ "partially delivered"
   // টেক্সটেও "Delivered" শব্দটা থাকে
   { label: "partial_delivered", pattern: /partial(ly)?[\s-]?deliver(ed)?/i },
@@ -60,27 +99,53 @@ const COURIER_STATUS_PATTERNS = [
 // delivered/cancelled হয়ে যাওয়া অর্ডারকে আবার pending-এ ফিরিয়ে দিতে পারে —
 // এটা ঠেকাতেই rank ব্যবহার করা হচ্ছে। rank কম হলে courierStatus স্কিপ হবে,
 // কিন্তু activity/note সবসময়ই সেভ হবে (নিচে দেখুন)।
-// delivered/partial_delivered/cancelled সবাইকে একই (৪) rank দেওয়া হয়েছে,
+// delivered/partial_delivered/cancelled সবাইকে একই (৬) rank দেওয়া হয়েছে,
 // যাতে কুরিয়ার নিজে একটা final status থেকে আরেকটা final status-এ সংশোধন
 // করলে (যেমন delivered -> partial_delivered) সেটা এখনও গ্রহণ করা যায়।
+// cancel flow: cancel_request(৪) -> cancel_parcel_pending(৫) -> cancelled(৬)।
+// ফলে দেরিতে আসা পুরনো মেসেজ (যেমন cancelled হয়ে যাওয়ার পর আবার "cancelled by system"
+// বা "pending") স্ট্যাটাস পিছিয়ে দিতে পারবে না, আবার cancel_request/cancel_parcel_pending
+// থেকে delivered (ক্যান্সেল রিজেক্ট হয়ে ডেলিভারি হলে) যাওয়াও আটকাবে না।
 const STATUS_RANK = {
   unknown: 0,
   review: 1,
   pending: 2,
   assigned: 3,
-  delivered: 4,
-  partial_delivered: 4,
-  cancelled: 4,
+  cancel_request: 4,
+  cancel_parcel_pending: 5,
+  delivered: 6,
+  partial_delivered: 6,
+  cancelled: 6,
 };
 
 // ----------- courier status বের করার মূল ফাংশন
-// প্রায়োরিটি: delivery_status webhook-এর অফিসিয়াল `status` ফিল্ড > tracking_message প্যাটার্ন ম্যাচিং
+// প্রায়োরিটি: cancel flow মেসেজ প্যাটার্ন > delivery_status webhook-এর অফিসিয়াল `status` ফিল্ড > tracking_message প্যাটার্ন ম্যাচিং
 function getCourierStatus(data) {
   const text = data.tracking_message;
+  // --- ১. cancel flow (cancel_request / cancel_parcel_pending / চূড়ান্ত cancelled) ---
+  if (text) {
+    const cancelStep = CANCEL_FLOW_PATTERNS.find((item) =>
+      item.pattern.test(text),
+    );
+    if (cancelStep) {
+      console.log(
+        `Steadfast webhook: cancel-flow message matched -> ${cancelStep.label} (consignment ${data.consignment_id}, type ${data.notification_type}, official status ${data.status}, message "${text}")`,
+      );
+      return cancelStep.label;
+    }
+  }
 
+  // --- ২. অফিসিয়াল status ফিল্ড ---
   if (data.notification_type === "delivery_status" && data.status) {
     const mapped = STATUS_FIELD_MAP[data.status.toLowerCase()];
-    if (mapped) return mapped;
+    if (mapped) {
+      if (String(data.status).toLowerCase() === "cancelled") {
+        console.log(
+          `Steadfast webhook: official status "cancelled" -> ${mapped} (consignment ${data.consignment_id}; চূড়ান্ত cancelled-এর জন্য রিটার্ন মেসেজ লাগবে)`,
+        );
+      }
+      return mapped;
+    }
   }
 
   if (!text) return "unknown";
@@ -184,41 +249,75 @@ exports.handleSteadfastWebhook = async (req, res) => {
     const newRank = STATUS_RANK[courierLabel] ?? 0;
     const isDowngrade = newRank < currentRank;
 
-    if (!isDowngrade) {
+    // চূড়ান্ত "cancelled" (রিটার্ন মেসেজ) আর delivered/partial_delivered-এর rank সমান,
+    // তাই rank দিয়ে আটকায় না — আলাদা করে আটকানো হচ্ছে
+    const isBlockedByDelivered =
+      courierLabel === "cancelled" &&
+      DELIVERED_FINAL_LABELS.includes(currentLabel);
+    const shouldSkipStatus = isDowngrade || isBlockedByDelivered;
+
+    if (!shouldSkipStatus) {
+      setFields["courier.courierStatus"] = courierLabel;
+      console.log(
+        `Steadfast webhook: courierStatus ${currentLabel} -> ${courierLabel} for consignment ${data.consignment_id}`,
+      );
       setFields["courier.courierStatus"] = courierLabel;
     } else {
       console.log(
-        `Steadfast webhook: ignoring status downgrade for consignment ${data.consignment_id} (${currentLabel} -> ${courierLabel})`,
+        `Steadfast webhook: ignoring status change for consignment ${data.consignment_id} (${currentLabel} -> ${courierLabel}, ${isBlockedByDelivered ? "delivered order cancel-flow দিয়ে উল্টানো যাবে না" : "downgrade"})`,
       );
     }
 
     // --- ফাইন্যান্সিয়াল ড্যাশবোর্ডের জন্য: delivery_status webhook-এ cod_amount ও delivery_charge আসে ---
-    // (isDowngrade true হলে courierLabel কখনোই delivered/cancelled/partial_delivered
-    // হতে পারে না, কারণ ওগুলো সর্বোচ্চ rank — তাই আলাদা করে isDowngrade চেক লাগছে না)
-    const isFinalDeliveryEvent =
-      data.notification_type === "delivery_status" &&
-      (courierLabel === "delivered" ||
-        courierLabel === "cancelled" ||
-        courierLabel === "partial_delivered");
+    const isDeliveryStatusEvent = data.notification_type === "delivery_status";
 
-    if (isFinalDeliveryEvent) {
+    // delivered/partial_delivered: আগের মতোই (delivery_status webhook-এই)
+    const isDeliveredFinalEvent =
+      isDeliveryStatusEvent &&
+      (courierLabel === "delivered" || courierLabel === "partial_delivered");
+
+    // চূড়ান্ত cancelled: রিটার্ন মেসেজ tracking_update হিসেবেও আসতে পারে, তাই
+    // notification_type চেক করা হচ্ছে না — শুধু স্ট্যাটাস সত্যিই বসেছে কিনা দেখা হচ্ছে।
+    // ড্যাশবোর্ডের cancelled কাউন্ট statusUpdatedAt দিয়ে ডেট-ফিল্টার হয়, তাই
+    // এটা এখন "চূড়ান্ত cancelled হওয়ার সময়" নির্দেশ করবে।
+    const isCancelFinalEvent =
+      !shouldSkipStatus && courierLabel === "cancelled";
+
+    // Steadfast-এর অফিসিয়াল delivery_status "cancelled"-এ delivery_charge আসে, কিন্তু আমাদের
+    // স্ট্যাটাস তখন cancel_parcel_pending — চার্জটা তখনই সেভ রাখতে হবে, নাহলে পরে
+    // রিটার্ন মেসেজ (যেটায় delivery_charge নাও থাকতে পারে) এলে চার্জ হারিয়ে যাবে।
+    // (delivered/partial_delivered অর্ডারের চার্জ যেন ক্যান্সেল ইভেন্ট ওভাররাইট না করে সেটাও আটকানো)
+    const isOfficialCancelEvent =
+      isDeliveryStatusEvent &&
+      String(data.status || "").toLowerCase() === "cancelled" &&
+      !DELIVERED_FINAL_LABELS.includes(currentLabel);
+
+    if (isDeliveredFinalEvent || isCancelFinalEvent) {
       setFields["courier.statusUpdatedAt"] = new Date();
       // setFields.orderStatus = courierLabel; // Order মডেলের orderStatus enum আলাদা (Capitalized) — একসাথে সিঙ্ক করতে চাইলে ম্যাপিং লাগবে
 
-      if (typeof data.delivery_charge !== "undefined") {
-        setFields["courier.deliveryCharge"] = Number(data.delivery_charge);
-      }
-
-      if (courierLabel === "delivered" || courierLabel === "partial_delivered") {
-        const deliveredCodAmount = Number(data.cod_amount || 0);
-        setFields["courier.deliveredCodAmount"] = deliveredCodAmount;
-        setFields["courier.codChargeAmount"] = calculateCodCharge(
-          deliveredCodAmount,
-          data.delivery_charge,
+      if (isCancelFinalEvent) {
+        console.log(
+          `Steadfast webhook: consignment ${data.consignment_id} চূড়ান্তভাবে cancelled — statusUpdatedAt সেট হলো`,
         );
       }
     }
+    if (
+      (isDeliveredFinalEvent || isCancelFinalEvent || isOfficialCancelEvent) &&
+      isDeliveryStatusEvent &&
+      typeof data.delivery_charge !== "undefined"
+    ) {
+      setFields["courier.deliveryCharge"] = Number(data.delivery_charge);
+    }
 
+    if (isDeliveredFinalEvent) {
+      const deliveredCodAmount = Number(data.cod_amount || 0);
+      setFields["courier.deliveredCodAmount"] = deliveredCodAmount;
+      setFields["courier.codChargeAmount"] = calculateCodCharge(
+        deliveredCodAmount,
+        data.delivery_charge,
+      );
+    }
     const updateObj = {
       $push: { activities: newActivity },
       $set: setFields,

@@ -3,6 +3,13 @@
 const STATUS_CARDS = [
   { key: "pending", label: "পেন্ডিং পার্সেল", icon: "⏳", color: "bg-amber-100 text-amber-800" },
   { key: "assigned", label: "এসাইন পার্সেল", icon: "🚚", color: "bg-blue-100 text-blue-800" },
+  { key: "cancel_request", label: "ক্যান্সেল রিকোয়েস্ট", icon: "📨", color: "bg-pink-100 text-pink-800" },
+  {
+   key: "cancel_parcel_pending",
+    label: "ক্যান্সেল (রিটার্ন পেন্ডিং)",
+    icon: "↩️",
+    color: "bg-rose-100 text-rose-800",
+  },
   { key: "review", label: "ইন-রিভিউ", icon: "🔎", color: "bg-purple-100 text-purple-800" },
   {
     key: "partial_delivered",
@@ -16,7 +23,7 @@ const STATUS_CARDS = [
 
 export default function TrackingParcelStatsCards({ counts, activeStatus, onCardClick }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
       {STATUS_CARDS.map((card) => {
         const isActive = activeStatus === card.key;
         return (
