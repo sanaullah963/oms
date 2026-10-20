@@ -21,6 +21,30 @@ const IGNORE_PATTERNS = [
   /dispatch id:\s*\d+/i,
 ];
 
+// ----------- এই প্যাটার্ন মিললে needsAttention সবসময় true (IGNORE_PATTERNS-এর আগে চেক হয়)
+const IMPORTANT_OVERRIDE_PATTERNS = [
+  /rider\s*note/i, // Rider note: "..." / Rider Note: "..."
+  /delivery attempt failed/i,
+  /receiver could not be reached/i,
+];
+
+// ----------- courierTrackingAttention: শুধু পার্সেল মুভমেন্ট/ওয়্যারহাউজ মেসেজে true হবে
+// (tracking_update webhook-এ + মেসেজ নিচের দুই ফরম্যাটের একটা হলে)
+//   "Consignment has been received at BHANGA - FARIDPUR WAREHOUSE."
+//   "Consignment has been received at CHARKAUA (BARISHAL)."
+//   "Consignment has been received at BARISHAL SHORTING CENTER"
+//   "Consignment sent to CHITTAGONG WAREHOUSE. Dispatch ID: 18427806"
+//   "Consignment sent to ANWARA (CTG). Dispatch ID: 18446774"
+const TRACKING_ATTENTION_PATTERNS = [
+  /^\s*consignment has been received at\s+\S/i,
+  /^\s*consignment sent to\s+\S/i,
+];
+
+function isTrackingAttentionMessage(text) {
+  if (!text) return false;
+  return TRACKING_ATTENTION_PATTERNS.some((p) => p.test(text));
+}
+
 // ----------- Steadfast-এর অফিসিয়াল status ফিল্ড (delivery_status webhook-এ আসে) -> আমাদের courierStatus লেবেল ম্যাপিং
 // note: সব ভ্যালু lowercase — Order.js স্কিমার enum, steadfastController.js/
 // steadfastBulkController.js এবং client (OrderContext.jsx, page.js,
@@ -65,6 +89,9 @@ const DELIVERED_FINAL_LABELS = ["delivered", "partial_delivered"];
 // ----------- note গুরুত্বপূর্ণ কিনা যাচাই -> সবসময় true/false রিটার্ন করে
 function classifyNote(text) {
   if (!text) return false;
+  // রাইডার নোট / ডেলিভারি ফেইল টাইপ মেসেজে অন্য কোনো ignore প্যাটার্ন (যেমন
+  // "Consignment sent to ... Dispatch ID") মিশে থাকলেও এটা সবসময় গুরুত্বপূর্ণ
+  if (IMPORTANT_OVERRIDE_PATTERNS.some((p) => p.test(text))) return true;
   const shouldIgnore = IGNORE_PATTERNS.some((p) => p.test(text));
   return !shouldIgnore; // true = গুরুত্বপূর্ণ, false = ignorable
 }
@@ -228,13 +255,6 @@ exports.handleSteadfastWebhook = async (req, res) => {
     needsAttention: isImportant,
   };
 
-  // --- Courier Tracking Attention: শুধু "tracking_update" webhook-এ true হয় (প্রতিটা
-  // নতুন আপডেটে আবার true, অ্যাডমিন "Tracking OK" দিয়ে false করার পরেও)।
-  // "delivery_status" বা অন্য কোনো notification_type এই ফ্ল্যাগ ছোঁয় না ---
-  if (data.notification_type === "tracking_update") {
-    setFields.courierTrackingAttention = true;
-  }
-
   try {
     // বর্তমান courierStatus আগে থেকে জেনে নেওয়া হচ্ছে, যাতে একটা দেরিতে আসা/
     // out-of-order webhook ইতিমধ্যে সেট হওয়া উঁচু-rank স্ট্যাটাসকে ডাউনগ্রেড
@@ -255,6 +275,22 @@ exports.handleSteadfastWebhook = async (req, res) => {
       courierLabel === "cancelled" &&
       DELIVERED_FINAL_LABELS.includes(currentLabel);
     const shouldSkipStatus = isDowngrade || isBlockedByDelivered;
+
+    // --- Courier Tracking Attention ---
+    // true হবে শুধু: notification_type === "tracking_update" এবং মেসেজ ওয়্যারহাউজ/
+    // মুভমেন্ট ফরম্যাটের (isTrackingAttentionMessage)। প্রতিটা নতুন মিল-করা আপডেটে
+    // আবার true (অ্যাডমিন "Tracking OK" দেওয়ার পরেও)।
+    // এই webhook-এর পরে অর্ডারের কার্যকর courierStatus cancel_parcel_pending হলে
+    // ট্র্যাকিং মনিটরিং লাগে না — তাই true তো হবেই না, আগের true থাকলেও false হবে।
+    const effectiveStatus = shouldSkipStatus ? currentLabel : courierLabel;
+    if (effectiveStatus === "cancel_parcel_pending") {
+      setFields.courierTrackingAttention = false;
+    } else if (
+      data.notification_type === "tracking_update" &&
+      isTrackingAttentionMessage(data.tracking_message)
+    ) {
+      setFields.courierTrackingAttention = true;
+    }
 
     if (!shouldSkipStatus) {
       setFields["courier.courierStatus"] = courierLabel;
