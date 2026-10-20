@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback } from "react";
 import { dashboardService } from "@/services/dashboardService";
 import { getPresetRange } from "@/utils/dateRangeUtils";
 import DateRangeFilter from "./DateRangeFilter";
-import DashboardOrderListModal from "./DashboardOrderListModal";
+// import DashboardOrderListModal from "./DashboardOrderListModal";
+import ParcelOrderListModal from "@/components/orders/ParcelOrderListModal";
 import ProductFinancialModal from "./ProductFinancialModal";
 
 // --- প্রোডাক্ট কার্ডের ৪টা স্ট্যাটাস চিপ কনফিগ ---
@@ -139,7 +140,8 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
       )}
 
       {drillDown && (
-        <DashboardOrderListModal
+        <ParcelOrderListModal
+          source="dashboard"
           status={drillDown.status}
           from={activeRange.from}
           to={activeRange.to}

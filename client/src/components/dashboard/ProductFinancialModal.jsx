@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { dashboardService } from "@/services/dashboardService";
+// import { dashboardService } from "@/services/dashboardService";
+import ParcelOrderListModal from "@/components/orders/ParcelOrderListModal";
 import StatsCards from "./StatsCards";
 import DashboardOrderListModal from "./DashboardOrderListModal";
 
@@ -86,7 +87,8 @@ export default function ProductFinancialModal({ productCode, from, to, moderator
       </div>
 
       {drillDown && (
-        <DashboardOrderListModal
+        <ParcelOrderListModal
+          source="dashboard"
           status={drillDown}
           from={from}
           to={to}

@@ -8,7 +8,8 @@ import AuthGuard from "@/components/auth/AuthGuard";
 import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 import ModeratorSelector from "@/components/dashboard/ModeratorSelector";
 import StatsCards from "@/components/dashboard/StatsCards";
-import DashboardOrderListModal from "@/components/dashboard/DashboardOrderListModal";
+// import DashboardOrderListModal from "@/components/dashboard/DashboardOrderListModal";
+import ParcelOrderListModal from "@/components/orders/ParcelOrderListModal";
 import TrendChart from "@/components/dashboard/TrendChart";
 import StatusPieChart from "@/components/dashboard/StatusPieChart";
 import MismatchTable from "@/components/dashboard/MismatchTable";
@@ -160,7 +161,8 @@ function DashboardPageContent() {
 
       </div>
       {drillDownStatus && (
-        <DashboardOrderListModal
+        <ParcelOrderListModal
+          source="dashboard"
           status={drillDownStatus}
           from={activeRange.from}
           to={activeRange.to}
