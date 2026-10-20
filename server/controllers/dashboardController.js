@@ -107,14 +107,14 @@ exports.getDashboardSummary = async (req, res) => {
           $match: {
             ...ownershipFilter,
             "courier.statusUpdatedAt": { $gte: fromDate, $lte: toDate },
-            orderStatus: { $in: ["delivered", "cancelled"] },
+            orderStatus: { $in: ["Delivered", "Cancelled"] },
           },
         },
         {
           $group: {
             _id: {
               date: { $dateToString: { format: "%Y-%m-%d", date: "$courier.statusUpdatedAt" } },
-              status: "courier.courierStatus",
+              status: "$courier.courierStatus",
             },
             count: { $sum: 1 },
             amount: { $sum: "$courier.deliveredCodAmount" },
@@ -153,10 +153,10 @@ exports.getDashboardSummary = async (req, res) => {
       if (!trendMap[date]) {
         trendMap[date] = { date, delivered: 0, cancelled: 0, deliveredAmount: 0 };
       }
-      if (item._id.status === "Delivered") {
+      if (item._id.status === "delivered") {
         trendMap[date].delivered = item.count;
         trendMap[date].deliveredAmount = item.amount || 0;
-      } else if (item._id.status === "Cancelled") {
+      } else if (item._id.status === "cancelled") {
         trendMap[date].cancelled = item.count;
       }
     });

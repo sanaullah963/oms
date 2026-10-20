@@ -156,7 +156,8 @@ function DashboardPageContent() {
           )
         )}
 
-        <ProductAnalytics moderatorId={moderatorId} isAdmin={isAdmin} />
+        {/* <ProductAnalytics moderatorId={moderatorId} isAdmin={isAdmin} /> */}
+
       </div>
       {drillDownStatus && (
         <DashboardOrderListModal
