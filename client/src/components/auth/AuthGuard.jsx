@@ -6,7 +6,13 @@ import { useAuth } from "@/context/AuthContext";
 // requiredPermission="some.key" দিলে (config/permissions.js-এর রেজিস্ট্রির key) পেজটা শুধু ওই পারমিশন-ওয়ালা
 // (বা admin) দেখতে পারবে — যেকোনো নতুন পেজ/URL এভাবে আটকানো যায়। সার্ভারের API-ও আলাদাভাবে
 // requirePermission("some.key") দিয়ে আটকাতে হবে (এটা শুধু UI গার্ড)।
-export default function AuthGuard({ children, adminOnly = false, requiredPermission = null }) {
+// redirectTo: adminOnly ব্যর্থ হলে কোথায় পাঠানো হবে (ডিফল্ট "/")
+export default function AuthGuard({
+  children,
+  adminOnly = false,
+  requiredPermission = null,
+  redirectTo = "/",
+}) {
   const { user, loading, isAuthenticated, isAdmin, can } = useAuth();
   const router = useRouter();
 
@@ -17,14 +23,14 @@ export default function AuthGuard({ children, adminOnly = false, requiredPermiss
       return;
     }
     if (adminOnly && !isAdmin) {
-      router.replace("/");
+      router.replace(redirectTo);
       return;
     }
     if (requiredPermission && !can(requiredPermission)) {
       console.log(`🚫 Page blocked — missing permission: ${requiredPermission}`);
       router.replace("/");
     }
-  }, [loading, isAuthenticated, isAdmin, adminOnly, requiredPermission, can, router]);
+  }, [loading, isAuthenticated, isAdmin, adminOnly, requiredPermission, can, router, redirectTo]);
 
   if (
     loading ||

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Order = require("../models/Order");
+const { isAdminReq, stripOrderMoney } = require("../utils/moneyScope");
 
 // --- courier.courierStatus এনামের সাথে মিলিয়ে (models/Order.js দেখুন) ---
 const COURIER_STATUSES = [
@@ -103,13 +104,17 @@ exports.getTrackingParcelSummary = async (req, res) => {
       },
     ]);
 
+    // মডারেটর: শুধু count, totalCOD (টাকার যোগফল) যাবে না
+    const showMoney = isAdminReq(req);
     const counts = {};
     COURIER_STATUSES.forEach((status) => {
-      counts[status] = { count: 0, totalCOD: 0 };
+      counts[status] = showMoney ? { count: 0, totalCOD: 0 } : { count: 0 };
     });
     agg.forEach((row) => {
       const key = row._id || "unknown";
-      counts[key] = { count: row.count, totalCOD: row.totalCOD || 0 };
+      counts[key] = showMoney
+        ? { count: row.count, totalCOD: row.totalCOD || 0 }
+        : { count: row.count };
     });
 
     return res.status(200).json({ counts });
@@ -156,7 +161,8 @@ exports.getTrackingParcelOrders = async (req, res) => {
     ]);
 
     return res.status(200).json({
-      orders,
+      // মডারেটর: totalCOD ও courier-এর আর্থিক ফিল্ড বাদ
+      orders: isAdminReq(req) ? orders : orders.map(stripOrderMoney),
       total,
       // page,
       // limit,

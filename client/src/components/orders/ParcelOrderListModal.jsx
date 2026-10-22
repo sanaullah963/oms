@@ -6,11 +6,13 @@ import { copyToClipboard } from "@/utils/copyToClipboard";
 import { formatDate, formatTime } from "@/utils/dateUtils";
 import TrackingActivityTimeline from "@/components/orders/TrackingActivityTimeline";
 import DisplayAgoTime from "../common/DisplayAgoTime";
+import { useAuth } from "@/context/AuthContext";
 
 // ============================================================================
 // ParcelOrderListModal — পার্সেল/অর্ডারের টেবিল-মডাল (row ক্লিক করলে এক্সপান্ড হয়ে
 // অ্যাক্টিভিটি/নোট দেখায়)। আগে এটা দুটো আলাদা কম্পোনেন্ট ছিল:
-
+//   • DashboardOrderListModal      → এখন source="dashboard"
+//   • TrackingParcelOrderListModal → এখন source="tracking"
 // দুটোর UI একই; শুধু ডেটা কোন API থেকে আসবে সেটাই আলাদা, তাই সেটা `source` প্রপ দিয়ে ঠিক হয়।
 //
 // প্রপ:
@@ -105,6 +107,8 @@ export default function ParcelOrderListModal({
   productCode,
   onClose,
 }) {
+  // টাকার সংখ্যা (COD কলাম) শুধু এডমিন দেখবে — মডারেটরের API রেসপন্সে এমনিতেই totalCOD থাকে না
+  const { isAdmin } = useAuth();
   const [orders, setOrders] = useState([]);
   const [total, setTotal] = useState(null); // সার্ভার total পাঠালে (tracking) সেটা, নাহলে orders.length
   const [loading, setLoading] = useState(true);
@@ -226,13 +230,15 @@ console.log("sortedOrders", sortedOrders);
                     sortConfig={sortConfig}
                     onToggle={toggleSort}
                   />
-                  <SortableTh
-                    label="COD"
-                    sortKey="totalCOD"
-                    title="COD এমাউন্ট অনুযায়ী সর্ট করুন"
-                    sortConfig={sortConfig}
-                    onToggle={toggleSort}
-                  />
+                  {isAdmin && (
+                    <SortableTh
+                      label="COD"
+                      sortKey="totalCOD"
+                      title="COD এমাউন্ট অনুযায়ী সর্ট করুন"
+                      sortConfig={sortConfig}
+                      onToggle={toggleSort}
+                    />
+                  )}
                   <th className="py-2 px-4">Order status</th>
                   <th className="py-2 px-4">Courier status</th>
                   <th className="py-2 px-4">যোগ করেছেন</th>
@@ -290,7 +296,7 @@ console.log("sortedOrders", sortedOrders);
                         <td className="py-2 px-4 text-gray-500">
                           {o.productCode || "-"}
                         </td>
-                        <td className="py-2 px-4">৳{o.totalCOD}</td>
+                        {isAdmin && <td className="py-2 px-4">৳{o.totalCOD}</td>}
                         <td className="py-2 px-4 text-gray-500">
                           {o.orderStatus || "-"}
                         </td>
@@ -309,7 +315,7 @@ console.log("sortedOrders", sortedOrders);
 
                       {isExpanded && (
                         <tr className="border-b last:border-0 bg-gray-50">
-                          <td colSpan={6} className="px-4 py-3">
+                          <td colSpan={isAdmin ? 6 : 5} className="px-4 py-3">
                             <div className="flex flex-wrap items-center gap-2 mb-2">
                               <span className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-indigo-100 text-indigo-700">
                                 {o.orderStatus}

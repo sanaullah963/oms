@@ -34,7 +34,10 @@ function SearchAndMenu({ scope = "orders" }) {
   const menueItems = [
     { title: "Home", link: "/" },
     { title: "🔍 মাস্টার সার্চ", link: "/search" },
-    { title: "📊 Dashboard", link: "/dashboard" },
+    {
+      title: user?.role === "admin" ? "📊 Dashboard" : "📊 মডারেটর ড্যাশবোর্ড",
+      link: user?.role === "admin" ? "/dashboard" : "/moderator-dashboard",
+    },
     { title: "🚚 ট্র্যাকিং পার্সেল", link: "/dashboard/tracking-parcels" },
     { title: "Note", link: "/note" },
     { title: "📍 Tracking Attention", link: "/tracking-attention" },

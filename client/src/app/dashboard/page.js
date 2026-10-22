@@ -184,7 +184,8 @@ function DashboardPageContent() {
 
 export default function DashboardPage() {
   return (
-    <AuthGuard>
+    // মেইন ড্যাশবোর্ডে আর্থিক তথ্য আছে — শুধু এডমিন; মডারেটর /moderator-dashboard-এ চলে যাবে
+    <AuthGuard adminOnly redirectTo="/moderator-dashboard">
       <DashboardPageContent />
     </AuthGuard>
   );

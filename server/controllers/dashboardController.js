@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const Order = require("../models/Order");
 const FacebookComment = require("../models/FacebookComment");
 const { courierNotesScope } = require("../utils/orderScope");
+// টাকার তথ্য শুধু এডমিনের জন্য — মডারেটরের রেসপন্সে আর্থিক ফিল্ড বাদ (utils/moneyScope.js)
+const { isAdminReq, stripOrderMoney } = require("../utils/moneyScope");
 
 // --- ইউরল কোয়েরি থেকে from/to ডেট রেঞ্জ বের করা (ডিফল্ট: শেষ ৭ দিন) ---
 function getDateRange(req) {
@@ -161,6 +163,28 @@ exports.getDashboardSummary = async (req, res) => {
       }
     });
 
+    const dailyTrend = Object.values(trendMap).sort((a, b) => a.date.localeCompare(b.date));
+
+    // --- মডারেটর: শুধু সংখ্যা (কাউন্ট), কোনো টাকার হিসাব/মিসম্যাচ নয় ---
+    if (!isAdminReq(req)) {
+      console.log(`[DashboardSummary] moderator=${req.user?.name} — আর্থিক তথ্য বাদ দিয়ে পাঠানো হলো`);
+      return res.status(200).json({
+        range: { from: fromDate, to: toDate },
+        scope: { role: req.user.role, moderatorId: null },
+        totals: {
+          sentCount: sent.count,
+          deliveredCount: delivered.count,
+          cancelledCount: cancelled.count,
+          pendingCount: pending.count,
+        },
+        dailyTrend: dailyTrend.map(({ date, delivered: d, cancelled: c }) => ({
+          date,
+          delivered: d,
+          cancelled: c,
+        })),
+      });
+    }
+
     return res.status(200).json({
       range: { from: fromDate, to: toDate },
       scope: {
@@ -183,7 +207,7 @@ exports.getDashboardSummary = async (req, res) => {
         mismatchCount: mismatches.length,
         mainBalanceAfterCosting: (delivered.deliveredAmount || 0) - netDeduction,
       },
-      dailyTrend: Object.values(trendMap).sort((a, b) => a.date.localeCompare(b.date)),
+      dailyTrend,
       mismatches,
     });
   } catch (error) {
@@ -353,6 +377,11 @@ exports.getDashboardOrders = async (req, res) => {
       .sort({ "courier.statusUpdatedAt": -1, "courier.bookedAt": -1 })
       .limit(500);
 
+    // --- মডারেটর: totalCOD ও courier-এর আর্থিক ফিল্ড (deliveredCodAmount/deliveryCharge/codChargeAmount) বাদ ---
+    if (!isAdminReq(req)) {
+      return res.status(200).json({ orders: orders.map(stripOrderMoney) });
+    }
+
     return res.status(200).json({ orders });
   } catch (error) {
     console.error("Dashboard orders list error:", error);
@@ -444,7 +473,18 @@ exports.getProductSummary = async (req, res) => {
       p.pendingAmount = row.amount || 0;
     });
 
-    const products = Object.values(productMap).sort((a, b) => b.sentCount - a.sentCount);
+    let products = Object.values(productMap).sort((a, b) => b.sentCount - a.sentCount);
+
+    // --- মডারেটর: শুধু কাউন্ট, *Amount ফিল্ডগুলো যাবে না ---
+    if (!isAdminReq(req)) {
+      products = products.map((p) => ({
+        productCode: p.productCode,
+        sentCount: p.sentCount,
+        deliveredCount: p.deliveredCount,
+        cancelledCount: p.cancelledCount,
+        pendingCount: p.pendingCount,
+      }));
+    }
 
     return res.status(200).json({
       range: { from: fromDate, to: toDate },

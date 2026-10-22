@@ -129,13 +129,18 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
               {products.map((p) => (
                 <tr key={p.productCode} className="border-b last:border-0">
                   <td className="py-2 px-4 font-semibold text-gray-800">
-                    <button
-                      onClick={() => setFinancialModalProduct(p.productCode)}
-                      className="text-indigo-600 hover:underline cursor-pointer hover:bg-blue-100 p-2 rounded-md"
-                      title="আর্থিক হিসাব দেখুন"
-                    >
-                      {p.productCode}
-                    </button>
+                    {isAdmin ? (
+                      <button
+                        onClick={() => setFinancialModalProduct(p.productCode)}
+                        className="text-indigo-600 hover:underline cursor-pointer hover:bg-blue-100 p-2 rounded-md"
+                        title="আর্থিক হিসাব দেখুন"
+                      >
+                        {p.productCode}
+                      </button>
+                    ) : (
+                      // মডারেটর: আর্থিক হিসাবের মডাল নেই, শুধু কোড
+                      <span className="text-indigo-600 p-2">{p.productCode}</span>
+                    )}
                   </td>
                   {METRICS.map((m) => {
                     const count = p[`${m.key}Count`] || 0;
@@ -155,7 +160,9 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
                           }`}
                         >
                           <div className="font-bold">{count.toLocaleString("bn-BD")}</div>
-                          <div className="text-[11px]">৳{amount.toLocaleString("bn-BD")}</div>
+                          {isAdmin && (
+                            <div className="text-[11px]">৳{amount.toLocaleString("bn-BD")}</div>
+                          )}
                           <div className="text-[11px] font-semibold opacity-80 mt-0.5">
                             {formatPercent(percent)}
                           </div>
@@ -182,7 +189,7 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
         />
       )}
 
-      {financialModalProduct && (
+      {isAdmin && financialModalProduct && (
         <ProductFinancialModal
           productCode={financialModalProduct}
           from={activeRange.from}
