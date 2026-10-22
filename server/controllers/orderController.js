@@ -957,6 +957,52 @@ exports.addNote = async (req, res) => {
   }
 };
 
+// --- PATCH /api/orders/:id/comment  { comment } — OrderCard-এর "Comment" ইনপুট থেকে কল হয়।
+// আগের "permanent note"-ই এখন কমেন্ট (ডাটাবেজে ফিল্ডের নাম permanentNote-ই আছে, তাই পুরনো ডেটা
+// অটোমেটিক কমেন্ট হিসেবে দেখাবে)। প্রতিবার সেভ করলে activities-এ "Add Comment" এন্ট্রি যোগ হয়;
+// ফাঁকা পাঠালে কমেন্ট মুছে যায় এবং "Remove Comment" অ্যাক্টিভিটি যোগ হয়। ---
+exports.addComment = async (req, res) => {
+  try {
+    const { comment } = req.body;
+    if (typeof comment !== "string") {
+      return res.status(400).json({ message: "comment ফিল্ড আবশ্যক।" });
+    }
+    const text = comment.trim();
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "অর্ডার খুঁজে পাওয়া যায়নি।" });
+    }
+
+    const previous = order.permanentNote || "";
+    if (text === previous) {
+      return res.status(200).json({ success: true, order });
+    }
+
+    const authorName = req.user?.name || "User";
+    order.permanentNote = text;
+    await logActivity(
+      order,
+      {
+        author: authorName,
+        type: text ? "Add Comment" : "Remove Comment",
+        description: text || `কমেন্ট মুছে ফেলা হয়েছে (আগের কমেন্ট: ${previous})`,
+        details: { before: previous, after: text },
+      },
+      { save: false },
+    );
+    const savedOrder = await order.save();
+
+    const io = req.app.get("io");
+    if (io) emitOrderUpdate(io, savedOrder);
+
+    return res.status(200).json({ success: true, order: savedOrder });
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    return res.status(500).json({ message: "কমেন্ট যোগ করতে ব্যর্থ হয়েছে।" });
+  }
+};
+
 // --- GET /api/orders/:id/previous-orders — এই কাস্টমারের (ফোন নম্বর মিলিয়ে) আগের
 // অর্ডারগুলো তার সর্বশেষ স্ট্যাটাসসহ ফেরত দেয় (Note বাবলের "আগের অর্ডার" মডেলের জন্য) ---
 exports.getPreviousOrders = async (req, res) => {
@@ -1356,7 +1402,7 @@ exports.searchDraftOrders = async (req, res) => {
 
     const drafts = await DraftOrder.find({
       status: "active",
-      // callStatus: { $ne: "cancelled" },
+      callStatus: { $ne: "cancelled" },
       $or: [
         { name: { $regex: regex } },
         { phone: { $regex: regex } },

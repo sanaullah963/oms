@@ -38,6 +38,8 @@ export default function OrderCard({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [noteText, setNoteText] = useState("");
+  const [commentText, setCommentText] = useState("");
+  const [commentSaving, setCommentSaving] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,7 +57,6 @@ export default function OrderCard({
     totalCOD: order.totalCOD,
     productCode: order.productCode,
     rawInputText: order.rawInputText,
-    permanentNote: order?.permanentNote || "",
   });
   const [touchedPhones, setTouchedPhones] = useState(
     new Array(formData.castomerPhone.length).fill(false),
@@ -72,6 +73,7 @@ export default function OrderCard({
     historyLoading,
     updateStatus,
     addNote,
+    addComment,
     fetchCourierHistory,
     updateOrder,
     deleteOrder,
@@ -192,6 +194,30 @@ export default function OrderCard({
     }
     addNote(noteText);
     setNoteText("");
+  };
+
+  const handleAddComment = async () => {
+    const text = commentText.trim();
+    if (!text) {
+      toast.error("কমেন্ট লিখুন");
+      return;
+    }
+    setCommentSaving(true);
+    const result = await addComment(text);
+    setCommentSaving(false);
+    if (result.success) {
+      setCommentText("");
+      showToast("Comment added", { position: "top" });
+    } else {
+      showMessage("alert", `ত্রুটি: ${result.message}`, null);
+    }
+  };
+
+  const handleRemoveComment = async () => {
+    const result = await addComment("");
+    if (!result.success) {
+      showMessage("alert", `ত্রুটি: ${result.message}`, null);
+    }
   };
 
   const executeDelete = async () => {
@@ -384,8 +410,18 @@ export default function OrderCard({
             </div>
 
             {order?.permanentNote && (
-              <div>
-                <p className="text-sm text-red-700">{order.permanentNote}</p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm text-red-700 whitespace-pre-wrap break-words">
+                  💬 {order.permanentNote}
+                </p>
+                <button
+                  onClick={handleRemoveComment}
+                  disabled={loading}
+                  className="text-xs text-gray-400 hover:text-red-600 cursor-pointer shrink-0"
+                  title="কমেন্ট মুছুন"
+                >
+                  ✕
+                </button>
               </div>
             )}
             {/* order status change buttons */}
@@ -452,6 +488,26 @@ export default function OrderCard({
                     className="cursor-pointer hover:bg-green-600 bg-green-500 text-gray-50 px-2 rounded-md"
                   >
                     Note
+                  </button>
+                </div>
+
+                <div className="flex gap-1 mt-1">
+                  <input
+                    type="text"
+                    placeholder="কমেন্ট যোগ করুন..."
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !commentSaving) handleAddComment();
+                    }}
+                    className="w-full pl-2 py-1 border border-gray-300 rounded-md focus:ring-indigo-200 focus:border-indigo-200 transition duration-150 text-sm"
+                  />
+                  <button
+                    onClick={handleAddComment}
+                    disabled={commentSaving}
+                    className="cursor-pointer hover:bg-red-600 bg-red-500 text-gray-50 px-2 rounded-md whitespace-nowrap disabled:opacity-50"
+                  >
+                    {commentSaving ? "..." : "Comment"}
                   </button>
                 </div>
 

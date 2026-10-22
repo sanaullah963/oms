@@ -41,6 +41,8 @@ router.post("/:id/courier-history", orderAccess(), orderController.getCourierHis
 router.post("/courier-history-bulk", orderController.getCourierHistoryBulk);
 // OrderCard-এর নোট সেকশন (HTTP, socket না — আগে socket.emit("addNote") দিয়ে হতো)
 router.patch("/:id/note", orderAccess(), orderController.addNote);
+// OrderCard-এর কমেন্ট ইনপুট (আগের permanent note) — সেভ করলে activities-এ "Add Comment" যোগ হয়
+router.patch("/:id/comment", orderAccess(), orderController.addComment);
 
 // ইনকমপ্লিট/ড্রাফট অর্ডার (কাস্টমার সাবমিট করার আগেই ফর্মে যা পূরণ করেছে)
 router.use("/drafts", requirePermission("orders.viewLandingPage"));

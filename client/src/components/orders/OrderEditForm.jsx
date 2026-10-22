@@ -62,20 +62,6 @@ function OrderEditForm({
         disabled={loading}
       />
 
-      {/* permanent note */}
-      <label htmlFor="permanentNote" className="text-sm">
-        Permanent Note
-      </label>
-      <input
-        type="text"
-        name="permanentNote"
-        value={formData.permanentNote}
-        onChange={onFormChange}
-        placeholder="permanent Note"
-        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
-        disabled={loading}
-      />
-
       {/* phone number edit section */}
       <label className="text-sm">Phone</label>
       {formData.castomerPhone.map((phone, index) => {

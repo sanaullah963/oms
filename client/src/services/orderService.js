@@ -22,6 +22,8 @@ export const orderService = {
 
   // OrderCard-এর নোট সেকশন (HTTP — socket না, আগে socket.emit("addNote") দিয়ে হতো)
   addNote: (orderId, note) => api.patch(`${BASE}/${orderId}/note`, { note }),
+  // কমেন্ট (আগের permanent note) — সেভ হলে activities-এ "Add Comment" যোগ হয়
+  addComment: (orderId, comment) => api.patch(`${BASE}/${orderId}/comment`, { comment }),
 
   createManual: (rawInputText) => api.post(`${BASE}/manual-single`, { rawInputText }),
 

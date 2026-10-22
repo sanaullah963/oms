@@ -65,6 +65,26 @@ export function useOrderActions(order, onUpdate) {
     [order._id, onUpdate],
   );
 
+  // --- কমেন্ট যোগ/মোছা (আগের permanent note) — সার্ভার activities-এ "Add Comment" লগ করে ---
+  const addComment = useCallback(
+    async (commentText) => {
+      try {
+        const response = await orderService.addComment(order._id, commentText);
+        if (response.data?.success && response.data?.order && onUpdate) {
+          onUpdate(response.data.order);
+        }
+        return { success: true };
+      } catch (error) {
+        console.error("Add comment error:", error);
+        return {
+          success: false,
+          message: error.response?.data?.message || "কমেন্ট যোগ করা যায়নি",
+        };
+      }
+    },
+    [order._id, onUpdate],
+  );
+
   // --- কাস্টমারের সব কুরিয়ারের হিস্ট্রি আনা (HTTP request/response দিয়ে, সকেট না —
   // আগে socket.emit("allCourierHistory") দিয়ে হতো, এখন সরাসরি REST কল করে existing
   // onUpdate() দিয়েই রেজাল্ট (আপডেটেড order) লিস্টে বসিয়ে দেওয়া হয়) ---
@@ -160,6 +180,7 @@ export function useOrderActions(order, onUpdate) {
     historyLoading,
     updateStatus,
     addNote,
+    addComment,
     fetchCourierHistory,
     updateOrder,
     deleteOrder,
