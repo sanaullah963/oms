@@ -358,8 +358,36 @@ const hasNum = (value) =>
   value !== "" &&
   Number.isFinite(Number(value));
 
+// API ব্যর্থ/কল-না-হওয়া সারির ছোট ট্যাগ (সার্ভার meta.error.state পাঠায় — utils/courierHistoryProviders.js)
+const ERROR_STATE_TAG = {
+  not_called: { text: "কল হয়নি", color: "text-amber-700" },
+  no_response: { text: "রেসপন্স নেই", color: "text-red-600" },
+  api_error: { text: "API error", color: "text-red-600" },
+  bad_response: { text: "ভুল রেসপন্স", color: "text-red-600" },
+  internal_error: { text: "সমস্যা", color: "text-red-600" },
+};
+
 function ProviderRow({ provider }) {
   const meta = provider.meta || {};
+
+  // এই API থেকে হিস্ট্রি আনা যায়নি — সংখ্যার বদলে কারণ দেখাই, সারিটা লুকাই না
+  if (meta.error) {
+    const tag = ERROR_STATE_TAG[meta.error.state] || ERROR_STATE_TAG.internal_error;
+    return (
+      <div className="py-1.5 border-b border-gray-100 last:border-0">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold text-gray-700">{provider.label}</span>
+          <span className={`text-[11px] font-semibold ${tag.color}`}>
+            ⚠ {tag.text}
+            {meta.error.code ? ` ${meta.error.code}` : ""}
+          </span>
+        </div>
+        <div className={`mt-0.5 text-[10px] break-words ${tag.color}`}>
+          {meta.error.message || "হিস্ট্রি আনা যায়নি"}
+        </div>
+      </div>
+    );
+  }
 
   const hasCounts =
     hasNum(provider.success) && hasNum(provider.cancel);
