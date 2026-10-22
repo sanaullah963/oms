@@ -1,9 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
-// import { dashboardService } from "@/services/dashboardService";
+import { dashboardService } from "@/services/dashboardService";
 import ParcelOrderListModal from "@/components/orders/ParcelOrderListModal";
 import StatsCards from "./StatsCards";
-import DashboardOrderListModal from "./DashboardOrderListModal";
+
 
 // --- মাস্টার সার্চ/ট্র্যাকিং-পার্সেল পেজে প্রোডাক্ট কোডে ক্লিক করলে এই মডেল ওপেন হয় —
 // main dashboard-এর StatsCards পুনর্ব্যবহার করা হয়েছে (একই ডিজাইন, ডেটা শুধু এই
@@ -85,7 +85,7 @@ export default function ProductFinancialModal({ productCode, from, to, moderator
           )}
         </div>
       </div>
-
+{/* dashboardService */}
       {drillDown && (
         <ParcelOrderListModal
           source="dashboard"

@@ -33,9 +33,6 @@ const COURIER_STATUS_COLOR_MAP = {
 // পেজিনেশন বন্ধ (কমেন্ট করা) — আবার চালু করতে নিচের সব "পেজিনেশন বন্ধ" কমেন্ট আনকমেন্ট করো
 // const PAGE_SIZE = 20;
 
-// --- ড্যাশবোর্ডের DashboardOrderListModal.jsx-এর ডিজাইনের আদলে — ট্র্যাকিং পার্সেল
-// পেজের কার্ড-লিস্টের বদলে টেবিল-মডাল, row ক্লিক করলে এক্সপান্ড হয়ে অ্যাক্টিভিটি/নোট দেখায়।
-// দাশবোর্ডের মডাল থেকে পার্থক্য: এটা paginated (trackingParcelService.getOrders সার্ভার-সাইড পেজিনেটেড)।
 export default function TrackingParcelOrderListModal({
   status,
   moderatorId,

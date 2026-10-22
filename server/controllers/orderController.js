@@ -245,7 +245,14 @@ function extractOrdersFromRawText(rawInputText, user) {
         ? lastWord
         : "0"
       : "0";
-    const productCode = words.length >= 2 ? words[words.length - 2] : "empty";
+    // ম্যানুয়াল অর্ডারের productCode-এর প্রথম অক্ষর বড় হাতের (k → K, kweb → Kweb)
+    // বাকি অক্ষর যেমন আছে তেমনই থাকবে (K-web অপরিবর্তিত)। শুধু এই ম্যানুয়াল ফ্লোতে প্রযোজ্য।
+    const rawProductCode = words.length >= 2 ? words[words.length - 2] : "empty";
+    const productCode =
+      rawProductCode === "empty"
+        ? rawProductCode
+        : rawProductCode.charAt(0).toUpperCase() + rawProductCode.slice(1);
+    console.log("[createManualOrder] productCode:", rawProductCode, "->", productCode);
     const parsedData = parseOrderDetails(order);
 
     if (parsedData.castomerName && parsedData.castomerPhone) {
@@ -1532,4 +1539,3 @@ exports.getDraftOrderCount = async (req, res) => {
       .json({ message: "ইনকমপ্লিট অর্ডারের সংখ্যা আনতে ব্যর্থ হয়েছে।" });
   }
 };
-

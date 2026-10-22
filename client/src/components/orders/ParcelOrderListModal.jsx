@@ -10,8 +10,7 @@ import DisplayAgoTime from "../common/DisplayAgoTime";
 // ============================================================================
 // ParcelOrderListModal — পার্সেল/অর্ডারের টেবিল-মডাল (row ক্লিক করলে এক্সপান্ড হয়ে
 // অ্যাক্টিভিটি/নোট দেখায়)। আগে এটা দুটো আলাদা কম্পোনেন্ট ছিল:
-//   • DashboardOrderListModal      → এখন source="dashboard"
-//   • TrackingParcelOrderListModal → এখন source="tracking"
+
 // দুটোর UI একই; শুধু ডেটা কোন API থেকে আসবে সেটাই আলাদা, তাই সেটা `source` প্রপ দিয়ে ঠিক হয়।
 //
 // প্রপ:

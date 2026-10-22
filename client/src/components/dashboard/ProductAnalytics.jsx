@@ -15,6 +15,19 @@ const METRICS = [
   { key: "pending", label: "পেন্ডিং", color: "bg-amber-50 text-amber-700 hover:bg-amber-100" },
 ];
 
+// --- পার্সেন্টেজ হিসাব: "পাঠানো" (কুরিয়ারে দেওয়া পার্সেল) = ১০০% ধরে ---
+// sentCount ০ হলে ভাগ করা যায় না, তাই null রিটার্ন করা হয়
+const calcPercent = (count, sentCount) => {
+  if (!sentCount) return null;
+  return (count / sentCount) * 100;
+};
+
+// ১ দশমিক ঘর পর্যন্ত, বাংলা সংখ্যায় (যেমন: ৭৬.৯%) — পূর্ণসংখ্যা হলে দশমিক ছাড়া (১০০%)
+const formatPercent = (value) => {
+  if (value === null) return "—";
+  return `${value.toLocaleString("bn-BD", { maximumFractionDigits: 1 })}%`;
+};
+
 export default function ProductAnalytics({ moderatorId, isAdmin }) {
   const [preset, setPreset] = useState("today");
   const [customRange, setCustomRange] = useState(null);
@@ -41,7 +54,21 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
         activeRange.to,
         isAdmin ? moderatorId : undefined,
       );
-      setProducts(res.data.products || []);
+      const list = res.data.products || [];
+      setProducts(list);
+      // ডায়াগনস্টিক: delivered/cancelled হয় statusUpdatedAt দিয়ে, sent হয় bookedAt দিয়ে —
+      // তাই কোনো স্ট্যাটাস sent-এর চেয়ে বেশি হলে পার্সেন্টেজ ১০০%-এর উপরে যেতে পারে
+      console.log("[ProductAnalytics] products loaded:", list.length, "range:", activeRange);
+      list.forEach((p) => {
+        METRICS.forEach((m) => {
+          const c = p[`${m.key}Count`] || 0;
+          if (m.key !== "sent" && c > (p.sentCount || 0)) {
+            console.log(
+              `[ProductAnalytics] ${p.productCode}: ${m.key}=${c} > sent=${p.sentCount || 0} (>100%)`,
+            );
+          }
+        });
+      });
     } catch (err) {
       console.error("Product summary fetch error:", err);
       setError("প্রোডাক্ট এনালিটিক্স লোড করা যায়নি।");
@@ -113,6 +140,7 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
                   {METRICS.map((m) => {
                     const count = p[`${m.key}Count`] || 0;
                     const amount = p[`${m.key}Amount`] || 0;
+                    const percent = calcPercent(count, p.sentCount || 0);
                     return (
                       <td key={m.key} className="py-2 px-4">
                         <button
@@ -128,6 +156,9 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
                         >
                           <div className="font-bold">{count.toLocaleString("bn-BD")}</div>
                           <div className="text-[11px]">৳{amount.toLocaleString("bn-BD")}</div>
+                          <div className="text-[11px] font-semibold opacity-80 mt-0.5">
+                            {formatPercent(percent)}
+                          </div>
                         </button>
                       </td>
                     );
