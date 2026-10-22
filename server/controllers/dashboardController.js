@@ -456,6 +456,105 @@ exports.getProductSummary = async (req, res) => {
   }
 };
 
+// --- GET /api/dashboard/booked-outcome?from=&to=&moderatorId= ---
+// প্রতিটা দিনে (বাংলাদেশ সময়, Asia/Dhaka) যতগুলো পার্সেল কুরিয়ারে বুক হয়েছে, সেগুলো
+// এখন পর্যন্ত কী অবস্থায় আছে (delivered / partial / in-progress / cancelled) — স্ট্যাকড বার চার্টের জন্য।
+// from/to = "YYYY-MM-DD" (ডিফল্ট: শেষ ৩০ দিন, সর্বোচ্চ ৩৬৬ দিন)
+exports.getBookedOutcome = async (req, res) => {
+  try {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v || "");
+    const addDays = (dateStr, n) =>
+      new Date(Date.parse(dateStr) + n * DAY_MS).toISOString().slice(0, 10);
+
+    // আজকের তারিখ ঢাকার সময় অনুযায়ী (UTC+6, ডেলাইট সেভিং নেই)
+    const todayDhaka = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const toStr = isDate(req.query.to) ? req.query.to : todayDhaka;
+    let fromStr = isDate(req.query.from) ? req.query.from : addDays(toStr, -29);
+
+    if (fromStr > toStr) {
+      return res.status(400).json({ message: "from তারিখ to তারিখের পরে হতে পারে না।" });
+    }
+    let dayCount = Math.round((Date.parse(toStr) - Date.parse(fromStr)) / DAY_MS) + 1;
+    if (dayCount > 366) {
+      fromStr = addDays(toStr, -365);
+      dayCount = 366;
+    }
+
+    const fromDate = new Date(`${fromStr}T00:00:00+06:00`);
+    const toDate = new Date(`${toStr}T23:59:59.999+06:00`);
+    const ownershipFilter = getOwnershipFilter(req);
+
+    const rows = await Order.aggregate([
+      {
+        $match: {
+          ...ownershipFilter,
+          "courier.bookedAt": { $gte: fromDate, $lte: toDate },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            date: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$courier.bookedAt",
+                timezone: "Asia/Dhaka",
+              },
+            },
+            status: "$courier.courierStatus",
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // --- প্রতিটা দিনের জন্য খালি এন্ট্রি (পার্সেল না থাকা দিনও চার্টে দেখাবে) ---
+    const dayMap = {};
+    for (let i = 0; i < dayCount; i++) {
+      const date = addDays(fromStr, i);
+      dayMap[date] = { date, total: 0, delivered: 0, partial: 0, inProgress: 0, cancelled: 0 };
+    }
+
+    // --- courierStatus → ৪টা বাকেট। cancel_request / cancel_parcel_pending এখনো ফাইনাল
+    // ক্যান্সেল না (রিটার্ন প্রসেস হয়নি), তাই "inProgress"-এ গোনা হয় ---
+    const bucketOf = (status) => {
+      if (status === "delivered") return "delivered";
+      if (status === "partial_delivered") return "partial";
+      if (status === "cancelled" || "cancel_parcel_pending") return "cancelled";
+      return "inProgress";
+    };
+
+    rows.forEach((row) => {
+      const day = dayMap[row._id.date];
+      if (!day) return;
+      day[bucketOf(row._id.status)] += row.count;
+      day.total += row.count;
+    });
+
+    const days = Object.values(dayMap);
+    const totals = days.reduce(
+      (acc, d) => ({
+        total: acc.total + d.total,
+        delivered: acc.delivered + d.delivered,
+        partial: acc.partial + d.partial,
+        inProgress: acc.inProgress + d.inProgress,
+        cancelled: acc.cancelled + d.cancelled,
+      }),
+      { total: 0, delivered: 0, partial: 0, inProgress: 0, cancelled: 0 },
+    );
+
+    console.log(
+      `[BookedOutcome] ${fromStr} → ${toStr} (${dayCount} দিন): মোট ${totals.total}, delivered ${totals.delivered}, inProgress ${totals.inProgress}, partial ${totals.partial}, cancelled ${totals.cancelled}`,
+    );
+
+    return res.status(200).json({ range: { from: fromStr, to: toStr }, days, totals });
+  } catch (error) {
+    console.error("Booked outcome error:", error);
+    return res.status(500).json({ message: "বুকিং আউটকাম ডেটা আনতে ব্যর্থ হয়েছে।" });
+  }
+};
+
 // --- GET /api/dashboard/attention-counts — হোমপেজের Attention/Tracking/Comments ব্যাজের জন্য
 // শুধু তিনটা সংখ্যা (কোনো তালিকা না)। গণনার ফিল্টার বিদ্যমান লজিকের সাথে মেলানো:
 //  - Attention/Tracking: orderController.getOrders-এর একই নিয়ম (মডারেটরের জন্য নিজের+ownerless

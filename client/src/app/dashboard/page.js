@@ -8,11 +8,13 @@ import AuthGuard from "@/components/auth/AuthGuard";
 import DateRangeFilter from "@/components/dashboard/DateRangeFilter";
 import ModeratorSelector from "@/components/dashboard/ModeratorSelector";
 import StatsCards from "@/components/dashboard/StatsCards";
+// import DashboardOrderListModal from "@/components/dashboard/DashboardOrderListModal";
 import ParcelOrderListModal from "@/components/orders/ParcelOrderListModal";
 import TrendChart from "@/components/dashboard/TrendChart";
 import StatusPieChart from "@/components/dashboard/StatusPieChart";
 import MismatchTable from "@/components/dashboard/MismatchTable";
 import ProductAnalytics from "@/components/dashboard/ProductAnalytics";
+import BookedOutcomeChart from "@/components/dashboard/BookedOutcomeChart";
 import { getPresetRange } from "@/utils/dateRangeUtils";
 
 function DashboardPageContent() {
@@ -157,6 +159,13 @@ function DashboardPageContent() {
         )}
 
         {/* <ProductAnalytics moderatorId={moderatorId} isAdmin={isAdmin} /> */}
+
+        <BookedOutcomeChart
+          from={activeRange.from}
+          to={activeRange.to}
+          moderatorId={moderatorId}
+          isAdmin={isAdmin}
+        />
 
       </div>
       {drillDownStatus && (

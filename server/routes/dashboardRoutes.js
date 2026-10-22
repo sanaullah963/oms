@@ -4,6 +4,7 @@ const {
   getDashboardSummary,
   getDashboardOrders,
   getProductSummary,
+  getBookedOutcome,
   getProductFinancialSummary,
   getAttentionCounts,
 } = require("../controllers/dashboardController");
@@ -11,6 +12,7 @@ const {
 router.get("/summary", getDashboardSummary);
 router.get("/orders", getDashboardOrders);
 router.get("/product-summary", getProductSummary);
+router.get("/booked-outcome", getBookedOutcome);
 router.get("/product-financial-summary", getProductFinancialSummary);
 router.get("/attention-counts", getAttentionCounts);
 
