@@ -717,22 +717,69 @@ exports.masterEditActivity = async (req, res) => {
 exports.updateOrder = async (req, res) => {
   try {
     const orderId = req.params.id;
-    const data = {
-      ...req.body,
-      $push: {
-        activities: buildActivity({
-          description: "address updated",
-          type: " Updated",
-          author: req.user?.name,
-        }),
-      },
-    };
-    const updatedOrder = await Order.findByIdAndUpdate(orderId, data, {
-      new: true,
-    });
-    if (!updatedOrder) {
+    const body = req.body || {};
+
+    const order = await Order.findById(orderId);
+    if (!order) {
       return res.status(404).json({ message: "Order not found." });
     }
+
+    // --- শুধু কোন ফিল্ড বদলেছে সেটা ধরা হয় (আগে/পরের মান সেভ করা হয় না — ডাটাবেজে চাপ কমাতে) ---
+    const updates = {};
+    const changedLabels = [];
+
+    if (typeof body.rawInputText === "string" && body.rawInputText !== (order.rawInputText || "")) {
+      updates.rawInputText = body.rawInputText;
+      changedLabels.push("ঠিকানা আপডেট");
+    }
+    if (typeof body.castomerName === "string" && body.castomerName.trim() !== (order.castomerName || "")) {
+      updates.castomerName = body.castomerName.trim();
+      changedLabels.push("নাম আপডেট");
+    }
+    if (body.castomerPhone !== undefined) {
+      const newPhones = (Array.isArray(body.castomerPhone) ? body.castomerPhone : [body.castomerPhone])
+        .map((p) => String(p).trim())
+        .filter(Boolean);
+      const oldPhones = (order.castomerPhone || []).map((p) => String(p).trim());
+      if (newPhones.length > 0 && newPhones.join(",") !== oldPhones.join(",")) {
+        updates.castomerPhone = newPhones;
+        changedLabels.push("নাম্বার আপডেট");
+      }
+    }
+    if (body.totalCOD !== undefined && body.totalCOD !== "") {
+      const newTotal = Number(body.totalCOD);
+      if (Number.isNaN(newTotal) || newTotal < 0) {
+        return res.status(400).json({ message: "totalCOD-এর মান সঠিক না।" });
+      }
+      if (newTotal !== order.totalCOD) {
+        updates.totalCOD = newTotal;
+        changedLabels.push("অ্যামাউন্ট আপডেট");
+      }
+    }
+    if (typeof body.productCode === "string" && body.productCode.trim() !== (order.productCode || "")) {
+      updates.productCode = body.productCode.trim();
+      changedLabels.push("প্রোডাক্ট কোড আপডেট");
+    }
+
+    // কিছুই না বদলালে কোনো অ্যাক্টিভিটি/রাইট ছাড়াই ফেরত
+    if (changedLabels.length === 0) {
+      return res.status(200).json({ message: "কোনো পরিবর্তন হয়নি।", order });
+    }
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      {
+        ...updates,
+        $push: {
+          activities: buildActivity({
+            type: "Order Updated",
+            description: changedLabels.join(", "),
+            author: req.user?.name,
+          }),
+        },
+      },
+      { new: true },
+    );
     return res
       .status(200)
       .json({ message: "সফলভাবে অপডেট করা হয়েছে", order: updatedOrder });
