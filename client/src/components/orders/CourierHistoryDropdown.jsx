@@ -1,6 +1,3 @@
-
-
-
 // "use client";
 // import React, { useEffect, useRef, useState } from "react";
 
@@ -583,6 +580,9 @@ export default function CourierHistoryDropdown({
 
   const providers = getProviders(courierHistory);
 
+  // BD Courier ফেল করলে সার্ভার success/cancel = null রাখে — তখন "All" পিলে সংখ্যার বদলে ⚠ দেখাই
+  const allOk = hasNum(all.success) && hasNum(all.cancel);
+
   return (
     <div
       ref={wrapperRef}
@@ -599,9 +599,15 @@ export default function CourierHistoryDropdown({
       >
         <span>All</span>
 
-        <span className="text-green-700">{all.success}</span>
-        <span>/</span>
-        <span className="text-red-600">{all.cancel}</span>
+        {allOk ? (
+          <>
+            <span className="text-green-700">{all.success}</span>
+            <span>/</span>
+            <span className="text-red-600">{all.cancel}</span>
+          </>
+        ) : (
+          <span className="text-red-600 font-semibold">⚠ error</span>
+        )}
 
         <svg
           className={`h-3 w-3 text-gray-600 transition-transform duration-200 ${
@@ -663,7 +669,7 @@ export default function CourierHistoryDropdown({
           ))}
 
           {/* একাধিক API হলে মোট হিসাব */}
-          {providers.length > 1 && (
+          {providers.length > 1 && allOk && (
             <div className="mt-1 flex items-center justify-between rounded-md bg-gray-50 px-2 py-1">
               <span className="text-xs font-bold text-gray-700">
                 মোট

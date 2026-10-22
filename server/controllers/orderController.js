@@ -11,7 +11,7 @@ const { withLandingPageMeta } = require("../utils/draftOrderView");
 const { checkFraudSignals } = require("../utils/fraudDetection");
 const { buildActivity, logActivity } = require("../utils/activityLogger");
 const { triggerPurchaseEvent } = require("../utils/metaCapi");
-const { fetchCourierHistorySummary } = require("../utils/courierHistoryProviders");
+const { createCourierHistoryHandlers } = require("../utils/courierHistoryHandlers");
 const { ordersScope, orderListScope, markViewScope } = require("../utils/orderScope");
 const mongoose = require("mongoose");
 
@@ -1318,159 +1318,29 @@ exports.getFraudMatches = async (req, res) => {
   }
 };
 
-// --- POST /api/orders/:id/courier-history — OrderCard-এর "History" বাটনে ক্লিক
-// করলে কল হয়। আগে এটা socket ("allCourierHistory" emit → "distributecourierHistory"
-// দিয়ে রেজাল্ট ফেরত) দিয়ে হতো, এখন প্লেইন HTTP request/response দিয়ে করা হচ্ছে —
-// socket কানেক্টেড থাক বা না থাক কাজ করবে। bdcourier.com API দিয়ে castomerPhone-এর
-// প্রতিটা নম্বর চেক করে সব কুরিয়ার মিলিয়ে success/cancel count বের করে, order.courierHistory.all-এ
-// সেভ করে, আপডেটেড অর্ডারটাই রেসপন্সে ফেরত দেয় (ফ্রন্টএন্ড এটা existing onUpdate/handleOrderUpdate
-// দিয়েই লিস্টে বসিয়ে দেবে, আলাদা কোনো নতুন মেকানিজম লাগে না)। এছাড়া emitOrderUpdate দিয়ে
-// broadcast-ও করা হয়, যাতে যে মুহূর্তে হিস্ট্রি ফেচ হলো, ওই সময় সাইটে সক্রিয় (socket
-// কানেক্টেড) বাকি সবার পেইজেও এই কাউন্ট রিয়েল-টাইমে আপডেট হয়ে যায় — শুধু যে ক্লিক করলো
-// তার কাছেই আটকে না থেকে।
-exports.getCourierHistory = async (req, res) => {
-  try {
-    const orderDoc = await Order.findById(req.params.id);
-    if (!orderDoc) {
-      return res.status(404).json({ message: "অর্ডারটি খুঁজে পাওয়া যায়নি।" });
-    }
-
-    // ⚠️ গুরুত্বপূর্ণ: `orderDoc.courierHistory?.all` দিয়ে সরাসরি চেক করা যাবে না —
-    // Order.js স্কিমায় courierHistory.all একটা nested object path (আলাদা কোনো
-    // Schema/subdocument না), তাই Mongoose in-memory ডকুমেন্টে এটা সবসময় একটা
-    // "phantom" খালি {} অবজেক্ট হিসেবে থাকে — DB-তে আসলে কখনো সেট না হলেও।
-    // (এই খালি {} শুধু JSON সিরিয়ালাইজেশনের সময় minimize:true-এর কারণে বাদ পড়ে
-    // যায়, তাই ফ্রন্টএন্ড ঠিকমতো falsy পায় — কিন্তু এখানে সার্ভার-সাইডে এখনো
-    // সিরিয়ালাইজ হয়নি।) তাই {} vs আসল ডেটার পার্থক্য বুঝতে লিফ-ভ্যালু (success)
-    // সরাসরি চেক করা হচ্ছে — এটাই আসল "আগে থেকে ফেচ করা আছে কিনা" প্রশ্নের সঠিক উত্তর দেয়।
-    const alreadyFetched = orderDoc.courierHistory?.all?.success !== undefined;
-    const force = req.body?.force === true;
-
-    if (alreadyFetched && !force) {
-      return res.status(200).json({ order: orderDoc, success: true });
-    }
-
-    if (!Array.isArray(orderDoc.castomerPhone) || orderDoc.castomerPhone.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "এই অর্ডারে কোনো ফোন নম্বর নেই।" });
-    }
-
-    const count = await fetchCourierHistorySummary(orderDoc.castomerPhone);
-
-    const updatedOrder = await Order.findByIdAndUpdate(
-      orderDoc._id,
-      {
-        $set: {
-          "courierHistory.all.success": count.success,
-          "courierHistory.all.cancel": count.cancel,
-          "courierHistory.providers": count.providers,
-        },
-      },
-      { new: true },
-    );
-
-    const io = req.app.get("io");
-    if (io) emitOrderUpdate(io, updatedOrder);
-
-    return res.status(200).json({ order: updatedOrder, success: true });
-  } catch (error) {
-    console.error("Get courier history error:", error);
-    return res
-      .status(500)
-      .json({ message: "কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।" });
-  }
-};
-
-// --- POST /api/orders/courier-history-bulk  { orderIds: [...] } — হোমপেজের অর্ডার
-// লিস্টে একসাথে একাধিক অর্ডার সিলেক্ট করে "History" চাপলে একবারেই সবগুলোর জন্য কল হয়
-// (উপরের getCourierHistory-এর মতোই একই লজিক, শুধু একটা রিকোয়েস্টে অনেকগুলো অর্ডার একসাথে)।
-// প্রতিটা অর্ডারের জন্য আলাদাভাবে emitOrderUpdate broadcast করা হয়, যাতে যারা এই মুহূর্তে
-// সাইটে আছে (socket কানেক্টেড) তাদের সবার পেইজেও প্রতিটা অর্ডার রিয়েল-টাইমে আপডেট হয়ে যায় —
-// শুধু যে বাল্ক অ্যাকশনটা নিলো তার কাছেই আটকে না থেকে। একটা অর্ডারে সমস্যা হলে (ফোন নম্বর
-// নেই ইত্যাদি) সেটা স্কিপ হবে, কিন্তু বাকি অর্ডারগুলোর প্রসেসিং থামবে না।
-//
-// note: আপাতত শুধু bdcourier.com (fetchCourierHistorySummary → utils/courierHistoryProviders.js)
-// ব্যবহার হচ্ছে। ভবিষ্যতে আরো প্রোভাইডার যোগ হলে ওই একটা ফাইলেই যোগ করলেই হবে, এই ফাংশন
-// বদলাতে হবে না।
-exports.getCourierHistoryBulk = async (req, res) => {
-  try {
-    const { orderIds } = req.body;
-    if (!Array.isArray(orderIds) || orderIds.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "orderIds ফিল্ড আবশ্যক (নন-এম্পটি অ্যারে)।" });
-    }
-
-    // ✅ শুধু ইউজারের স্কোপের ভেতরের অর্ডারগুলো — বাইরের ID পাঠালেও চুপচাপ বাদ পড়ে
-    const orders = await Order.find({
-      $and: [ordersScope(req.user), { _id: { $in: orderIds } }],
-    });
-    if (orders.length !== orderIds.length) {
-      console.log(
-        `⚠️ courier-history-bulk: ${orderIds.length}টি চাওয়া হয়েছে, স্কোপে পাওয়া গেছে ${orders.length}টি (user=${req.user.name})`,
-      );
-    }
-    if (orders.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "কোনো অর্ডার পাওয়া যায়নি।" });
-    }
-
-    const io = req.app.get("io");
-
-    const updatedOrders = await Promise.all(
-      orders.map(async (orderDoc) => {
-        // ⚠️ single history-endpoint-এর মতোই: courierHistory.all Mongoose-এ nested
-        // path হওয়ায় in-memory ডকুমেন্টে সবসময় একটা phantom {} থাকে, তাই leaf ভ্যালু
-        // (success) দিয়েই "আগে ফেচ করা আছে কিনা" যাচাই করা হচ্ছে।
-        const alreadyFetched = orderDoc.courierHistory?.all?.success !== undefined;
-        if (alreadyFetched) return orderDoc;
-
-        if (!Array.isArray(orderDoc.castomerPhone) || orderDoc.castomerPhone.length === 0) {
-          return orderDoc; // ফোন নম্বর নেই — এই অর্ডারটা স্কিপ, বাকিগুলো চলবে
-        }
-
-        let count;
-        try {
-          count = await fetchCourierHistorySummary(orderDoc.castomerPhone);
-        } catch (err) {
-          console.error(`Bulk courier history failed for order ${orderDoc._id}:`, err.message);
-          return orderDoc; // এই অর্ডার আনচেঞ্জড থাকবে, বাকিগুলো চলবে
-        }
-
-        const updatedOrder = await Order.findByIdAndUpdate(
-          orderDoc._id,
-          {
-            $set: {
-              "courierHistory.all.success": count.success,
-              "courierHistory.all.cancel": count.cancel,
-              "courierHistory.providers": count.providers,
-            },
-          },
-          { new: true },
-        );
-
-        if (io) emitOrderUpdate(io, updatedOrder);
-        return updatedOrder;
-      }),
-    );
-
-    return res.status(200).json({ success: true, orders: updatedOrders });
-  } catch (error) {
-    console.error("Get bulk courier history error:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "বাল্ক কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।" });
-  }
-};
-
-
-
-
-
-
-
+// --- কুরিয়ার হিস্ট্রি (single: POST /api/orders/:id/courier-history, bulk: POST /api/orders/courier-history-bulk) ---
+// লজিক Draft-এর সাথে কমন — utils/courierHistoryHandlers.js। এখানে শুধু Order-এর নিজস্ব config।
+// নতুন প্রোভাইডার যোগ করতে হলে utils/courierHistoryProviders.js-এ, এখানে কিছু বদলাতে হয় না।
+const orderCourierHistory = createCourierHistoryHandlers({
+  Model: Order,
+  logName: "order",
+  getPhones: (order) => order.castomerPhone,
+  emit: emitOrderUpdate,
+  bulkScope: (req) => ordersScope(req.user), // ✅ শুধু ইউজারের স্কোপের অর্ডার
+  singleKey: "order",
+  bulkKey: "orders",
+  idsKey: "orderIds",
+  msg: {
+    notFound: "অর্ডারটি খুঁজে পাওয়া যায়নি।",
+    noPhone: "এই অর্ডারে কোনো ফোন নম্বর নেই।",
+    noneFound: "কোনো অর্ডার পাওয়া যায়নি।",
+    idsRequired: "orderIds ফিল্ড আবশ্যক (নন-এম্পটি অ্যারে)।",
+    failed: "কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।",
+    bulkFailed: "বাল্ক কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।",
+  },
+});
+exports.getCourierHistory = orderCourierHistory.single;
+exports.getCourierHistoryBulk = orderCourierHistory.bulk;
 
 // --- GET /api/orders/drafts/search?q=... — ইনকমপ্লিট সার্চের DB সার্চ। getDraftOrders শুধু
 // সর্বশেষ ২০০টা লোড করে, তাই তার বাইরের পুরনো ড্রাফটও যেন সার্চে পাওয়া যায়।

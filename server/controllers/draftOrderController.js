@@ -6,7 +6,7 @@ const {
 } = require("../utils/socketBroadcast");
 const { withLandingPageMeta } = require("../utils/draftOrderView");
 const { createLandingOrder } = require("../utils/landingOrderCreation");
-const { fetchCourierHistorySummary } = require("../utils/courierHistoryProviders");
+const { createCourierHistoryHandlers } = require("../utils/courierHistoryHandlers");
 
 const PHONE_REGEX = /^01[3-9]\d{8}$/;
 
@@ -334,135 +334,32 @@ exports.updateDraftCallStatus = async (req, res) => {
       .json({ message: "কল স্ট্যাটাস আপডেট করতে ব্যর্থ হয়েছে।" });
   }
 };
-// --- POST /api/orders/drafts/:id/courier-history — DraftOrderCard-এর "History"
-// বাটনে ক্লিক করলে কল হয় (orderController.getCourierHistory-এর হুবহু একই প্যাটার্ন,
-// শুধু Order-এর বদলে DraftOrder-এ, এবং castomerPhone অ্যারের বদলে draft.phone একটাই
-// স্ট্রিং — তাই fetchCourierHistorySummary-কে একটা এক-আইটেমের অ্যারে হিসেবে পাঠানো হয়)। ---
-exports.getDraftCourierHistory = async (req, res) => {
-  try {
-    const draft = await DraftOrder.findById(req.params.id);
-    if (!draft) {
-      return res.status(404).json({ message: "ড্রাফট খুঁজে পাওয়া যায়নি।" });
-    }
-
-    // ⚠️ orderController.getCourierHistory-এর মতোই: courierHistory.all Mongoose-এ
-    // nested path হওয়ায় in-memory ডকুমেন্টে সবসময় একটা phantom {} থাকে, তাই leaf
-    // ভ্যালু (success) দিয়েই "আগে ফেচ করা আছে কিনা" যাচাই করা হচ্ছে।
-    const alreadyFetched = draft.courierHistory?.all?.success !== undefined;
-    const force = req.body?.force === true;
-    const page = await LandingPage.findOne({ slug: draft.landingPageSlug });
-
-    if (alreadyFetched && !force) {
-      return res
-        .status(200)
-        .json({ success: true, draft: withLandingPageMeta(draft, page) });
-    }
-
-    if (!draft.phone) {
-      return res
-        .status(400)
-        .json({ message: "এই ড্রাফটে কোনো ফোন নম্বর নেই।" });
-    }
-
-    const count = await fetchCourierHistorySummary([draft.phone]);
-
-    const updatedDraft = await DraftOrder.findByIdAndUpdate(
-      draft._id,
-      {
-        $set: {
-          "courierHistory.all.success": count.success,
-          "courierHistory.all.cancel": count.cancel,
-          "courierHistory.providers": count.providers,
-        },
-      },
-      { new: true },
-    );
-
-    const enrichedDraft = withLandingPageMeta(updatedDraft, page);
-    const io = req.app.get("io");
-    if (io) emitDraftUpdate(io, enrichedDraft);
-
-    return res.status(200).json({ success: true, draft: enrichedDraft });
-  } catch (error) {
-    console.error("Get draft courier history error:", error);
-    return res
-      .status(500)
-      .json({ message: "কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।" });
-  }
-};
-
-// --- POST /api/orders/drafts/courier-history-bulk  { draftIds: [...] } — ইনকমপ্লিট
-// লিস্টে একসাথে একাধিক ড্রাফট সিলেক্ট করে "History" চাপলে একবারেই সবগুলোর জন্য কল হয়
-// (orderController.getCourierHistoryBulk-এর হুবহু একই প্যাটার্ন)। একটা ড্রাফটে সমস্যা
-// হলে (ফোন নম্বর নেই ইত্যাদি) সেটা স্কিপ হবে, বাকিগুলোর প্রসেসিং থামবে না। ---
-exports.getDraftCourierHistoryBulk = async (req, res) => {
-  try {
-    const { draftIds } = req.body;
-    if (!Array.isArray(draftIds) || draftIds.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "draftIds ফিল্ড আবশ্যক (নন-এম্পটি অ্যারে)।" });
-    }
-
-    const drafts = await DraftOrder.find({ _id: { $in: draftIds } });
-    if (drafts.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "কোনো ড্রাফট পাওয়া যায়নি।" });
-    }
-
-    const io = req.app.get("io");
-    // একই রিকোয়েস্টে একাধিক ল্যান্ডিং পেজের ড্রাফট থাকতে পারে — প্রতিবার lookup
-    // এড়াতে slug অনুযায়ী ক্যাশ করে রাখা হচ্ছে
-    const pageCache = new Map();
-    const getPage = async (slug) => {
-      if (!pageCache.has(slug)) {
-        pageCache.set(slug, await LandingPage.findOne({ slug }));
-      }
-      return pageCache.get(slug);
-    };
-
-    const updatedDrafts = await Promise.all(
-      drafts.map(async (draftDoc) => {
-        const page = await getPage(draftDoc.landingPageSlug);
-        const alreadyFetched = draftDoc.courierHistory?.all?.success !== undefined;
-        if (alreadyFetched) return withLandingPageMeta(draftDoc, page);
-
-        if (!draftDoc.phone) {
-          return withLandingPageMeta(draftDoc, page); // ফোন নম্বর নেই — স্কিপ
-        }
-
-        let count;
-        try {
-          count = await fetchCourierHistorySummary([draftDoc.phone]);
-        } catch (err) {
-          console.error(`Bulk courier history failed for draft ${draftDoc._id}:`, err.message);
-          return withLandingPageMeta(draftDoc, page); // আনচেঞ্জড, বাকিগুলো চলবে
-        }
-
-        const updatedDraft = await DraftOrder.findByIdAndUpdate(
-          draftDoc._id,
-          {
-            $set: {
-              "courierHistory.all.success": count.success,
-              "courierHistory.all.cancel": count.cancel,
-              "courierHistory.providers": count.providers,
-            },
-          },
-          { new: true },
-        );
-
-        const enrichedDraft = withLandingPageMeta(updatedDraft, page);
-        if (io) emitDraftUpdate(io, enrichedDraft);
-        return enrichedDraft;
-      }),
-    );
-
-    return res.status(200).json({ success: true, drafts: updatedDrafts });
-  } catch (error) {
-    console.error("Get bulk draft courier history error:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "বাল্ক কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।" });
-  }
-};
+// --- ড্রাফটের কুরিয়ার হিস্ট্রি (single: POST /api/orders/drafts/:id/courier-history,
+// bulk: POST /api/orders/drafts/courier-history-bulk) — লজিক Order-এর সাথে কমন:
+// utils/courierHistoryHandlers.js। ড্রাফট থেকে কল হলে রেজাল্ট DraftOrder-এই সেভ হয়।
+// ড্রাফটে ফোন একটাই স্ট্রিং (draft.phone), আর রেসপন্সে landing-page meta যোগ হয়। ---
+const draftCourierHistory = createCourierHistoryHandlers({
+  Model: DraftOrder,
+  logName: "draft",
+  getPhones: (draft) => [draft.phone],
+  // একই রিকোয়েস্টে একই slug-এর পেজ একবারই খোঁজা হয় (cache-এ Promise রাখা হয়, তাই প্যারালাল কলেও একবার)
+  enrich: async (draft, cache) => {
+    const slug = draft.landingPageSlug;
+    if (!cache.has(slug)) cache.set(slug, LandingPage.findOne({ slug }));
+    return withLandingPageMeta(draft, await cache.get(slug));
+  },
+  emit: emitDraftUpdate,
+  singleKey: "draft",
+  bulkKey: "drafts",
+  idsKey: "draftIds",
+  msg: {
+    notFound: "ড্রাফট খুঁজে পাওয়া যায়নি।",
+    noPhone: "এই ড্রাফটে কোনো ফোন নম্বর নেই।",
+    noneFound: "কোনো ড্রাফট পাওয়া যায়নি।",
+    idsRequired: "draftIds ফিল্ড আবশ্যক (নন-এম্পটি অ্যারে)।",
+    failed: "কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।",
+    bulkFailed: "বাল্ক কুরিয়ার হিস্ট্রি আনতে ব্যর্থ হয়েছে।",
+  },
+});
+exports.getDraftCourierHistory = draftCourierHistory.single;
+exports.getDraftCourierHistoryBulk = draftCourierHistory.bulk;

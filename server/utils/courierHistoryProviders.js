@@ -17,8 +17,20 @@ const {
  */
 
 // --- bdcourier.com দিয়ে একটা ফোন নম্বরের success/cancel count আনা ---
+// ⚠️ এটাও এখন কখনো throw করে না: ব্যর্থ হলে { phone, error: { state, message, code } } ফেরত দেয়,
+// যাতে একটা API ফেল করলে বাকি API-র রেজাল্ট সেভ হয় আর ফ্রন্টএন্ডে ওই API-র এরর দেখা যায়।
 async function fetchBdCourierForPhone(phone) {
-  const engNum = convertNumber(phone);
+  let engNum = String(phone ?? "");
+  try {
+    engNum = convertNumber(phone);
+  } catch (err) {
+    return failure(engNum, "internal_error", `নম্বর কনভার্ট করা যায়নি: ${shorten(err.message)}`);
+  }
+
+  if (!BDCOURIER_SECRET_KEY) {
+    console.warn(`bdcourier skipped [${engNum}]: BDCOURIER_SECRET_KEY সেট নেই`);
+    return failure(engNum, "not_called", "API কল করা হয়নি — BDCOURIER_SECRET_KEY সেট নেই");
+  }
 
   let bdRes;
   try {
@@ -36,8 +48,25 @@ async function fetchBdCourierForPhone(phone) {
       err.response?.status,
       err.response?.data || err.message,
     );
-    // ⚠️ জিরো রিটার্ন করা যাবে না — এরর throw হলে কলার DB-তে কিছু সেভ করবে না
-    throw new Error("BDCOURIER_REQUEST_FAILED");
+
+    // HTTP এরর এসেছে (401/403/429/5xx...) — সার্ভারের message সহ দেখাই (যেমন 429: limit শেষ)
+    if (err.response) {
+      const serverMsg = err.response.data?.message || err.response.data?.error;
+      return failure(
+        engNum,
+        "api_error",
+        `API error: HTTP ${err.response.status}${typeof serverMsg === "string" ? ` — ${shorten(serverMsg, 60)}` : ""}`,
+        err.response.status,
+      );
+    }
+
+    // কোনো রেসপন্স আসেনি (timeout / নেটওয়ার্ক / DNS)
+    return failure(
+      engNum,
+      "no_response",
+      `API কল হয়েছে, রেসপন্স পাইনি (${shorten(err.code || err.message, 30)})`,
+      err.code ? shorten(err.code, 20) : null,
+    );
   }
 
   const summary = bdRes?.data?.courierData?.summary;
@@ -50,18 +79,18 @@ async function fetchBdCourierForPhone(phone) {
       `bdcourier unexpected response [${engNum}]:`,
       JSON.stringify(bdRes?.data),
     );
-    throw new Error("BDCOURIER_INVALID_RESPONSE");
+    return failure(engNum, "bad_response", "রেসপন্সের ফরম্যাট সঠিক নয়");
   }
 
   const success = Number(summary.success_parcel);
   const cancel = Number(summary.cancelled_parcel);
   if (Number.isNaN(success) || Number.isNaN(cancel)) {
     console.error(`bdcourier non-numeric summary [${engNum}]:`, JSON.stringify(summary));
-    throw new Error("BDCOURIER_INVALID_RESPONSE");
+    return failure(engNum, "bad_response", "রেসপন্সে সংখ্যা সঠিক নয়");
   }
 
   console.log(`bdcourier OK [${engNum}]: success=${success}, cancel=${cancel}`);
-  return { success, cancel };
+  return { phone: engNum, success, cancel };
 }
 
 // --- ছোট হেল্পার: এরর টেক্সট ছোট করা (নতুন লাইন/ট্যাগ বাদ, সর্বোচ্চ n অক্ষর) ---
@@ -179,50 +208,79 @@ async function fetchSteadfastForPhone(phone) {
   }
 }
 
+// --- যেকোনো প্রোভাইডার ফাংশন হঠাৎ throw করলেও যেন পুরো রিকোয়েস্ট না ভাঙে ---
+async function safeCall(fn, phone) {
+  try {
+    return await fn(phone);
+  } catch (err) {
+    console.error(`courier provider unexpected error [${phone}]:`, err);
+    return failure(String(phone ?? ""), "internal_error", `অপ্রত্যাশিত সমস্যা: ${shorten(err.message)}`);
+  }
+}
+
 /**
- * একাধিক ফোন নম্বরের হিস্ট্রি রিটার্ন করে:
- *  - success/cancel: শুধু BD Courier-এর যোগফল — এটাই order.courierHistory.all (কার্ডের "All x/y" পিল)।
- *    ⚠️ Steadfast-এর সংখ্যা এতে যোগ করা হয় না — BD Courier নিজেই একাধিক কুরিয়ারের (সম্ভবত
- *    Steadfast-সহ) ডেটা মেলায়, যোগ করলে একই পার্সেল দুবার গোনা হতো।
- *  - providers: প্রতিটা API-র আলাদা রেজাল্ট (ড্রপডাউনে সারি হিসেবে দেখায়) —
- *    order.courierHistory.providers-এ সেভ হয়।
- * BD Courier ফেল করলে আগের মতোই throw করে (কিছু সেভ হয় না — কারণ "All x/y" পিল ওটার ওপর নির্ভর করে);
- * Steadfast ফেল করলে throw করে না, বরং তার সারিতে কারণ লেখা থাকে (meta.error.state/message)।
+ * একাধিক ফোন নম্বরের হিস্ট্রি রিটার্ন করে — কখনো throw করে না।
+ *  - success/cancel: শুধু BD Courier-এর যোগফল (order.courierHistory.all, কার্ডের "All x/y" পিল)।
+ *    ⚠️ Steadfast যোগ হয় না — BD Courier নিজেই একাধিক কুরিয়ারের ডেটা মেলায়, যোগ করলে ডাবল গোনা হতো।
+ *    BD Courier (কোনো একটা নম্বরেও) ফেল করলে success/cancel = null — জিরো সেভ হয় না, আংশিক যোগফলও না।
+ *    কলার null দেখলে "All" পিলে ⚠ দেখায় (ফ্রন্টএন্ড) আর পরে Retry করা যায়।
+ *  - providers: প্রতিটা API-র আলাদা রেজাল্ট বা এরর (ড্রপডাউনে সারি) — order.courierHistory.providers-এ সেভ হয়।
+ * নতুন প্রোভাইডার যোগ করতে PROVIDERS অ্যারেতে একটা এন্ট্রি দিলেই হবে।
  * @param {string[]} phones
- * @returns {Promise<{success: number, cancel: number, providers: object[]}>}
+ * @returns {Promise<{success: number|null, cancel: number|null, providers: object[]}>}
  */
+const PROVIDERS = [
+  { key: "bdcourier", label: "BD Courier", fetch: fetchBdCourierForPhone, aggregate: true },
+  { key: "steadfast", label: "Steadfast", fetch: fetchSteadfastForPhone, aggregate: false },
+];
+
 async function fetchCourierHistorySummary(phones) {
   const total = { success: 0, cancel: 0, providers: [] };
   if (!Array.isArray(phones) || phones.length === 0) return total;
 
-  const [bdResults, steadfastResults] = await Promise.all([
-    Promise.all(phones.map((phone) => fetchBdCourierForPhone(phone))),
-    Promise.all(phones.map((phone) => fetchSteadfastForPhone(phone))), // কখনো reject হয় না
-    // note: নতুন প্রোভাইডার যোগ হলে এখানে আরেকটা Promise.all যোগ করে নিচে providers-এ push করলেই হবে।
-  ]);
+  const allResults = await Promise.all(
+    PROVIDERS.map((p) => Promise.all(phones.map((phone) => safeCall(p.fetch, phone)))),
+  );
 
-  for (const result of bdResults) {
-    total.success += result.success;
-    total.cancel += result.cancel;
-  }
-  total.providers.push({
-    key: "bdcourier",
-    label: "BD Courier",
-    success: total.success,
-    cancel: total.cancel,
-  });
+  PROVIDERS.forEach((provider, i) => {
+    const results = allResults[i];
 
-  // সফল/ব্যর্থ সব ফলাফলেরই একটা করে সারি থাকে — কোনোটাই আর চুপচাপ বাদ পড়ে না
-  const multi = steadfastResults.length > 1; // একাধিক ফোন হলে সারির নামে নম্বর যোগ হয়
-  for (const r of steadfastResults) {
-    const key = multi ? `steadfast-${r.phone}` : "steadfast";
-    const label = multi ? `Steadfast (${r.phone})` : "Steadfast";
-    if (r.error) {
-      total.providers.push({ key, label, success: null, cancel: null, meta: { error: r.error } });
-    } else {
-      total.providers.push({ key, label, success: r.success, cancel: r.cancel, meta: r.meta });
+    // "All x/y" শুধু aggregate=true প্রোভাইডার (BD Courier) থেকে
+    if (provider.aggregate) {
+      const failed = results.find((r) => r.error);
+      if (failed) {
+        // ফেল → জিরো নয়, null; এরর সারিতে দেখাবে
+        total.success = null;
+        total.cancel = null;
+        total.providers.push({
+          key: provider.key,
+          label: provider.label,
+          success: null,
+          cancel: null,
+          meta: { error: failed.error },
+        });
+        return;
+      }
+      const success = results.reduce((sum, r) => sum + r.success, 0);
+      const cancel = results.reduce((sum, r) => sum + r.cancel, 0);
+      total.success = success;
+      total.cancel = cancel;
+      total.providers.push({ key: provider.key, label: provider.label, success, cancel });
+      return;
     }
-  }
+
+    // বাকি প্রোভাইডার: প্রতিটা ফলাফলের একটা করে সারি (সফল/ব্যর্থ সবই দেখায়)
+    const multi = results.length > 1; // একাধিক ফোন হলে সারির নামে নম্বর যোগ হয়
+    for (const r of results) {
+      const key = multi ? `${provider.key}-${r.phone}` : provider.key;
+      const label = multi ? `${provider.label} (${r.phone})` : provider.label;
+      if (r.error) {
+        total.providers.push({ key, label, success: null, cancel: null, meta: { error: r.error } });
+      } else {
+        total.providers.push({ key, label, success: r.success, cancel: r.cancel, meta: r.meta });
+      }
+    }
+  });
 
   return total;
 }
