@@ -19,6 +19,43 @@ export default function BlockedReactorsList() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
   const [unblockingId, setUnblockingId] = useState(null);
+  // একসাথে ডিলিটের জন্য সিলেক্ট করা আইডি
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const allSelected = reactors.length > 0 && reactors.every((r) => selectedIds.has(r._id));
+
+  const toggleOne = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setSelectedIds(allSelected ? new Set() : new Set(reactors.map((r) => r._id)));
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    if (!confirm(`সিলেক্ট করা ${ids.length}টি রেকর্ড লিস্ট থেকে ডিলিট করবেন? (Facebook-এর ব্লক এতে সরবে না)`)) return;
+
+    setBulkDeleting(true);
+    try {
+      await facebookService.bulkDeleteBlockedReactors(ids);
+      setReactors((prev) => prev.filter((r) => !selectedIds.has(r._id)));
+      setSelectedIds(new Set());
+      showToast(`${ids.length}টি রেকর্ড ডিলিট হয়েছে`);
+    } catch (err) {
+      console.error("Bulk delete blocked reactors error:", err);
+      showToast("ডিলিট করা যায়নি");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (!socket) return;
@@ -66,6 +103,11 @@ export default function BlockedReactorsList() {
     try {
       await facebookService.deleteBlockedReactor(id);
       setReactors((prev) => prev.filter((r) => r._id !== id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       showToast("ডিলিট হয়েছে");
     } catch (err) {
       console.error("Delete blocked reactor error:", err);
@@ -108,9 +150,38 @@ export default function BlockedReactorsList() {
         <div className="text-center py-8 text-gray-400 text-sm">এখনো কেউ ব্লক হয়নি।</div>
       ) : (
         <div className="overflow-x-auto">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <button
+              onClick={toggleAll}
+              className="text-xs px-3 py-1.5 rounded-md border border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+            >
+              {allSelected ? "সব আনসিলেক্ট" : `সব সিলেক্ট (${reactors.length})`}
+            </button>
+            {selectedIds.size > 0 && (
+              <>
+                <span className="text-xs text-gray-600">{selectedIds.size}টি সিলেক্টেড</span>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                  className="text-xs px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 cursor-pointer"
+                >
+                  {bulkDeleting ? "ডিলিট হচ্ছে..." : `🗑️ সিলেক্টেড ডিলিট (${selectedIds.size})`}
+                </button>
+              </>
+            )}
+          </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-gray-500 border-b">
+                <th className="py-2 px-3 w-8">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    aria-label="সব সিলেক্ট"
+                    className="cursor-pointer"
+                  />
+                </th>
                 <th className="py-2 px-3">নাম</th>
                 <th className="py-2 px-3">রিয়েকশন</th>
                 <th className="py-2 px-3">পেজ</th>
@@ -121,7 +192,18 @@ export default function BlockedReactorsList() {
             </thead>
             <tbody>
               {reactors.map((r) => (
-                <tr key={r._id} className="border-b last:border-0 hover:bg-gray-50">
+                <tr
+                  key={r._id}
+                  className={`border-b last:border-0 hover:bg-gray-50 ${selectedIds.has(r._id) ? "bg-indigo-50/60" : ""}`}
+                >
+                  <td className="py-2 px-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(r._id)}
+                      onChange={() => toggleOne(r._id)}
+                      className="cursor-pointer"
+                    />
+                  </td>
                   <td className="py-2 px-3 font-medium">
                     {r.profileLink ? (
                       <a

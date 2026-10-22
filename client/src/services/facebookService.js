@@ -19,5 +19,6 @@ export const facebookService = {
   // --- haha/angry রিয়েক্ট দিলে অটো-ব্লক হওয়া ইউজারদের লিস্ট ---
   getBlockedReactors: () => api.get(`${BASE}/blocked-reactors`),
   deleteBlockedReactor: (id) => api.delete(`${BASE}/blocked-reactors/${id}`),
+  bulkDeleteBlockedReactors: (ids) => api.post(`${BASE}/blocked-reactors/bulk-delete`, { ids }),
   unblockReactor: (id) => api.post(`${BASE}/blocked-reactors/${id}/unblock`),
 };

@@ -119,3 +119,44 @@ exports.setPermissions = async (req, res) => {
     return res.status(500).json({ message: "পারমিশন আপডেট করতে ব্যর্থ হয়েছে।" });
   }
 };
+
+// --- DELETE /api/users/:id (admin only) --- ইউজার ডাটাবেজ থেকে স্থায়ীভাবে ডিলিট ---
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (String(id) === String(req.user._id)) {
+      return res.status(400).json({ message: "নিজের একাউন্ট নিজে ডিলিট করা যাবে না।" });
+    }
+
+    const user = await User.findById(id).select("-passwordHash -pushSubscriptions");
+    if (!user) {
+      return res.status(404).json({ message: "ইউজার খুঁজে পাওয়া যায়নি।" });
+    }
+
+    // সিস্টেম যেন অ্যাডমিনশূন্য না হয়ে যায়
+    if (user.role === "admin") {
+      const adminCount = await User.countDocuments({ role: "admin" });
+      if (adminCount <= 1) {
+        return res.status(400).json({ message: "সর্বশেষ অ্যাডমিন একাউন্ট ডিলিট করা যাবে না।" });
+      }
+    }
+
+    await User.deleteOne({ _id: id });
+
+    console.log(`🗑️ User deleted by ${req.user.name}: ${user.name} (${user._id})`);
+
+    // লাইভ কানেকশন থাকলে কেটে দেওয়া (টোকেন থাকলেও protect মিডলওয়্যার পরের রিকোয়েস্টে ৪০১ দেবে)
+    try {
+      const io = req.app.get("io");
+      if (io) io.in(`user:${user._id}`).disconnectSockets(true);
+    } catch (e) {
+      console.error("deleteUser socket disconnect error:", e);
+    }
+
+    return res.status(200).json({ message: `"${user.name}" ইউজার ডিলিট করা হয়েছে।`, id: user._id });
+  } catch (error) {
+    console.error("deleteUser error:", error);
+    return res.status(500).json({ message: "ইউজার ডিলিট করতে ব্যর্থ হয়েছে।" });
+  }
+};

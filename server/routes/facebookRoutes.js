@@ -11,6 +11,7 @@ router.post("/block-user", facebookController.blockUser);
 router.post("/delete-and-block", facebookController.deleteAndBlock);
 router.delete("/db-comment-delete/:id", facebookController.hardDeleteComment);
 router.get("/blocked-reactors", facebookController.getBlockedReactors);
+router.post("/blocked-reactors/bulk-delete", facebookController.bulkDeleteBlockedReactors);
 router.delete("/blocked-reactors/:id", facebookController.deleteBlockedReactor);
 router.post("/blocked-reactors/:id/unblock", facebookController.unblockReactor);
 

@@ -1356,7 +1356,7 @@ exports.searchDraftOrders = async (req, res) => {
 
     const drafts = await DraftOrder.find({
       status: "active",
-      callStatus: { $ne: "cancelled" },
+      // callStatus: { $ne: "cancelled" },
       $or: [
         { name: { $regex: regex } },
         { phone: { $regex: regex } },

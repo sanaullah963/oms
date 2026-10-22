@@ -307,6 +307,7 @@
 
 
 const axios = require("axios");
+const mongoose = require("mongoose");
 const FacebookComment = require("../models/FacebookComment");
 const BlockedReactor = require("../models/BlockedReactor");
 const { FB_VERIFY_TOKEN } = require("../config/env");
@@ -711,6 +712,30 @@ exports.deleteBlockedReactor = async (req, res) => {
     return res.status(200).json({ success: true, message: "রেকর্ড ডিলিট হয়েছে।" });
   } catch (error) {
     console.error("Delete blocked reactor error:", error);
+    return res.status(500).json({ success: false, error: "ডিলিট করা যায়নি।" });
+  }
+};
+
+// --- POST /api/facebook/blocked-reactors/bulk-delete — body: { ids: [...] }
+// একসাথে অনেকগুলো রেকর্ড ডিলিট (শুধু আমাদের রেকর্ড; Facebook-এর ব্লক সরে না) ---
+exports.bulkDeleteBlockedReactors = async (req, res) => {
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, error: "কোনো রেকর্ড সিলেক্ট করা হয়নি।" });
+    }
+    const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    if (validIds.length === 0) {
+      return res.status(400).json({ success: false, error: "সঠিক আইডি পাওয়া যায়নি।" });
+    }
+    const result = await BlockedReactor.deleteMany({ _id: { $in: validIds } });
+    return res.status(200).json({
+      success: true,
+      deletedCount: result.deletedCount,
+      message: `${result.deletedCount}টি রেকর্ড ডিলিট হয়েছে।`,
+    });
+  } catch (error) {
+    console.error("Bulk delete blocked reactors error:", error);
     return res.status(500).json({ success: false, error: "ডিলিট করা যায়নি।" });
   }
 };

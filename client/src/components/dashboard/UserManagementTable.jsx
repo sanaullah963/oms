@@ -1,6 +1,7 @@
 "use client";
 import { Fragment, useState } from "react";
 import { userService } from "@/services/userService";
+import ConfirmModal from "@/components/common/ConfirmModal";
 
 // permissionRegistry: সার্ভারের config/permissions.js-এর লিস্ট (GET /api/users-এর সাথে আসে) —
 // টগলগুলো এখান থেকেই নিজে নিজে তৈরি হয়, নতুন পারমিশন যোগ করলে এখানে কিছু বদলাতে হয় না।
@@ -16,6 +17,24 @@ export default function UserManagementTable({
   // সেভ হওয়া পারমিশন (userId → { key: bool }) — onRefresh ছাড়াই UI আপডেট রাখে, তাই প্যানেল বন্ধ হয়ে যায় না
   const [permState, setPermState] = useState({});
   const [permBusyKey, setPermBusyKey] = useState(null); // "<userId>:<permKey>"
+
+  // ডিলিটের জন্য কনফার্মেশন অপেক্ষায় থাকা ইউজার
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const handleConfirmDelete = async () => {
+    const target = deleteTarget;
+    if (!target) return;
+    setDeleteTarget(null);
+    setBusyId(target._id);
+    try {
+      await userService.remove(target._id);
+      onRefresh();
+    } catch (err) {
+      alert(err.response?.data?.message || "ইউজার ডিলিট ব্যর্থ হয়েছে।");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const getPerms = (u) => permState[u._id] || u.permissions || {};
 
@@ -160,6 +179,13 @@ export default function UserManagementTable({
                           ? "অ্যাক্সেস বন্ধ করুন"
                           : "অনুমোদন দিন"}
                     </button>
+                    <button
+                      onClick={() => setDeleteTarget(u)}
+                      disabled={busyId === u._id || u._id === currentUserId}
+                      className="ml-2 px-3 py-1 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50"
+                    >
+                      🗑️ ডিলিট
+                    </button>
                   </td>
                 </tr>
                 {isOpen && u.role !== "admin" && (
@@ -252,6 +278,14 @@ export default function UserManagementTable({
           })}
         </tbody>
       </table>
+
+      <ConfirmModal
+        isVisible={!!deleteTarget}
+        type="confirm"
+        message={`"${deleteTarget?.name || ""}" (${deleteTarget?.phone || ""}) ইউজারটি স্থায়ীভাবে ডাটাবেজ থেকে ডিলিট হয়ে যাবে এবং আর ফেরত আনা যাবে না। নিশ্চিত?`}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
