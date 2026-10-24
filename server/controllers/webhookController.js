@@ -228,6 +228,14 @@ exports.handleSteadfastWebhook = async (req, res) => {
     });
   }
 
+  // ----------- Steadfast raw response log (সিগনেচার ভ্যালিড হওয়ার পরে)
+  // তারিখ ও সময় বাংলাদেশ টাইমে (Asia/Dhaka), যেমন: 24/10/2026, 10:53:12 pm
+  const logTime = new Date().toLocaleString("en-GB", {
+    timeZone: "Asia/Dhaka",
+    hour12: true,
+  });
+  console.log(`[STEADFAST WEBHOOK] [${logTime}] ${JSON.stringify(data)}`);
+
   const noteText = data.tracking_message || "null-set by our server";
   const isImportant = classifyNote(noteText); //true = গুরুত্বপূর্ণ, false = ignorable
   const courierLabel = getCourierStatus(data);
