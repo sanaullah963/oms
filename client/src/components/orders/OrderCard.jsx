@@ -46,7 +46,7 @@ export default function OrderCard({
   const [isFraudModalOpen, setIsFraudModalOpen] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleNote, setScheduleNote] = useState("");
-  console.log(order);
+  // console.log(order);
   const [formData, setFormData] = useState({
     castomerName: order.castomerName,
     castomerPhone: Array.isArray(order.castomerPhone)

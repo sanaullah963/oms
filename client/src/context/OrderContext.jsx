@@ -84,7 +84,7 @@ export function OrderProvider({ children }) {
     setLoading(true);
     try {
       const res = await orderService.getAll();
-      console.log(res.data);
+      // console.log(res.data);
       if (Array.isArray(res.data)) {
         // কুরিয়ার-নোট-ওনলি অর্ডার (_viewScope মার্কার) আলাদা করা — মূল লিস্টে মিশবে না
         const mainOrders = [];
@@ -92,9 +92,9 @@ export function OrderProvider({ children }) {
         res.data.forEach((o) =>
           (o?._viewScope === COURIER_NOTES_SCOPE ? noteOnlyOrders : mainOrders).push(o),
         );
-        console.log(
-          `Orders loaded: main=${mainOrders.length}, courier-note-only=${noteOnlyOrders.length}`,
-        );
+        // console.log(
+        //   `Orders loaded: main=${mainOrders.length}, courier-note-only=${noteOnlyOrders.length}`,
+        // );
         setOrders(mainOrders);
         setCourierNoteOrders(noteOnlyOrders);
       }
@@ -423,7 +423,7 @@ export function OrderProvider({ children }) {
 
     // অ্যাডমিন এই ইউজারের পারমিশন/role বদলালে — নতুন পারমিশন আনা, তারপর অর্ডার লিস্ট আবার লোড
     const handlePermissionsChanged = async (payload) => {
-      console.log("🔐 permissionsChanged received:", payload);
+      // console.log("🔐 permissionsChanged received:", payload);
       await refreshPermissions();
       fetchOrders();
     };

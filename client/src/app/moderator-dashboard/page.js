@@ -41,7 +41,7 @@ function ModeratorDashboardContent() {
     try {
       // মডারেটরের ক্ষেত্রে moderatorId পাঠানো হয় না — সার্ভার নিজেই নিজের অর্ডারে সীমাবদ্ধ করে
       const res = await dashboardService.getSummary(activeRange.from, activeRange.to, undefined);
-      console.log("[ModeratorDashboard] summary totals:", res.data?.totals);
+      // console.log("[ModeratorDashboard] summary totals:", res.data?.totals);
       setData(res.data);
     } catch (err) {
       console.error("Moderator dashboard fetch error:", err);

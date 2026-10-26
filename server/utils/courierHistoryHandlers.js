@@ -95,9 +95,9 @@ function createCourierHistoryHandlers(config) {
 
       const docs = await Model.find({ $and: [bulkScope(req), { _id: { $in: ids } }] });
       if (docs.length !== ids.length) {
-        console.log(
-          `⚠️ ${logName} courier-history-bulk: ${ids.length}টি চাওয়া হয়েছে, পাওয়া গেছে ${docs.length}টি`,
-        );
+        // console.log(
+        //   `⚠️ ${logName} courier-history-bulk: ${ids.length}টি চাওয়া হয়েছে, পাওয়া গেছে ${docs.length}টি`,
+        // );
       }
       if (docs.length === 0) {
         return res.status(404).json({ success: false, message: msg.noneFound });

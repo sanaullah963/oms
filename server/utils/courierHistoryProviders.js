@@ -89,7 +89,7 @@ async function fetchBdCourierForPhone(phone) {
     return failure(engNum, "bad_response", "রেসপন্সে সংখ্যা সঠিক নয়");
   }
 
-  console.log(`bdcourier OK [${engNum}]: success=${success}, cancel=${cancel}`);
+  // console.log(`bdcourier OK [${engNum}]: success=${success}, cancel=${cancel}`);
   return { phone: engNum, success, cancel };
 }
 
@@ -163,7 +163,7 @@ async function fetchSteadfastForPhone(phone) {
       );
     }
 
-    console.log(`steadfast fraud check OK [${engNum}]`);
+    // console.log(`steadfast fraud check OK [${engNum}]`);
     return {
       phone: engNum,
       success: orNull(d.delivered_count),

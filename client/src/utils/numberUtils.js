@@ -11,6 +11,6 @@ export const convertNumber = (input) => {
     }
     return output;
   } catch (error) {
-    console.log("error", error);
+    console.log("error-numberUtils.js", error);
   }
 };

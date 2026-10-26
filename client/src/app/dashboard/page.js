@@ -27,7 +27,7 @@ function DashboardPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [drillDownStatus, setDrillDownStatus] = useState(null);
-  console.log(data)
+  // console.log(data)
   const activeRange =
     preset === "custom" && customRange
       ? customRange

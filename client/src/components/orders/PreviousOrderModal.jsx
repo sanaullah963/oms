@@ -29,7 +29,7 @@ export default function PreviousOrderModal({ order, onClose }) {
       .catch((err) => console.error("Previous orders fetch error:", err))
       .finally(() => setLoading(false));
   }, [order?._id]);
-console.log(previousOrders)
+// console.log(previousOrders)
   if (!order) return null;
 
   return ReactDOM.createPortal(

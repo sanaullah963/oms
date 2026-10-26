@@ -397,7 +397,7 @@ exports.verifyWebhook = (req, res) => {
 // --- POST /api/facebook/webhook - Facebook থেকে কমেন্ট রিসিভ করা (একাধিক পেজ সাপোর্ট করে) ---
 exports.receiveWebhookEvent = async (req, res) => {
   const body = req.body;
-  console.log("🎉 Webhook Event Received",body);
+  // console.log("🎉 Webhook Event Received",body);
   if (body.object !== "page") {
     return res.sendStatus(404);
   }
@@ -430,9 +430,9 @@ exports.receiveWebhookEvent = async (req, res) => {
         const postIdPrefix = rawPostId ? rawPostId.split("_")[0] : null;
         const actualPageId = postIdPrefix || rawEntryId;
 
-        console.log(
-          `🔎 Page ID সোর্স তুলনা — entry.id: "${rawEntryId}" | post_id: "${rawPostId}" | post_id প্রিফিক্স: "${postIdPrefix}" | ব্যবহৃত হচ্ছে: "${actualPageId}"`,
-        );
+        // console.log(
+        //   `🔎 Page ID সোর্স তুলনা — entry.id: "${rawEntryId}" | post_id: "${rawPostId}" | post_id প্রিফিক্স: "${postIdPrefix}" | ব্যবহৃত হচ্ছে: "${actualPageId}"`,
+        // );
 
         // আমাদের নিজেদের কোনো পেজ থেকে করা কমেন্ট/রিপ্লাই হলে ইগনোর করা (নাহলে নিজের রিপ্লাইও নতুন কমেন্ট হিসেবে দেখাবে)
         if (knownPageIds.includes(change.from?.id)) continue;

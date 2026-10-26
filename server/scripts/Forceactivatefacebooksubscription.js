@@ -17,12 +17,12 @@ const runForceSubscription = async () => {
       },
     );
 
-    console.log("=========================================");
-    console.log("🎉 SUCCESS! মেটা রেসপন্স:", response.data);
-    console.log("=========================================");
-    console.log("🚀 আপনার পেজ এখন অ্যাপের সাথে ১০০% সফলভাবে কানেক্টেড!");
+    // console.log("=========================================");
+    // console.log("🎉 SUCCESS! মেটা রেসপন্স:", response.data);
+    // console.log("=========================================");
+    // console.log("🚀 আপনার পেজ এখন অ্যাপের সাথে ১০০% সফলভাবে কানেক্টেড!");
   } catch (error) {
-    console.error("❌ সাবস্ক্রিপশন ব্যর্থ হয়েছে!");
+    // console.error("❌ সাবস্ক্রিপশন ব্যর্থ হয়েছে!");
     console.error("এরর ডিটেইলস:", error.response?.data || error.message);
   }
 };

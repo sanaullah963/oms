@@ -45,13 +45,13 @@ export default function UserManagementTable({
       const res = await userService.setPermissions(userItem._id, {
         [key]: nextValue,
       });
-      console.log(
-        "🔐 Permission saved:",
-        userItem.name,
-        key,
-        nextValue,
-        res.data?.user?.permissions,
-      );
+      // console.log(
+      //   "🔐 Permission saved:",
+      //   userItem.name,
+      //   key,
+      //   nextValue,
+      //   res.data?.user?.permissions,
+      // );
       setPermState((prev) => ({
         ...prev,
         [userItem._id]: res.data.user.permissions,

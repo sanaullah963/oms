@@ -118,7 +118,7 @@ async function sendCapiEvent({
     const response = await axios.post(url, payload, {
       params: { access_token: META_CAPI_ACCESS_TOKEN },
     });
-    console.log("respons-----------", response);
+    // console.log("respons-----------", response);
     await EventLog.create({
       eventName,
       eventId: finalEventId,

@@ -167,7 +167,7 @@ exports.getDashboardSummary = async (req, res) => {
 
     // --- মডারেটর: শুধু সংখ্যা (কাউন্ট), কোনো টাকার হিসাব/মিসম্যাচ নয় ---
     if (!isAdminReq(req)) {
-      console.log(`[DashboardSummary] moderator=${req.user?.name} — আর্থিক তথ্য বাদ দিয়ে পাঠানো হলো`);
+      // console.log(`[DashboardSummary] moderator=${req.user?.name} — আর্থিক তথ্য বাদ দিয়ে পাঠানো হলো`);
       return res.status(200).json({
         range: { from: fromDate, to: toDate },
         scope: { role: req.user.role, moderatorId: null },
@@ -584,9 +584,9 @@ exports.getBookedOutcome = async (req, res) => {
       { total: 0, delivered: 0, partial: 0, inProgress: 0, cancelled: 0 },
     );
 
-    console.log(
-      `[BookedOutcome] ${fromStr} → ${toStr} (${dayCount} দিন): মোট ${totals.total}, delivered ${totals.delivered}, inProgress ${totals.inProgress}, partial ${totals.partial}, cancelled ${totals.cancelled}`,
-    );
+    // console.log(
+    //   `[BookedOutcome] ${fromStr} → ${toStr} (${dayCount} দিন): মোট ${totals.total}, delivered ${totals.delivered}, inProgress ${totals.inProgress}, partial ${totals.partial}, cancelled ${totals.cancelled}`,
+    // );
 
     return res.status(200).json({ range: { from: fromStr, to: toStr }, days, totals });
   } catch (error) {

@@ -20,9 +20,9 @@ const { canAccessOrder } = require("../utils/orderScope");
 function requirePermission(key) {
   return function permissionGate(req, res, next) {
     if (can(req.user, key)) return next();
-    console.log(
-      `🚫 Permission denied: user=${req.user?.name} (${req.user?._id}) key="${key}" ${req.method} ${req.originalUrl}`,
-    );
+    // console.log(
+    //   `🚫 Permission denied: user=${req.user?.name} (${req.user?._id}) key="${key}" ${req.method} ${req.originalUrl}`,
+    // );
     return res.status(403).json({
       message: "এই অংশে আপনার অ্যাক্সেস নেই। অ্যাডমিনের কাছ থেকে অনুমতি নিন।",
       permission: key,
@@ -45,9 +45,9 @@ function orderAccess({ param = "id", via = [] } = {}) {
 
       if (canAccessOrder(req.user, order, { via })) return next();
 
-      console.log(
-        `🚫 Order access denied: user=${req.user?.name} (${req.user?._id}) order=${id} owner=${order.createdBy} ${req.method} ${req.originalUrl}`,
-      );
+      // console.log(
+      //   `🚫 Order access denied: user=${req.user?.name} (${req.user?._id}) order=${id} owner=${order.createdBy} ${req.method} ${req.originalUrl}`,
+      // );
       return res.status(403).json({
         message: "এই অর্ডারে আপনার অ্যাক্সেস নেই।",
       });

@@ -155,9 +155,9 @@ function getCourierStatus(data) {
       item.pattern.test(text),
     );
     if (cancelStep) {
-      console.log(
-        `Steadfast webhook: cancel-flow message matched -> ${cancelStep.label} (consignment ${data.consignment_id}, type ${data.notification_type}, official status ${data.status}, message "${text}")`,
-      );
+      // console.log(
+      //   `Steadfast webhook: cancel-flow message matched -> ${cancelStep.label} (consignment ${data.consignment_id}, type ${data.notification_type}, official status ${data.status}, message "${text}")`,
+      // );
       return cancelStep.label;
     }
   }
@@ -167,9 +167,9 @@ function getCourierStatus(data) {
     const mapped = STATUS_FIELD_MAP[data.status.toLowerCase()];
     if (mapped) {
       if (String(data.status).toLowerCase() === "cancelled") {
-        console.log(
-          `Steadfast webhook: official status "cancelled" -> ${mapped} (consignment ${data.consignment_id}; চূড়ান্ত cancelled-এর জন্য রিটার্ন মেসেজ লাগবে)`,
-        );
+        // console.log(
+        //   `Steadfast webhook: official status "cancelled" -> ${mapped} (consignment ${data.consignment_id}; চূড়ান্ত cancelled-এর জন্য রিটার্ন মেসেজ লাগবে)`,
+        // );
       }
       return mapped;
     }
@@ -234,7 +234,7 @@ exports.handleSteadfastWebhook = async (req, res) => {
     timeZone: "Asia/Dhaka",
     hour12: true,
   });
-  console.log(`[STEADFAST WEBHOOK] [${logTime}] ${JSON.stringify(data)}`);
+  console.log(`[STEADFAST WEBHOOK] ---------- [${logTime}] ${JSON.stringify(data)}`);
 
   const noteText = data.tracking_message || "null-set by our server";
   const isImportant = classifyNote(noteText); //true = গুরুত্বপূর্ণ, false = ignorable

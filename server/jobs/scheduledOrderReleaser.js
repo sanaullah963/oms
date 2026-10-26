@@ -5,7 +5,7 @@ const { logActivity } = require("../utils/activityLogger");
 
 // আজকের দিনের শুরুতে (00:00:00) রিলিজ ডেট থাকা 'Scheduled' অর্ডারগুলোকে 'Pending'-এ রিলিজ করে
 async function releaseScheduledOrders(io) {
-  console.log(`[Scheduler - ${new Date().toLocaleString("bn-BD")}] শিডিউলার কাজ শুরু করেছে...`);
+  // console.log(`[Scheduler - ${new Date().toLocaleString("bn-BD")}] শিডিউলার কাজ শুরু করেছে...`);
 
   try {
     const today = new Date();
@@ -19,11 +19,11 @@ async function releaseScheduledOrders(io) {
     const scheduledOrders = await Order.find(filter);
 
     if (scheduledOrders.length === 0) {
-      console.log("[Scheduler] রিলিজ করার মতো কোনো শিডিউলড অর্ডার পাওয়া যায়নি।");
+      // console.log("[Scheduler] রিলিজ করার মতো কোনো শিডিউলড অর্ডার পাওয়া যায়নি।");
       return;
     }
 
-    console.log(`[Scheduler] মোট ${scheduledOrders.length} টি অর্ডার রিলিজ করা হচ্ছে...`);
+    // console.log(`[Scheduler] মোট ${scheduledOrders.length} টি অর্ডার রিলিজ করা হচ্ছে...`);
 
     for (const order of scheduledOrders) {
       order.orderStatus = "Pending";
@@ -42,9 +42,9 @@ async function releaseScheduledOrders(io) {
       if (io) emitOrderUpdate(io, order);
     }
 
-    console.log("[Scheduler] সকল নির্ধারিত অর্ডার সফলভাবে রিলিজ করা হয়েছে!");
+    // console.log("[Scheduler] সকল নির্ধারিত অর্ডার সফলভাবে রিলিজ করা হয়েছে!");
   } catch (error) {
-    console.error("[Scheduler Error] অর্ডার রিলিজ করার সময় ত্রুটি হয়েছে:", error);
+    // console.error("[Scheduler Error] অর্ডার রিলিজ করার সময় ত্রুটি হয়েছে:", error);
   }
 }
 

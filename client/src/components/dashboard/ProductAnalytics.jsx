@@ -58,14 +58,14 @@ export default function ProductAnalytics({ moderatorId, isAdmin }) {
       setProducts(list);
       // ডায়াগনস্টিক: delivered/cancelled হয় statusUpdatedAt দিয়ে, sent হয় bookedAt দিয়ে —
       // তাই কোনো স্ট্যাটাস sent-এর চেয়ে বেশি হলে পার্সেন্টেজ ১০০%-এর উপরে যেতে পারে
-      console.log("[ProductAnalytics] products loaded:", list.length, "range:", activeRange);
+      // console.log("[ProductAnalytics] products loaded:", list.length, "range:", activeRange);
       list.forEach((p) => {
         METRICS.forEach((m) => {
           const c = p[`${m.key}Count`] || 0;
           if (m.key !== "sent" && c > (p.sentCount || 0)) {
-            console.log(
-              `[ProductAnalytics] ${p.productCode}: ${m.key}=${c} > sent=${p.sentCount || 0} (>100%)`,
-            );
+            // console.log(
+            //   `[ProductAnalytics] ${p.productCode}: ${m.key}=${c} > sent=${p.sentCount || 0} (>100%)`,
+            // );
           }
         });
       });

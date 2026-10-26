@@ -212,11 +212,11 @@ exports.getOrders = async (req, res) => {
     ]);
 
     const result = markViewScope(req.user, orders || []);
-    console.log(
-      "Orders fetched successfully:",
-      result.length,
-      `(user=${req.user.name}, role=${req.user.role}, courierNote-only=${result.filter((o) => o._viewScope).length})`,
-    );
+    // console.log(
+    //   "Orders fetched successfully:",
+    //   result.length,
+    //   `(user=${req.user.name}, role=${req.user.role}, courierNote-only=${result.filter((o) => o._viewScope).length})`,
+    // );
     return res.status(200).json(result);
   } catch (error) {
     console.error("Error fetching orders:", error);
@@ -252,7 +252,7 @@ function extractOrdersFromRawText(rawInputText, user) {
       rawProductCode === "empty"
         ? rawProductCode
         : rawProductCode.charAt(0).toUpperCase() + rawProductCode.slice(1);
-    console.log("[createManualOrder] productCode:", rawProductCode, "->", productCode);
+    // console.log("[createManualOrder] productCode:", rawProductCode, "->", productCode);
     const parsedData = parseOrderDetails(order);
 
     if (parsedData.castomerName && parsedData.castomerPhone) {

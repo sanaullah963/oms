@@ -27,7 +27,7 @@ export default function AuthGuard({
       return;
     }
     if (requiredPermission && !can(requiredPermission)) {
-      console.log(`🚫 Page blocked — missing permission: ${requiredPermission}`);
+      // console.log(`🚫 Page blocked — missing permission: ${requiredPermission}`);
       router.replace("/");
     }
   }, [loading, isAuthenticated, isAdmin, adminOnly, requiredPermission, can, router, redirectTo]);

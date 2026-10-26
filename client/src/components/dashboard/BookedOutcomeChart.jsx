@@ -85,14 +85,14 @@ export default function BookedOutcomeChart({ from, to, moderatorId, isAdmin }) {
       setLoading(true);
       setError("");
       try {
-        console.log("[BookedOutcomeChart] fetch:", { from, to, moderatorId: isAdmin ? moderatorId : undefined });
+        // console.log("[BookedOutcomeChart] fetch:", { from, to, moderatorId: isAdmin ? moderatorId : undefined });
         const res = await dashboardService.getBookedOutcome(
           from,
           to,
           isAdmin ? moderatorId : undefined,
         );
         if (ignore) return;
-        console.log("[BookedOutcomeChart] response:", res.data?.totals, "days:", res.data?.days?.length);
+        // console.log("[BookedOutcomeChart] response:", res.data?.totals, "days:", res.data?.days?.length);
         setData(res.data);
       } catch (err) {
         if (ignore) return;

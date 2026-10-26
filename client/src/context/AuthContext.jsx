@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
   const refreshPermissions = useCallback(async () => {
     try {
       const res = await authService.getMe();
-      console.log("🔐 Permissions refreshed:", res.data.user?.role, res.data.user?.permissions);
+      // console.log("🔐 Permissions refreshed:", res.data.user?.role, res.data.user?.permissions);
       setUser(res.data.user);
       return res.data.user;
     } catch (err) {
